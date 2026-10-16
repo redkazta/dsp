@@ -1,33 +1,91 @@
 ---
-import Layout from './BaseLayout.astro';
+/**
+ * BaseLayout.astro - Layout principal del storefront
+ * Paleta: Negro (#0A0A0A), Oro (#D4AF37), Plateado (#C0C0C0)
+ */
+import '../styles/global.css';
 
-export default function Page() {
-  return (
-    <Layout>
-      <div className="min-h-screen">
-        <header className="bg-negro-carbono py-6 shadow-md">
-          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-            <a href="/" className="text-2xl font-bold text-oro-elegante">
-              WildForgeLabs
-            </a>
-            <nav className="flex space-x-6">
-              <a href="/tienda" className="text-plateado-claro hover:text-oro-elegante">
-                Tienda
-              </a>
-              <a href="/carrito" className="text-plateado-claro hover:text-oro-elegante">
-                Carrito
-              </a>
-              <a href="/entrar" className="text-plateado-claro hover:text-oro-elegante">
-                Entrar
-              </a>
-            </nav>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto py-12">
-          <slot />
-        </main>
-      </div>
-    </Layout>
-  );
+export interface Props {
+  title?: string;
+  description?: string;
 }
+
+const {
+  title = 'Dinero Sobre Problemas | Streetwear Premium',
+  description = 'Ropa urbana de alta gama. Diseño minimalista, calidad premium.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- SEO -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={Astro.url} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={Astro.url} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-negro-profundo text-blancoRoto font-cuerpo min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-negro-profundo border-b border-oro-elegante/20 sticky top-0 z-50 backdrop-blur">
+      <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <a href="/" class="font-titulos text-2xl tracking-wide text-oro-elegante">
+          DINERO SOBRE PROBLEMAS
+        </a>
+        <nav class="hidden md:flex items-center gap-8 font-acentos text-sm uppercase tracking-widest">
+          <a href="/tienda" class="text-plata-claro hover:text-oro-elegante transition-colors">Tienda</a>
+          <a href="/carrito" class="text-plata-claro hover:text-oro-elegante transition-colors">Carrito</a>
+          <a href="/entrar" class="text-plata-claro hover:text-oro-elegante transition-colors">Entrar</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-negro-profundo border-t border-oro-elegante/20 mt-auto">
+      <div class="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-8 text-plata-metalico text-sm">
+        <div>
+          <h3 class="font-titulos text-oro-elegante text-lg mb-3">DSP</h3>
+          <p class="leading-relaxed">Streetwear premium hecho en México.</p>
+        </div>
+        <div>
+          <h3 class="font-titulos text-oro-elegante text-lg mb-3">Tienda</h3>
+          <ul class="space-y-2">
+            <li><a href="/tienda" class="hover:text-oro-suave transition-colors">Catálogo</a></li>
+            <li><a href="/blog" class="hover:text-oro-suave transition-colors">Blog</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-titulos text-oro-elegante text-lg mb-3">Contacto</h3>
+          <p>hola@dinerosobreproblemas.com</p>
+        </div>
+      </div>
+      <div class="border-t border-plata-metalico/10 py-5 text-center text-xs text-plata-metalico">
+        © {new Date().getFullYear()} Dinero Sobre Problemas. Todos los derechos reservados.
+      </div>
+    </footer>
+  </body>
+</html>

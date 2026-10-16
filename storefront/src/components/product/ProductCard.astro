@@ -1,0 +1,35 @@
+---
+/**
+ * ProductCard.astro - Tarjeta de producto
+ */
+export interface Props {
+  product: {
+    id: string;
+    name: string;
+    base_price: number;
+    product_variants?: Array<{ id: string; name: string; price: number; stock: number }>;
+  };
+}
+
+const { product } = Astro.props;
+const price = product.product_variants?.[0]?.price ?? product.base_price;
+---
+
+<a
+  href={`/producto/${product.id}`}
+  class="card group overflow-hidden block transition-transform duration-300 hover:-translate-y-1"
+>
+  <div class="aspect-square bg-negro-profundo flex items-center justify-center overflow-hidden">
+    <span class="text-plata-metalico/30 font-acentos text-xs uppercase tracking-widest">
+      Sin imagen
+    </span>
+  </div>
+  <div class="p-6">
+    <h3 class="font-acentos text-plata-claro mb-2 group-hover:text-oro-elegante transition-colors">
+      {product.name}
+    </h3>
+    <p class="text-oro-elegante font-bold text-lg">
+      ${price.toFixed(2)} MXN
+    </p>
+  </div>
+</a>

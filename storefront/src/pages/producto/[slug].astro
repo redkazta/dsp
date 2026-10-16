@@ -1,41 +1,71 @@
 ---
-import Layout from '../../layouts/BaseLayout.astro';
-import { getProductBySlug } from '../../lib/supabase';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getProductById } from '../../lib/supabase';
 
-const slug = Astro.params.slug || '';
-const tenantId = Astro.url.searchParams.get('tenant') || 'tenant-demo';
+const id = Astro.params.slug ?? '';
+const tenantId = Astro.url.searchParams.get('tenant') ?? 'dinerosobreproblemas';
 
-const { data: product, error } = await getProductBySlug(tenantId, slug);
+const { data: product } = await getProductById(tenantId, id);
 ---
 
-<Layout title={product?.name || 'Producto'} description={product?.description || 'Detalle del producto'}>
-  <div className="max-w-6xl mx-auto py-12">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      {/* Imagen */}
-      <div className="aspect-square bg-negro-carbono rounded-2xl overflow-hidden shadow-2xl">
-        <img src={product?.image || '/placeholder.jpg'} alt={product?.name || ''} className="w-full h-full object-cover" />
+<BaseLayout
+  title={product?.name ?? 'Producto'} 
+  description={product?.description ?? 'Detalle del producto'}
+>
+  {
+    !product ? (
+      <div class="max-w-3xl mx-auto py-24 text-center">
+        <h1 class="font-titulos text-3xl text-blancoRoto mb-4">Producto no encontrado</h1>
+        <a href="/tienda" class="btn-primary inline-block">Volver al catálogo</a>
       </div>
+    ) : (
+      <div class="max-w-6xl mx-auto px-6 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div class="aspect-square bg-negro-carbono rounded-2xl flex items-center justify-center border border-plata-metalico/20">
+            <span class="text-plata-metalico/30 font-acentos text-sm uppercase tracking-widest">
+              Sin imagen
+            </span>
+          </div>
 
-      {/* Info */}
-      <div>
-        <h1 className="text-4xl font-bold text-oro-elegante mb-4">{product?.name}</h1>
-        <p className="text-plateado-claro text-lg mb-6">{product?.description}</p>
-        <p className="text-3xl font-black text-oro-elegante mb-6">${product?.base_price?.toFixed(2)} MXN</p>
-        
-        <div className="flex gap-4 mb-6">
-          <button className="btn-primary">Agregar al carrito</button>
-          <button className="px-6 py-3 border border-plata-metalico rounded-lg text-plateado-claro hover:border-oro-elegante transition-colors">Guardar</button>
-        </div>
+          <div>
+            <h1 class="font-titulos text-4xl text-blancoRoto mb-4">{product.name}</h1>
+            <div class="w-16 h-px bg-oro-elegante mb-6"></div>
+            <p class="text-plata-metalico text-lg mb-8 leading-relaxed">
+              {product.description ?? 'Sin descripción'}
+            </p>
+            <p class="font-acentos text-3xl text-oro-elegante font-bold mb-8">
+              ${Number(product.base_price).toFixed(2)} MXN
+            </p>
 
-        <div className="bg-negro-carbono rounded-xl p-6 border border-plata-metalico">
-          <h3 className="text-oro-elegante font-bold mb-2">Detalles</h3>
-          <ul className="text-plateado-claro space-y-1">
-            <li><strong>SKU:</strong> {product?.sku}</li>
-            <li><strong>Stock:</strong> {product?.stock || 0}</li>
-            <li><strong>Categoría:</strong> {product?.category?.name || '-'}</li>
-          </ul>
+            {product.product_variants && product.product_variants.length > 0 && (
+              <div class="mb-8">
+                <h3 class="font-acentos text-plata-claro text-sm uppercase tracking-wider mb-3">
+                  Variantes
+                </h3>
+                <div class="flex flex-wrap gap-3">
+                  {product.product_variants.map((variant: any) => (
+                    <span class="px-4 py-2 border border-plata-metalico/30 rounded text-plata-claro text-sm">
+                      {variant.name} — ${Number(variant.price).toFixed(2)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div class="flex gap-4 mb-8">
+              <button class="btn-primary">Agregar al carrito</button>
+            </div>
+
+            <div class="card p-6">
+              <h3 class="font-titulos text-oro-elegante mb-3">Detalles</h3>
+              <ul class="text-plata-metalico space-y-2 text-sm">
+                <li><strong class="text-plata-claro">SKU:</strong> {product.sku ?? '—'}</li>
+                <li><strong class="text-plata-claro">Categoría:</strong> {product.categories?.name ?? '—'}</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</Layout>
+    )
+  }
+</BaseLayout>

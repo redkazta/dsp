@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Dinero Sobre Problemas | Streetwear Premium"
+  description="Ropa urbana de alta gama. Diseño minimalista, calidad premium. Envíos a todo México."
+>
+  <!-- Hero -->
+  <section class="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-b from-negro-profundo via-negro-carbono to-negro-profundo">
+    <div class="relative z-10 text-center px-6 max-w-4xl">
+      <p class="font-acentos text-oro-elegante text-sm uppercase tracking-[0.3em] mb-6">
+        Nueva Colección
+      </p>
+      <h1 class="font-titulos text-5xl md:text-7xl text-blancoRoto leading-tight mb-8">
+        El lujo está en los <span class="text-oro-elegante">detalles</span>
+      </h1>
+      <p class="text-plata-metalico text-lg md:text-xl mb-10 max-w-2xl mx-auto">
+        Streetwear premium para quienes no necesitan gritar para destacar.
+      </p>
+      <a href="/tienda" class="btn-primary inline-block">
+        Explorar Colección
+      </a>
+    </div>
+  </section>
+
+  <!-- Productos Destacados -->
+  <section class="max-w-7xl mx-auto px-6 py-24">
+    <div class="text-center mb-16">
+      <h2 class="font-titulos text-4xl text-blancoRoto mb-4">Destacados</h2>
+      <div class="w-24 h-px bg-oro-elegante mx-auto"></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- ProductCard se renderizará aquí dinámicamente desde Supabase -->
+      <div class="card group overflow-hidden">
+        <div class="aspect-square bg-negro-profundo"></div>
+        <div class="p-6">
+          <h3 class="font-acentos text-plata-claro mb-2">Cargando productos...</h3>
+          <p class="text-oro-elegante font-bold">—</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Storytelling de Marca -->
+  <section class="bg-negro-carbono py-24">
+    <div class="max-w-3xl mx-auto px-6 text-center">
+      <h2 class="font-titulos text-4xl text-oro-elegante mb-8">Nuestra Historia</h2>
+      <p class="text-plata-metalico text-lg leading-relaxed">
+        Dinero Sobre Problemas nace de la convicción de que el estilo es una forma de
+        expresión. Cada prenda está diseñada con intención, fabricada con materiales
+        que resisten el tiempo, y pensada para quienes entienden que la elegancia
+        no grita: se nota.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

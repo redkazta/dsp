@@ -1,0 +1,33 @@
+---
+/**
+ * ProductList.astro - Grid de productos
+ */
+import ProductCard from './ProductCard.astro';
+
+export interface Product {
+  id: string;
+  name: string;
+  base_price: number;
+  product_variants?: Array<{ id: string; name: string; price: number; stock: number }>;
+}
+
+export interface Props {
+  products: Product[];
+}
+
+const { products } = Astro.props;
+---
+
+{
+  products.length === 0 ? (
+    <p class="text-plata-metalico text-center py-16">
+      No hay productos disponibles por el momento.
+    </p>
+  ) : (
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {products.map((product) => (
+        <ProductCard product={product} />
+      ))}
+    </div>
+  )
+}

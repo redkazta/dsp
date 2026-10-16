@@ -1,35 +1,47 @@
 ---
-import ProductCard from '../components/product/ProductCard.tsx';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductList from '../components/product/ProductList.astro';
 import { getProducts, getCategories } from '../lib/supabase';
 
-// Obtener tenantId del subdominio o query param
-const tenantId = Astro.url.searchParams.get('tenant') || 'tenant-demo';
+// Tenant por query param (temporal hasta tener subdominios)
+const tenantId = Astro.url.searchParams.get('tenant') ?? 'dinerosobreproblemas';
 
-// Obtener productos
-const { data: products, error } = await getProducts(tenantId, {
-  page: 1,
-  limit: 12
-});
+const [productsResult, categoriesResult] = await Promise.all([
+  getProducts(tenantId, { page: 1, limit: 12 }),
+  getCategories(tenantId),
+]);
 
-const categories = await getCategories(tenantId);
+const products = productsResult.data ?? [];
+const categories = categoriesResult.data ?? [];
 ---
 
-<Layout title="WildForgeLabs - Tienda" description="Descubre los mejores productos de streetwear">
-  <div className="container mx-auto px-4 py-8">
-    <div className="flex flex-col md:flex-row gap-8">
-      {/* Sidebar de filtros */}
-      <aside className="w-full md:w-64">
-        <div className="bg-negro-carbono rounded-lg p-6 shadow-lg">
-          <h3 className="text-oro-elegante font-bold text-lg mb-4">Filtros</h3>
-          
-          {/* Categorías */}
-          <div className="mb-6">
-            <h4 className="text-plateado-claro font-medium mb-2">Categorías</h4>
-            <ul className="space-y-2">
-              {categories.data?.map(category => (
+<BaseLayout
+  title="Catálogo | Dinero Sobre Problemas"
+  description="Explora nuestra colección de streetwear premium."
+>
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <div class="flex flex-col md:flex-row gap-10">
+      <!-- Filtros -->
+      <aside class="w-full md:w-64 shrink-0">
+        <div class="card p-6">
+          <h3 class="font-titulos text-oro-elegante text-xl mb-6">Filtros</h3>
+
+          <div class="mb-8">
+            <h4 class="font-acentos text-plata-claro text-sm uppercase tracking-wider mb-3">
+              Categorías
+            </h4>
+            <ul class="space-y-2">
+              {
+                categories.length === 0 && (
+                  <li class="text-plata-metalico/50 text-sm">Sin categorías</li>
+                )
+              }
+              {categories.map((category) => (
                 <li>
-                  <a href={`?tenant=${tenantId}&category=${category.id}`} 
-                     className="text-plateado-claro hover:text-oro-elegante transition-colors">
+                  <a
+                    href={`/tienda?tenant=${tenantId}&category=${category.id}`}
+                    class="text-plata-metalico hover:text-oro-elegante transition-colors text-sm"
+                  >
                     {category.name}
                   </a>
                 </li>
@@ -37,26 +49,35 @@ const categories = await getCategories(tenantId);
             </ul>
           </div>
 
-          {/* Precio */}
-          <div className="mb-6">
-            <h4 className="text-plateado-claro font-medium mb-2">Rango de Precio</h4>
-            <div className="flex space-x-2">
-              <input type="number" placeholder="Mínimo" 
-                     className="w-full bg-negro-profundo border border-plata-metalico rounded px-3 py-2 text-plateado-claro" />
-              <input type="number" placeholder="Máximo" 
-                     className="w-full bg-negro-profundo border border-plata-metalico rounded px-3 py-2 text-plateado-claro" />
+          <div class="mb-8">
+            <h4 class="font-acentos text-plata-claro text-sm uppercase tracking-wider mb-3">
+              Precio
+            </h4>
+            <div class="flex gap-2">
+              <input
+                type="number"
+                placeholder="Mín"
+                class="w-full bg-negro-profundo border border-plata-metalico/30 rounded px-3 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
+              />
+              <input
+                type="number"
+                placeholder="Máx"
+                class="w-full bg-negro-profundo border border-plata-metalico/30 rounded px-3 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
+              />
             </div>
           </div>
 
-          <button className="btn-primary w-full">Aplicar Filtros</button>
+          <button class="btn-primary w-full text-sm">Aplicar</button>
         </div>
       </aside>
 
-      {/* Catálogo principal */}
-      <main className="flex-1">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-oro-elegante">Catálogo</h1>
-          <select className="bg-negro-carbono border border-plata-metalico rounded px-4 py-2 text-plateado-claro">
+      <!-- Catálogo -->
+      <div class="flex-1">
+        <div class="flex justify-between items-center mb-8">
+          <h1 class="font-titulos text-3xl text-blancoRoto">Catálogo</h1>
+          <select
+            class="bg-negro-carbono border border-plata-metalico/30 rounded px-4 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
+          >
             <option>Más recientes</option>
             <option>Precio: Bajo a Alto</option>
             <option>Precio: Alto a Bajo</option>
@@ -64,22 +85,8 @@ const categories = await getCategories(tenantId);
           </select>
         </div>
 
-        {/* Grid de productos */}
-        <ProductList products={products || []} />
-
-        {/* Paginación */}
-        <div className="flex justify-center mt-12 space-x-2">
-          <button className="px-4 py-2 bg-negro-carbono border border-plata-metalico rounded text-plateado-claro hover:border-oro-elegante">
-            ← Anterior
-          </button>
-          <button className="px-4 py-2 bg-oro-elegante text-negro-profundo rounded font-bold">
-            1
-          </button>
-          <button className="px-4 py-2 bg-negro-carbono border border-plata-metalico rounded text-plateado-claro hover:border-oro-elegante">
-            Siguiente →
-          </button>
-        </div>
-      </main>
+        <ProductList products={products} />
+      </div>
     </div>
   </div>
-</Layout>
+</BaseLayout>

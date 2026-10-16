@@ -1,17 +1,17 @@
-/**
- * Astro Configuration for WildForgeLabs Storefront
- * Tailwind CSS con paleta de colores: Negro, Oro, Plateado
- */
-
+// @ts-check
 import { defineConfig } from 'astro/config';
-import tailwind from '@tailwindcss/vite';
-import rehypeKatex from 'rehype-katex';
+import tailwind from '@astrojs/tailwind';
+import vercel from '@astrojs/vercel/serverless';
 
+// https://astro.build/config
 export default defineConfig({
-  integrations: [],
-  vitePlugins: [tailwind()],
-  // Configuración SEO automática
-  experimental: {
-    islandMerge: true
-  }
+  // SSR: páginas dinámicas (producto/[slug], carrito, checkout)
+  // SSG: páginas estáticas (home, tienda)
+  output: 'hybrid',
+  adapter: vercel(),
+  integrations: [tailwind()],
+  site: 'https://dinerosobreproblemas.com',
+  image: {
+    domains: ['dzrxwmyxxhjonhbfgfvo.supabase.co'],
+  },
 });
