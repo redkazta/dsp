@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\WildForgeLabs.Api.props" />
-</Project>
