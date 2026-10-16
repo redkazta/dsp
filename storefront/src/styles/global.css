@@ -1,0 +1,40 @@
+/* Global Styles for WildForgeLabs Storefront */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+:root {
+  --color-negro-profundo: #0A0A0A;
+  --color-negro-carbono: #1A1A1A;
+  --color-oro-elegante: #D4AF37;
+  --color-oro-suave: #E8C874;
+  --color-plata-metalico: #C0C0C0;
+  --color-plata-claro: #E5E5E5;
+  --color-blanco-roto: #F5F5F5;
+}
+
+/* Dark mode por defecto */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-negro-profundo text-plata-claro antialiased;
+  font-family: theme('fontFamily.cuerpo');
+}
+
+/* Botones principales */
+.btn-primary {
+  @apply bg-oro-elegante text-negro-profundo font-acentos font-bold py-3 px-6 rounded-lg transition-all duration-300 hover:bg-oro-suave shadow-lg hover:shadow-2xl;
+}
+
+/* Cards oscuras */
+.card {
+  @apply bg-negro-carbono rounded-xl shadow-lg border border-plata-metalico;
+}
+
+/* Gradiente dorado */
+.gradient-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #E8C874 100%);
+}

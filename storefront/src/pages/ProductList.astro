@@ -1,0 +1,47 @@
+import { useState } from 'react';
+import { Link } from '@astro/astro';
+
+interface Props {
+  categoryId?: string;
+  searchTerm?: string;
+}
+
+export default function CategoryPage({ categoryId, searchTerm }) {
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+
+  const handleSearch = () => {
+    if (!searchTerm) {
+      setFilteredProducts(/* todos */);
+    } else {
+      // Filter logic here
+      setFilteredProducts([]);
+      // ... filter
+    }
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto py-12">
+      <div className="flex flex-col md:flex-row gap-6 mb-8">
+        <input
+          type="text"
+          placeholder="Buscar productos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="px-4 py-2 border border-neutral-300 rounded-lg shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+        />
+        <Link
+          href="/productos"
+          className="bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-colors"
+        >
+          Todos
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredProducts.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
+  );
+}

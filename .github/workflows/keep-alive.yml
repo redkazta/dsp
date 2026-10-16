@@ -1,0 +1,15 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API
+        run: curl -f https://wildforgelabs-api.onrender.com/health || exit 0
+      - name: Ping Admin
+        run: curl -f https://wildforgelabs-admin.onrender.com || exit 0

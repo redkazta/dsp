@@ -1,0 +1,85 @@
+---
+import ProductCard from '../components/product/ProductCard.tsx';
+import { getProducts, getCategories } from '../lib/supabase';
+
+// Obtener tenantId del subdominio o query param
+const tenantId = Astro.url.searchParams.get('tenant') || 'tenant-demo';
+
+// Obtener productos
+const { data: products, error } = await getProducts(tenantId, {
+  page: 1,
+  limit: 12
+});
+
+const categories = await getCategories(tenantId);
+---
+
+<Layout title="WildForgeLabs - Tienda" description="Descubre los mejores productos de streetwear">
+  <div className="container mx-auto px-4 py-8">
+    <div className="flex flex-col md:flex-row gap-8">
+      {/* Sidebar de filtros */}
+      <aside className="w-full md:w-64">
+        <div className="bg-negro-carbono rounded-lg p-6 shadow-lg">
+          <h3 className="text-oro-elegante font-bold text-lg mb-4">Filtros</h3>
+          
+          {/* Categorías */}
+          <div className="mb-6">
+            <h4 className="text-plateado-claro font-medium mb-2">Categorías</h4>
+            <ul className="space-y-2">
+              {categories.data?.map(category => (
+                <li>
+                  <a href={`?tenant=${tenantId}&category=${category.id}`} 
+                     className="text-plateado-claro hover:text-oro-elegante transition-colors">
+                    {category.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Precio */}
+          <div className="mb-6">
+            <h4 className="text-plateado-claro font-medium mb-2">Rango de Precio</h4>
+            <div className="flex space-x-2">
+              <input type="number" placeholder="Mínimo" 
+                     className="w-full bg-negro-profundo border border-plata-metalico rounded px-3 py-2 text-plateado-claro" />
+              <input type="number" placeholder="Máximo" 
+                     className="w-full bg-negro-profundo border border-plata-metalico rounded px-3 py-2 text-plateado-claro" />
+            </div>
+          </div>
+
+          <button className="btn-primary w-full">Aplicar Filtros</button>
+        </div>
+      </aside>
+
+      {/* Catálogo principal */}
+      <main className="flex-1">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-oro-elegante">Catálogo</h1>
+          <select className="bg-negro-carbono border border-plata-metalico rounded px-4 py-2 text-plateado-claro">
+            <option>Más recientes</option>
+            <option>Precio: Bajo a Alto</option>
+            <option>Precio: Alto a Bajo</option>
+            <option>Nombre A-Z</option>
+          </select>
+        </div>
+
+        {/* Grid de productos */}
+        <ProductList products={products || []} />
+
+        {/* Paginación */}
+        <div className="flex justify-center mt-12 space-x-2">
+          <button className="px-4 py-2 bg-negro-carbono border border-plata-metalico rounded text-plateado-claro hover:border-oro-elegante">
+            ← Anterior
+          </button>
+          <button className="px-4 py-2 bg-oro-elegante text-negro-profundo rounded font-bold">
+            1
+          </button>
+          <button className="px-4 py-2 bg-negro-carbono border border-plata-metalico rounded text-plateado-claro hover:border-oro-elegante">
+            Siguiente →
+          </button>
+        </div>
+      </main>
+    </div>
+  </div>
+</Layout>

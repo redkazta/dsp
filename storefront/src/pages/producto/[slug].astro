@@ -1,0 +1,41 @@
+---
+import Layout from '../../layouts/BaseLayout.astro';
+import { getProductBySlug } from '../../lib/supabase';
+
+const slug = Astro.params.slug || '';
+const tenantId = Astro.url.searchParams.get('tenant') || 'tenant-demo';
+
+const { data: product, error } = await getProductBySlug(tenantId, slug);
+---
+
+<Layout title={product?.name || 'Producto'} description={product?.description || 'Detalle del producto'}>
+  <div className="max-w-6xl mx-auto py-12">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      {/* Imagen */}
+      <div className="aspect-square bg-negro-carbono rounded-2xl overflow-hidden shadow-2xl">
+        <img src={product?.image || '/placeholder.jpg'} alt={product?.name || ''} className="w-full h-full object-cover" />
+      </div>
+
+      {/* Info */}
+      <div>
+        <h1 className="text-4xl font-bold text-oro-elegante mb-4">{product?.name}</h1>
+        <p className="text-plateado-claro text-lg mb-6">{product?.description}</p>
+        <p className="text-3xl font-black text-oro-elegante mb-6">${product?.base_price?.toFixed(2)} MXN</p>
+        
+        <div className="flex gap-4 mb-6">
+          <button className="btn-primary">Agregar al carrito</button>
+          <button className="px-6 py-3 border border-plata-metalico rounded-lg text-plateado-claro hover:border-oro-elegante transition-colors">Guardar</button>
+        </div>
+
+        <div className="bg-negro-carbono rounded-xl p-6 border border-plata-metalico">
+          <h3 className="text-oro-elegante font-bold mb-2">Detalles</h3>
+          <ul className="text-plateado-claro space-y-1">
+            <li><strong>SKU:</strong> {product?.sku}</li>
+            <li><strong>Stock:</strong> {product?.stock || 0}</li>
+            <li><strong>Categoría:</strong> {product?.category?.name || '-'}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

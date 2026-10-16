@@ -1,0 +1,33 @@
+---
+import Layout from './BaseLayout.astro';
+
+export default function Page() {
+  return (
+    <Layout>
+      <div className="min-h-screen">
+        <header className="bg-negro-carbono py-6 shadow-md">
+          <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+            <a href="/" className="text-2xl font-bold text-oro-elegante">
+              WildForgeLabs
+            </a>
+            <nav className="flex space-x-6">
+              <a href="/tienda" className="text-plateado-claro hover:text-oro-elegante">
+                Tienda
+              </a>
+              <a href="/carrito" className="text-plateado-claro hover:text-oro-elegante">
+                Carrito
+              </a>
+              <a href="/entrar" className="text-plateado-claro hover:text-oro-elegante">
+                Entrar
+              </a>
+            </nav>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto py-12">
+          <slot />
+        </main>
+      </div>
+    </Layout>
+  );
+}
