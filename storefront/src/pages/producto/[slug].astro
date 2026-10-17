@@ -1,10 +1,11 @@
 ---
+// SSR: el detalle se resuelve en cada request (stock/precio en vivo)
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getProductById } from '../../lib/supabase';
 
-const id = Astro.params.slug ?? '';
+const id = Astro.params.id ?? '';
 const tenantId = Astro.url.searchParams.get('tenant') ?? 'dinerosobreproblemas';
 
 const { data: product } = await getProductById(tenantId, id);
