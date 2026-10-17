@@ -3,7 +3,7 @@
  * Llamadas a la API de .NET (hosteada en Render)
  */
 
-const API_URL =
+export const API_URL =
   import.meta.env.PUBLIC_API_URL || 'https://wildforgelabs-api.onrender.com/api/v1';
 
 export class ApiClient {
