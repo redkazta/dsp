@@ -3,108 +3,121 @@ using Microsoft.AspNetCore.Mvc;
 using Stripe.Checkout;
 using WildForgeLabs.Core.DTOs;
 using WildForgeLabs.Core.Interfaces;
-using WildForgeLabs.Infrastructure.Services;
 
 namespace WildForgeLabs.Api.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/[controller]")]
-[ApiVersion("1.0")]
-[Authorize]
+[Route("api/v1/payments")]
 public class PaymentsController : ControllerBase
 {
-    private readonly IPaymentService _paymentService;
-    private readonly IOrderRepository _orderRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IOrderRepository _orders;
+    private readonly IConfiguration _config;
 
-    public PaymentsController(IPaymentService paymentService, IOrderRepository orderRepository, IUnitOfWork unitOfWork)
+    public PaymentsController(IOrderRepository orders, IConfiguration config)
     {
-        _paymentService = paymentService;
-        _orderRepository = orderRepository;
-        _unitOfWork = unitOfWork;
+        _orders = orders;
+        _config = config;
     }
 
     /// <summary>
-    /// Procesa un pago para un pedido
+    /// Crea una sesión de Stripe Checkout y devuelve la URL de pago.
     /// </summary>
-    [HttpPost("process")]
-    [ProducesResponseType(typeof(CreatePaymentResponse), 200)]
+    [HttpPost("checkout")]
+    [AllowAnonymous]
+    [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public async Task<ActionResult<CreatePaymentResponse>> ProcessPayment([FromBody] CreatePaymentDto dto)
+    public async Task<IActionResult> CreateCheckout([FromBody] CheckoutRequest request, CancellationToken ct)
     {
-        var order = await _orderRepository.GetByIdAsync(dto.OrderId);
-        if (order == null || order.TenantId != User.GetTenantId())
-            return NotFound("Order not found");
+        if (request.Items is null || request.Items.Count == 0)
+            return BadRequest(new { error = "El carrito está vacío" });
 
-        if (order.Status != "Pending" && order.Status != "Confirmed")
-            return BadRequest("Order is not in a payable state");
+        Stripe.StripeConfiguration.ApiKey = _config["Stripe:SecretKey"];
 
-        // Procesar pago según el proveedor
-        var result = await _paymentService.ProcessPaymentAsync(dto.OrderId, dto.Provider, dto.Amount);
+        var frontendUrl = _config["Frontend:Url"] ?? "https://dinerosobreproblemas.com";
 
-        if (!result.Success)
-            return BadRequest(result.ErrorMessage);
-
-        // Guardar registro de pago
-        var payment = new Payment
+        var options = new SessionCreateOptions
         {
-            Id = Guid.NewGuid(),
-            TenantId = User.GetTenantId(),
-            OrderId = dto.OrderId,
-            Amount = dto.Amount,
-            Provider = dto.Provider,
-            ProviderTransactionId = result.ProviderTransactionId,
-            Status = result.Status,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            Mode = "payment",
+            SuccessUrl = $"{frontendUrl}/confirmacion?session_id={{CHECKOUT_SESSION_ID}}",
+            CancelUrl = $"{frontendUrl}/carrito",
+            CustomerEmail = request.Customer?.GetValueOrDefault("email"),
+            LineItems = request.Items.Select(i => new SessionLineItemOptions
+            {
+                Quantity = i.Qty,
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency = "mxn",
+                    UnitAmount = (long)(i.Price * 100),
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = string.IsNullOrWhiteSpace(i.VariantName)
+                            ? i.Name
+                            : $"{i.Name} — {i.VariantName}",
+                    },
+                },
+            }).ToList(),
+            Metadata = new Dictionary<string, string>
+            {
+                { "customer_name", $"{request.Customer?.GetValueOrDefault("firstName")} {request.Customer?.GetValueOrDefault("lastName")}".Trim() },
+                { "phone", request.Customer?.GetValueOrDefault("phone") ?? "" },
+            },
         };
 
-        await _paymentService.AddPaymentAsync(payment);
-        await _unitOfWork.SaveChangesAsync();
+        var service = new SessionService();
+        var session = await service.CreateAsync(options, cancellationToken: ct);
 
-        return Ok(new CreatePaymentResponse
-        {
-            PaymentUrl = result.PaymentUrl,
-            ProviderTransactionId = result.ProviderTransactionId
-        });
+        return Ok(new { url = session.Url, id = session.Id });
     }
 
     /// <summary>
-    /// Endpoint para webhooks de Stripe
+    /// Webhook de Stripe.
     /// </summary>
     [HttpPost("webhook/stripe")]
     [AllowAnonymous]
-    public async Task<IActionResult> StripeWebhook()
+    public async Task<IActionResult> StripeWebhook(CancellationToken ct)
     {
-        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        try
-        {
-            await _paymentService.HandleStripeWebhookAsync(json);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            // Log error
-            return BadRequest($"Webhook error: {ex.Message}");
-        }
-    }
+        var json = await new StreamReader(Request.Body).ReadToEndAsync(ct);
+        var signature = Request.Headers["Stripe-Signature"].ToString();
+        var secret = _config["Stripe:WebhookSecret"];
 
-    /// <summary>
-    /// Endpoint para webhooks de Mercado Pago
-    /// </summary>
-    [HttpPost("webhook/mercadopago")]
-    [AllowAnonymous]
-    public async Task<IActionResult> MercadoPagoWebhook()
-    {
-        var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+        if (string.IsNullOrWhiteSpace(secret) || secret.StartsWith("whsec_..."))
+            return Ok(new { skipped = "webhook secret not configured" });
+
         try
         {
-            await _paymentService.HandleMercadoPagoWebhookAsync(json);
+            var stripeEvent = Stripe.EventUtility.ConstructEvent(json, signature, secret);
+
+            switch (stripeEvent.Type)
+            {
+                case "checkout.session.completed":
+                case "payment_intent.succeeded":
+                    // TODO: crear pedido + descontar stock
+                    break;
+                default:
+                    break;
+            }
+
             return Ok();
         }
-        catch (Exception ex)
+        catch (Stripe.StripeException ex)
         {
-            return BadRequest($"Webhook error: {ex.Message}");
+            return BadRequest(new { error = ex.Message });
         }
     }
+}
+
+public class CheckoutRequest
+{
+    public Dictionary<string, string>? Customer { get; set; }
+    public List<CheckoutItem> Items { get; set; } = new();
+}
+
+public class CheckoutItem
+{
+    public string VariantId { get; set; } = string.Empty;
+    public string ProductId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string VariantName { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public int Qty { get; set; } = 1;
 }

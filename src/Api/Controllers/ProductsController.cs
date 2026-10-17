@@ -1,35 +1,25 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WildForgeLabs.Core.DTOs;
+using WildForgeLabs.Core.Entities;
 using WildForgeLabs.Core.Interfaces;
 
 namespace WildForgeLabs.Api.Controllers;
 
 [ApiController]
-[Route("api/v{version:apiVersion}/[controller]")]
-[ApiVersion("1.0")]
+[Route("api/v1/products")]
 [Authorize]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductRepository _productRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IProductRepository _products;
+    private readonly IUnitOfWork _uow;
 
-    public ProductsController(IProductRepository productRepository, IUnitOfWork unitOfWork)
+    public ProductsController(IProductRepository products, IUnitOfWork uow)
     {
-        _productRepository = productRepository;
-        _unitOfWork = unitOfWork;
+        _products = products;
+        _uow = uow;
     }
 
-    /// <summary>
-    /// Lista paginada de productos
-    /// </summary>
-    /// <param name="pageNumber">Número de página (default 1)</param>
-    /// <param name="pageSize">Tamaño de página (default 20)</param>
-    /// <param name="search">Término de búsqueda</param>
-    /// <param name="categoryId">Filtrar por categoría</param>
-    /// <param name="minPrice">Precio mínimo</param>
-    /// <param name="maxPrice">Precio máximo</param>
-    /// <returns>Lista paginada de productos</returns>
     [HttpGet]
     [ProducesResponseType(typeof(GetProductListResponse), 200)]
     public async Task<ActionResult<GetProductListResponse>> GetProducts(
@@ -38,36 +28,31 @@ public class ProductsController : ControllerBase
         [FromQuery] string? search = null,
         [FromQuery] Guid? categoryId = null,
         [FromQuery] decimal? minPrice = null,
-        [FromQuery] decimal? maxPrice = null)
+        [FromQuery] decimal? maxPrice = null,
+        CancellationToken ct = default)
     {
-        var products = await _productRepository.GetPagedAsync(
-            pageNumber, pageSize, search, categoryId, minPrice, maxPrice);
+        var result = await _products.GetPagedAsync(
+            Math.Max(1, pageNumber),
+            Math.Clamp(pageSize, 1, 100),
+            search, categoryId, minPrice, maxPrice, ct);
 
-        return Ok(products);
+        return Ok(result);
     }
 
-    /// <summary>
-    /// Obtiene un producto por ID
-    /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(GetProductByIdResponse), 200)]
     [ProducesResponseType(404)]
-    public async Task<ActionResult<GetProductByIdResponse>> GetProduct(Guid id)
+    public async Task<ActionResult<GetProductByIdResponse>> GetProduct(Guid id, CancellationToken ct)
     {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
-            return NotFound();
-
-        return Ok(product);
+        var product = await _products.GetByIdAsync(id, ct);
+        return product is null ? NotFound() : Ok(product);
     }
 
-    /// <summary>
-    /// Crea un nuevo producto
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ProductDto), 201)]
-    [ProducesResponseType(400)]
-    public async Task<ActionResult<ProductDto>> CreateProduct([FromBody] CreateProductDto dto)
+    public async Task<ActionResult<ProductDto>> CreateProduct(
+        [FromBody] CreateProductDto dto,
+        CancellationToken ct)
     {
         var product = new Product
         {
@@ -75,71 +60,41 @@ public class ProductsController : ControllerBase
             Name = dto.Name,
             Description = dto.Description,
             BasePrice = dto.BasePrice,
-            SKU = dto.SKU,
+            Sku = dto.SKU,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        // Crear variantes
-        foreach (var variantDto in dto.Variants)
-        {
-            product.Variants.Add(new ProductVariant
+            Variants = dto.Variants.Select(v => new ProductVariant
             {
                 Id = Guid.NewGuid(),
-                Name = variantDto.Name,
-                Price = variantDto.Price,
-                Stock = variantDto.Stock,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-        }
+                Name = v.Name,
+                Price = v.Price,
+                Stock = v.Stock,
+            }).ToList(),
+        };
 
-        await _productRepository.AddAsync(product);
-        await _unitOfWork.SaveChangesAsync();
+        await _products.AddAsync(product, ct);
+        await _uow.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Description = product.Description ?? string.Empty,
+            BasePrice = product.BasePrice,
+            SKU = product.Sku ?? string.Empty,
+            IsActive = product.IsActive,
+        });
     }
 
-    /// <summary>
-    /// Actualiza un producto existente
-    /// </summary>
-    [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ProductDto), 200)]
-    [ProducesResponseType(404)]
-    public async Task<ActionResult<ProductDto>> UpdateProduct(Guid id, [FromBody] UpdateProductDto dto)
-    {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
-            return NotFound();
-
-        product.Name = dto.Name ?? product.Name;
-        product.Description = dto.Description ?? product.Description;
-        product.BasePrice = dto.BasePrice ?? product.BasePrice;
-        product.SKU = dto.SKU ?? product.SKU;
-        product.UpdatedAt = DateTime.UtcNow;
-
-        await _productRepository.UpdateAsync(product);
-        await _unitOfWork.SaveChangesAsync();
-
-        return Ok(product);
-    }
-
-    /// <summary>
-    /// Elimina un producto (soft delete)
-    /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(204)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> DeleteProduct(Guid id)
+    public async Task<IActionResult> DeleteProduct(Guid id, CancellationToken ct)
     {
-        var product = await _productRepository.GetByIdAsync(id);
-        if (product == null)
-            return NotFound();
+        var product = await _products.GetByIdAsync(id, ct);
+        if (product is null) return NotFound();
 
-        await _productRepository.DeleteAsync(id);
-        await _unitOfWork.SaveChangesAsync();
-
+        await _products.DeleteAsync(id, ct);
+        await _uow.SaveChangesAsync(ct);
         return NoContent();
     }
 }

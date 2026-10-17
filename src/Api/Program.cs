@@ -1,86 +1,152 @@
-using WildForgeLabs.Infrastructure.Data;
-using WildForgeLabs.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using Stripe;
+using System.Text;
+using WildForgeLabs.Core.Interfaces;
+using WildForgeLabs.Infrastructure.Data;
+using WildForgeLabs.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Configure Serilog
+// ---------- Logging ----------
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
+    .WriteTo.Console()
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// Configure DbContext with Npgsql
-builder.Services.AddDbContext<WildForgeLabsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ---------- Database ----------
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection no configurada");
 
-// Configure JWT authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddDbContext<WildForgeLabsDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// ---------- Repositories / UoW ----------
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
+// ---------- Stripe ----------
+var stripeKey = builder.Configuration["Stripe:SecretKey"];
+if (!string.IsNullOrWhiteSpace(stripeKey) && !stripeKey.StartsWith("sk_test_..."))
+{
+    StripeConfiguration.ApiKey = stripeKey;
+}
+
+// ---------- Auth (JWT) ----------
+var jwtKey = builder.Configuration["Jwt:Key"] ?? string.Empty;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateIssuer = !string.IsNullOrWhiteSpace(jwtIssuer),
+            ValidateAudience = !string.IsNullOrWhiteSpace(jwtAudience),
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            ValidateIssuerSigningKey = jwtKey.Length >= 16,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = jwtKey.Length >= 16
+                ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                : null,
         };
     });
 
-// Configure CORS
+builder.Services.AddAuthorization();
+
+// ---------- CORS ----------
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFromFrontend", policy =>
-        policy.WithOrigins("https://*.vercel.app", "http://localhost:4321")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials());
+    options.AddPolicy("Frontend", policy =>
+    {
+        if (allowedOrigins.Length > 0)
+            policy.WithOrigins(allowedOrigins);
+        else
+            policy.AllowAnyOrigin();
+
+        policy.AllowAnyHeader().AllowAnyMethod();
+    });
 });
 
-// Add HttpContextAccessor for tenant resolution
-builder.Services.AddHttpContextAccessor();
+// ---------- MVC + Swagger ----------
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "WildForgeLabs API",
+        Version = "v1",
+        Description = "API del ERP de Dinero Sobre Problemas",
+    });
 
-// Add repositories and services
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+    var scheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Token JWT",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer",
+        },
+    };
+
+    c.AddSecurityDefinition("Bearer", scheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { scheme, Array.Empty<string>() },
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ---------- Pipeline ----------
+app.UseSerilogRequestLogging();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseCors("AllowFromFrontend");
-
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<TenantMiddleware>();
-
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }));
 
-app.Run();
+try
+{
+    Log.Information("WildForgeLabs API starting...");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "API terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

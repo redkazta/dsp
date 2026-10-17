@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Stripe;
-using WildForgeLabs.Core.Entities;
+using WildForgeLabs.Core.DTOs;
+using WildForgeLabs.Core.Interfaces;
+using WildForgeLabs.Infrastructure.Data;
 
 namespace WildForgeLabs.Infrastructure.Services;
 
@@ -15,85 +17,36 @@ public class PaymentService : IPaymentService
         _stripeClient = stripeClient;
     }
 
-    public async Task<PaymentResult> ProcessPaymentAsync(Guid orderId, string provider, decimal amount)
+    public async Task<CreatePaymentResponse> CreatePaymentAsync(
+        CreatePaymentDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var order = await _context.Orders.FindAsync(orderId);
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == dto.OrderId, cancellationToken);
         if (order == null)
+            throw new InvalidOperationException($"Order {dto.OrderId} not found");
+
+        if (!dto.Provider.Equals("stripe", StringComparison.OrdinalIgnoreCase))
+            throw new NotSupportedException($"Provider '{dto.Provider}' not implemented yet");
+
+        var options = new PaymentIntentCreateOptions
         {
-            return PaymentResult.Failure("Order not found");
-        }
+            Amount = (long)(dto.Amount * 100), // cents
+            Currency = "mxn",
+            PaymentMethodTypes = new List<string> { "card" },
+            Metadata = new Dictionary<string, string> { { "order_id", order.Id.ToString() } },
+        };
 
-        switch (provider.ToLower())
+        var service = new PaymentIntentService(_stripeClient);
+        var intent = await service.CreateAsync(options, cancellationToken: cancellationToken);
+
+        order.Status = "pending";
+        order.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new CreatePaymentResponse
         {
-            case "stripe":
-                return await ProcessStripePaymentAsync(order, amount);
-            case "mercadopago":
-                return await ProcessMercadoPagoPaymentAsync(order, amount);
-            case "conekta":
-                return await ProcessConektaPaymentAsync(order, amount);
-            default:
-                return PaymentResult.Failure("Unsupported payment provider");
-        }
-    }
-
-    private async Task<PaymentResult> ProcessStripePaymentAsync(Order order, decimal amount)
-    {
-        try
-        {
-            var options = new PaymentIntentCreateOptions
-            {
-                Amount = (long)(amount * 100), // Convert to cents
-                Currency = "mxn",
-                PaymentMethodTypes = new List<string> { "card" },
-                Metadata = new Dictionary<string, string>
-                {
-                    { "order_id", order.Id.ToString() }
-                }
-            };
-
-            var service = new PaymentIntentService();
-            var paymentIntent = await service.CreateAsync(options);
-
-            order.Status = "Paid";
-            order.UpdatedAt = DateTime.UtcNow;
-
-            _context.Orders.Update(order);
-            await _context.SaveChangesAsync();
-
-            return PaymentResult.Success(paymentIntent.Id, paymentIntent.Id);
-        }
-        catch (Exception ex)
-        {
-            return PaymentResult.Failure(ex.Message);
-        }
-    }
-
-    public async Task HandleStripeWebhookAsync(string json)
-    {
-        var stripeEvent = EventUtility.ConstructEvent(json, Request.Headers["Stripe-Signature"], "your_stripe_secret_key");
-
-        switch (stripeEvent.Type)
-        {
-            case "payment_intent.succeeded":
-                var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                await UpdateOrderStatusFromPaymentAsync(paymentIntent.Metadata["order_id"], "Paid");
-                break;
-            case "payment_intent.payment_failed":
-                var failedPaymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                await UpdateOrderStatusFromPaymentAsync(failedPaymentIntent.Metadata["order_id"], "PaymentFailed");
-                break;
-        }
-    }
-
-    private async Task UpdateOrderStatusFromPaymentAsync(string orderId, string status)
-    {
-        var order = await _context.Orders.FindAsync(Guid.Parse(orderId));
-        if (order != null)
-        {
-            order.Status = status;
-            order.UpdatedAt = DateTime.UtcNow;
-            _context.Orders.Update(order);
-            await _context.SaveChangesAsync();
-        }
+            ProviderTransactionId = intent.Id,
+            PaymentUrl = intent.ClientSecret,
+        };
     }
 }

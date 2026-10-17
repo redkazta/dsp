@@ -1,7 +1,6 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WildForgeLabs.Core.Entities;
-using WildForgeLabs.Core.Common;
 
 namespace WildForgeLabs.Infrastructure.Data;
 
@@ -9,66 +8,70 @@ public class WildForgeLabsDbContext : DbContext
 {
     private readonly Guid? _tenantId;
 
-    public WildForgeLabsDbContext(DbContextOptions<WildForgeLabsDbContext> options, IHttpContextAccessor httpContextAccessor = null)
+    public WildForgeLabsDbContext(
+        DbContextOptions<WildForgeLabsDbContext> options,
+        IHttpContextAccessor? httpContextAccessor = null)
         : base(options)
     {
-        _tenantId = httpContextAccessor?.HttpContext?.GetTenantId() ?? Guid.Empty;
+        var claim = httpContextAccessor?.HttpContext?.User?.FindFirst("tenant_id")?.Value;
+        _tenantId = Guid.TryParse(claim, out var id) ? id : null;
     }
 
-    public DbSet<Tenant> Tenants { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Product> Products { get; set; }
-    public DbSet<ProductVariant> ProductVariants { get; set; }
-    public DbSet<Category> Categories { get; set; }
-    public DbSet<Customer> Customers { get; set; }
-    public DbSet<Order> Orders { get; set; }
-    public DbSet<OrderItem> OrderItems { get; set; }
-    public DbSet<Payment> Payments { get; set; }
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Aplicar configuración específica de cada entidad
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(WildForgeLabsDbContext).Assembly);
 
-        // Filtros globales de multi-tenancy
-        if (_tenantId.HasValue && _tenantId != Guid.Empty)
+        // Multi-tenancy + soft delete por convención
+        if (_tenantId.HasValue)
         {
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            var tenantFilter = BuildFilter<Tenant>(e => e.Id == _tenantId.Value);
+            modelBuilder.Entity<Tenant>().HasQueryFilter(tenantFilter);
+        }
+
+        modelBuilder.Entity<User>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Category>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Product>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<ProductVariant>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Customer>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Order>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<OrderItem>().HasQueryFilter(e => !e.IsDeleted);
+        modelBuilder.Entity<Payment>().HasQueryFilter(e => !e.IsDeleted);
+    }
+
+    private static System.Linq.Expressions.Expression<Func<T, bool>> BuildFilter<T>(
+        System.Linq.Expressions.Expression<Func<T, bool>> expr) => expr;
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State == EntityState.Added)
             {
-                if (entityType.ClrType.IsAssignableTo(typeof(ITenant)))
-                {
-                    var parameter = Expression.Parameter(entityType.ClrType, "e");
-                    var tenantIdProperty = entityType.FindProperty("TenantId");
-                    if (tenantIdProperty != null)
-                    {
-                        var tenantId = Expression.Property(parameter, tenantIdProperty.ClrType!);
-                        var tenantIdLambda = Expression.Lambda(
-                            Expression.Equal(tenantId, Expression.Constant(_tenantId)),
-                            _tenantId);
-                        modelBuilder.Entity(entityType.ClrType).HasQueryFilter(tenantIdLambda);
-                    }
-                }
+                if (entry.Metadata.FindProperty("CreatedAt") != null)
+                    entry.Property("CreatedAt").CurrentValue = DateTime.UtcNow;
+                if (entry.Metadata.FindProperty("UpdatedAt") != null)
+                    entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                if (entry.Metadata.FindProperty("UpdatedAt") != null)
+                    entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
             }
         }
 
-        // Soft delete global
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (entityType.ClrType.IsAssignableTo(typeof(ISoftDelete)))
-            {
-                var parameter = Expression.Parameter(entityType.ClrType, "e");
-                var isDeletedProperty = entityType.FindProperty("IsDeleted");
-                if (isDeletedProperty != null)
-                {
-                    var isDeleted = Expression.Property(parameter, isDeletedProperty.ClrType!);
-                    var isDeletedLambda = Expression.Lambda(
-                        Expression.Equal(isDeleted, Expression.Constant(false)),
-                        parameter);
-                    modelBuilder.Entity(entityType.ClrType).HasQueryFilter(isDeletedLambda);
-                }
-            }
-        }
+        return base.SaveChangesAsync(cancellationToken);
     }
 }

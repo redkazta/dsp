@@ -1,139 +1,206 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WildForgeLabs.Core.Entities;
-using WildForgeLabs.Core.Common;
 
 namespace WildForgeLabs.Infrastructure.Data.Configurations;
 
-public class ProductConfiguration : IEntityTypeConfiguration<Product>
+// Mapeo snake_case -> entidades, alineado con scripts/supabase_schema.sql
+
+public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
 {
-    public void Configure(EntityTypeBuilder<Product> builder)
+    public void Configure(EntityTypeBuilder<Tenant> b)
     {
-        builder.ToTable("products");
-        builder.HasKey(p => p.Id);
-        builder.Property(p => p.Name).IsRequired().HasMaxLength(200);
-        builder.Property(p => p.Description).HasMaxLength(2000);
-        builder.Property(p => p.BasePrice).HasColumnType("decimal(10,2)");
-        builder.Property(p => p.Cost).HasColumnType("decimal(10,2)");
-        builder.Property(p => p.SKU).HasMaxLength(50);
-        builder.Property(p => p.IsActive).HasDefaultValue(true);
-        builder.Property(p => p.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(p => p.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(p => p.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(p => p.SKU).IsUnique();
-        builder.HasIndex(p => p.TenantId);
+        b.ToTable("tenants");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.Slug).HasColumnName("slug");
+        b.Property(x => x.Name).HasColumnName("name").IsRequired();
+        b.Property(x => x.Plan).HasColumnName("plan").HasDefaultValue("free");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        b.HasIndex(x => x.Slug).IsUnique();
     }
 }
 
-public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVariant>
+public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder<ProductVariant> builder)
+    public void Configure(EntityTypeBuilder<User> b)
     {
-        builder.ToTable("product_variants");
-        builder.HasKey(pv => pv.Id);
-        builder.HasOne(pv => pv.Product)
-            .WithMany(p => p.Variants)
-            .HasForeignKey(pv => pv.ProductId)
-            .OnDelete(DeleteBehavior.Cascade);
-        builder.Property(pv => pv.Name).IsRequired().HasMaxLength(100);
-        builder.Property(pv => pv.Price).HasColumnType("decimal(10,2)");
-        builder.Property(pv => pv.Stock).HasDefaultValue(0);
-        builder.Property(pv => pv.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(pv => pv.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(pv => pv.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(pv => pv.ProductId);
+        b.ToTable("users");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Email).HasColumnName("email").IsRequired();
+        b.Property(x => x.PasswordHash).HasColumnName("password_hash");
+        b.Property(x => x.FirstName).HasColumnName("first_name");
+        b.Property(x => x.LastName).HasColumnName("last_name");
+        b.Property(x => x.Role).HasColumnName("role").HasDefaultValue("customer");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+        b.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
     }
 }
 
 public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 {
-    public void Configure(EntityTypeBuilder<Category> builder)
+    public void Configure(EntityTypeBuilder<Category> b)
     {
-        builder.ToTable("categories");
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
-        builder.Property(c => c.ParentCategoryId).IsRequired(false);
-        builder.HasOne(c => c.ParentCategory)
-            .WithMany()
-            .HasForeignKey(c => c.ParentCategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.Property(c => c.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(c => c.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(c => c.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(c => c.TenantId);
+        b.ToTable("categories");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.Name).HasColumnName("name").IsRequired();
+        b.Property(x => x.ParentCategoryId).HasColumnName("parent_category_id");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+    }
+}
+
+public class ProductConfiguration : IEntityTypeConfiguration<Product>
+{
+    public void Configure(EntityTypeBuilder<Product> b)
+    {
+        b.ToTable("products");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.CategoryId).HasColumnName("category_id");
+        b.Property(x => x.Name).HasColumnName("name").IsRequired();
+        b.Property(x => x.Description).HasColumnName("description");
+        b.Property(x => x.BasePrice).HasColumnName("base_price").HasColumnType("decimal(10,2)");
+        b.Property(x => x.Cost).HasColumnName("cost").HasColumnType("decimal(10,2)");
+        b.Property(x => x.Sku).HasColumnName("sku");
+        b.Property(x => x.IsActive).HasColumnName("is_active");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+
+        b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId);
+        b.HasMany(x => x.Variants).WithOne(v => v.Product).HasForeignKey(v => v.ProductId);
+        b.HasMany(x => x.Images).WithOne(i => i.Product).HasForeignKey(i => i.ProductId);
+    }
+}
+
+public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVariant>
+{
+    public void Configure(EntityTypeBuilder<ProductVariant> b)
+    {
+        b.ToTable("product_variants");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.ProductId).HasColumnName("product_id");
+        b.Property(x => x.Name).HasColumnName("name").IsRequired();
+        b.Property(x => x.Size).HasColumnName("size");
+        b.Property(x => x.Color).HasColumnName("color");
+        b.Property(x => x.Price).HasColumnName("price").HasColumnType("decimal(10,2)");
+        b.Property(x => x.Stock).HasColumnName("stock");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+    }
+}
+
+public class ProductImageConfiguration : IEntityTypeConfiguration<ProductImage>
+{
+    public void Configure(EntityTypeBuilder<ProductImage> b)
+    {
+        b.ToTable("product_images");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.ProductId).HasColumnName("product_id");
+        b.Property(x => x.Url).HasColumnName("url").IsRequired();
+        b.Property(x => x.AltText).HasColumnName("alt_text");
+        b.Property(x => x.Position).HasColumnName("position");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
     }
 }
 
 public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 {
-    public void Configure(EntityTypeBuilder<Customer> builder)
+    public void Configure(EntityTypeBuilder<Customer> b)
     {
-        builder.ToTable("customers");
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.FirstName).IsRequired().HasMaxLength(100);
-        builder.Property(c => c.LastName).IsRequired().HasMaxLength(100);
-        builder.Property(c => c.Email).HasMaxLength(255);
-        builder.Property(c => c.Phone).HasMaxLength(50);
-        builder.Property(c => c.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(c => c.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(c => c.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(c => new { c.TenantId, c.Email }).IsUnique();
+        b.ToTable("customers");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.FirstName).HasColumnName("first_name").IsRequired();
+        b.Property(x => x.LastName).HasColumnName("last_name").IsRequired();
+        b.Property(x => x.Email).HasColumnName("email");
+        b.Property(x => x.Phone).HasColumnName("phone");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
     }
 }
 
 public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
-    public void Configure(EntityTypeBuilder<Order> builder)
+    public void Configure(EntityTypeBuilder<Order> b)
     {
-        builder.ToTable("orders");
-        builder.HasKey(o => o.Id);
-        builder.Property(o => o.TotalAmount).HasColumnType("decimal(10,2)");
-        builder.Property(o => o.Status).HasMaxLength(50).HasDefaultValue("pending");
-        builder.Property(o => o.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(o => o.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(o => o.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(o => new { o.TenantId, o.Status });
-        builder.HasIndex(o => o.CustomerId);
+        b.ToTable("orders");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.CustomerId).HasColumnName("customer_id");
+        b.Property(x => x.OrderNumber).HasColumnName("order_number");
+        b.Property(x => x.TotalAmount).HasColumnName("total_amount").HasColumnType("decimal(10,2)");
+        b.Property(x => x.Status).HasColumnName("status").HasDefaultValue("pending");
+        b.Property(x => x.Notes).HasColumnName("notes");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+
+        b.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId);
+        b.HasMany(x => x.Items).WithOne(i => i.Order).HasForeignKey(i => i.OrderId);
     }
 }
 
 public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
 {
-    public void Configure(EntityTypeBuilder<OrderItem> builder)
+    public void Configure(EntityTypeBuilder<OrderItem> b)
     {
-        builder.ToTable("order_items");
-        builder.HasKey(oi => oi.Id);
-        builder.HasOne(oi => oi.Order)
-            .WithMany(o => o.Items)
-            .HasForeignKey(oi => oi.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
-        builder.HasOne(oi => oi.ProductVariant)
-            .WithMany()
-            .HasForeignKey(oi => oi.ProductVariantId)
-            .OnDelete(DeleteBehavior.Restrict);
-        builder.Property(oi => oi.Quantity).IsRequired();
-        builder.Property(oi => oi.UnitPrice).HasColumnType("decimal(10,2)");
-        builder.Property(oi => oi.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(oi => oi.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(oi => oi.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(oi => oi.OrderId);
+        b.ToTable("order_items");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.OrderId).HasColumnName("order_id");
+        b.Property(x => x.ProductVariantId).HasColumnName("product_variant_id");
+        b.Property(x => x.Quantity).HasColumnName("quantity");
+        b.Property(x => x.UnitPrice).HasColumnName("unit_price").HasColumnType("decimal(10,2)");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
+
+        b.HasOne(x => x.ProductVariant).WithMany().HasForeignKey(x => x.ProductVariantId);
     }
 }
 
 public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
-    public void Configure(EntityTypeBuilder<Payment> builder)
+    public void Configure(EntityTypeBuilder<Payment> b)
     {
-        builder.ToTable("payments");
-        builder.HasKey(p => p.Id);
-        builder.Property(p => p.Amount).HasColumnType("decimal(10,2)");
-        builder.Property(p => p.Provider).HasMaxLength(50);
-        builder.Property(p => p.ProviderTransactionId).HasMaxLength(255);
-        builder.Property(p => p.Status).HasMaxLength(50).HasDefaultValue("pending");
-        builder.Property(p => p.CreatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(p => p.UpdatedAt).HasColumnType("timestamptz").HasDefaultValueSql("NOW()");
-        builder.Property(p => p.IsDeleted).HasDefaultValue(false);
-        builder.HasIndex(p => p.OrderId);
-        builder.HasIndex(p => p.TenantId);
+        b.ToTable("payments");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Id).HasColumnName("id");
+        b.Property(x => x.TenantId).HasColumnName("tenant_id");
+        b.Property(x => x.OrderId).HasColumnName("order_id");
+        b.Property(x => x.Amount).HasColumnName("amount").HasColumnType("decimal(10,2)");
+        b.Property(x => x.Provider).HasColumnName("provider").IsRequired();
+        b.Property(x => x.ProviderTransactionId).HasColumnName("provider_transaction_id");
+        b.Property(x => x.Status).HasColumnName("status").HasDefaultValue("pending");
+        b.Property(x => x.CreatedAt).HasColumnName("created_at");
+        b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        b.Property(x => x.IsDeleted).HasColumnName("is_deleted");
+        b.Property(x => x.DeletedAt).HasColumnName("deleted_at");
     }
 }
