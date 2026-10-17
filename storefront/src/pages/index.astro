@@ -9,32 +9,11 @@ const tenantId = 'dinerosobreproblemas';
 
 let featured: any[] = [];
 try {
-  const { data, error } = await getProducts(tenantId, { page: 1, limit: 4 });
+  const { data, error } = await getProducts(tenantId, { page: 1, limit: 8 });
   if (!error && data) featured = data;
 } catch {
   featured = [];
 }
-
-const collections = [
-  {
-    name: 'Camisas',
-    id: 'c0000001-0000-0000-0000-000000000001',
-    desc: 'Reflective · Aurora · Silver',
-    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    name: 'Hoodies',
-    id: 'c0000001-0000-0000-0000-000000000002',
-    desc: 'Felpa premium, bordado metálico',
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1200&auto=format&fit=crop',
-  },
-  {
-    name: 'Accesorios',
-    id: 'c0000001-0000-0000-0000-000000000004',
-    desc: 'El detalle que cierra el look',
-    image: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?q=80&w=1200&auto=format&fit=crop',
-  },
-];
 ---
 
 <BaseLayout>
@@ -78,7 +57,7 @@ const collections = [
 
         <div class="flex flex-wrap gap-4 animate-fade-up" style="animation-delay: 0.6s">
           <a href="/tienda" class="btn-gold">Comprar el drop</a>
-          <a href="#colecciones" class="btn-outline">Ver colecciones</a>
+          <a href="/nosotros" class="btn-outline">Nuestra historia</a>
         </div>
 
         <div class="flex items-center gap-8 mt-12 animate-fade-up" style="animation-delay: 0.8s">
@@ -98,50 +77,6 @@ const collections = [
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- ============ COLECCIONES ============ -->
-  <section id="colecciones" class="max-w-[1400px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
-    <div class="flex items-end justify-between mb-14">
-      <div>
-        <p class="section-label mb-4">Colecciones</p>
-        <h2 class="font-titulos text-4xl md:text-5xl text-blancoRoto">Explora por categoría</h2>
-      </div>
-      <a
-        href="/tienda"
-        class="hidden md:inline-flex items-center gap-2 font-acentos text-[11px] uppercase tracking-[0.25em] text-plata-metalico hover:text-oro-elegante transition-colors group"
-      >
-        Ver todo
-        <span class="transition-transform duration-300 group-hover:translate-x-1">→</span>
-      </a>
-    </div>
-
-    <div class="grid gap-6 md:grid-cols-3">
-      {
-        collections.map((col, i) => (
-          <a
-            href={`/tienda?category=${col.id}`}
-            class="group relative aspect-[3/4] overflow-hidden border border-plata-metalico/10 hover:border-oro-elegante/40 transition-all duration-500"
-            style={`animation-delay: ${0.1 * i}s`}
-          >
-            <img
-              src={col.image}
-              alt={col.name}
-              class="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
-              loading="lazy"
-            />
-            <div class="absolute inset-0 bg-gradient-to-t from-negro-profundo via-negro-profundo/30 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-8">
-              <h3 class="font-titulos text-2xl text-blancoRoto mb-1 group-hover:text-oro-elegante transition-colors">
-                {col.name}
-              </h3>
-              <p class="text-sm text-plata-metalico/70">{col.desc}</p>
-            </div>
-            <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-          </a>
-        ))
-      }
     </div>
   </section>
 

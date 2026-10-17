@@ -21,15 +21,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).to
 
 const navLinks = [
   { href: '/tienda', label: 'Tienda' },
-  { href: '/tienda?category=c0000001-0000-0000-0000-000000000001', label: 'Camisas' },
-  { href: '/tienda?category=c0000001-0000-0000-0000-000000000002', label: 'Hoodies' },
   { href: '/nosotros', label: 'Nosotros' },
 ];
 
 const announcements = [
   'Envío gratis en pedidos superiores a $1,500 MXN',
   'Drop Reflective disponible por tiempo limitado',
-  'Pago seguro con Stripe · Meses sin intereses',
 ];
 
 const jsonLd = {
@@ -192,7 +189,7 @@ const jsonLd = {
         {
           [
             { t: 'Envío express', d: '24-48h en zona metropolitana', icon: 'M5 12h14M12 5l7 7-7 7' },
-            { t: 'Pago seguro', d: 'Stripe · 3D Secure', icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
+            { t: 'Pago seguro', d: 'Tarjetas de crédito y débito', icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
             { t: 'Devoluciones', d: '30 días sin preguntas', icon: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5' },
             { t: 'Atención 1:1', d: 'WhatsApp y DM abiertos', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
           ].map((item) => (
@@ -254,10 +251,10 @@ const jsonLd = {
             <ul class="space-y-3">
               {
                 [
-                  { href: '/tienda', label: 'Todo el catálogo' },
-                  { href: '/tienda?category=c0000001-0000-0000-0000-000000000001', label: 'Camisas' },
-                  { href: '/tienda?category=c0000001-0000-0000-0000-000000000002', label: 'Hoodies' },
-                  { href: '/tienda?category=c0000001-0000-0000-0000-000000000004', label: 'Accesorios' },
+                  { href: '/tienda', label: 'Catálogo' },
+                  { href: '/nosotros', label: 'Nosotros' },
+                  { href: '/contacto', label: 'Contacto' },
+                  { href: '/tallas', label: 'Guía de tallas' },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-sm text-plata-metalico/70 hover:text-oro-elegante transition-colors duration-300">
@@ -275,10 +272,10 @@ const jsonLd = {
             <ul class="space-y-3">
               {
                 [
-                  { href: '/nosotros', label: 'Nosotros' },
-                  { href: '/contacto', label: 'Contacto' },
-                  { href: '/envios', label: 'Envíos y devoluciones' },
-                  { href: '/tallas', label: 'Guía de tallas' },
+                  { href: '/envios', label: 'Envíos' },
+                  { href: '/devoluciones', label: 'Devoluciones' },
+                  { href: '/privacidad', label: 'Privacidad' },
+                  { href: '/terminos', label: 'Términos' },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-sm text-plata-metalico/70 hover:text-oro-elegante transition-colors duration-300">
