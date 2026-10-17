@@ -21,7 +21,7 @@ const totalStock =
 const isSoldOut = product.product_variants != null && totalStock === 0;
 ---
 
-<a href={`/producto/${product.id}`} class="product-card">
+<a href={`/producto/${product.id}`} class="product-card group">
   <!-- Imagen -->
   <div class="relative aspect-[4/5] overflow-hidden bg-negro-elevado">
     {

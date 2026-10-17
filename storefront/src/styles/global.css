@@ -77,9 +77,9 @@
     @apply font-acentos text-[10px] uppercase tracking-[0.35em] text-oro-elegante;
   }
 
-  /* Card de producto */
+  /* Card de producto (usar junto con la clase `group` en el markup) */
   .product-card {
-    @apply group relative block overflow-hidden bg-negro-carbono
+    @apply relative block overflow-hidden bg-negro-carbono
       border border-plata-metalico/10
       transition-all duration-500
       hover:border-oro-elegante/40;
