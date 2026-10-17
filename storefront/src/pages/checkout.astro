@@ -123,8 +123,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
   <script>
     import { getCart, cartSubtotal, formatMXN, clearCart } from '../lib/cart';
 
-    const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
-    const FREE_SHIPPING = 1500;
+    import { API_URL } from '../lib/api';
+
+const FREE_SHIPPING = 1500;
 
     function render() {
       const items = getCart();
@@ -175,7 +176,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
       const items = getCart();
 
       try {
-        const res = await fetch(`${apiUrl}/api/v1/payments/checkout`, {
+        const res = await fetch(`${API_URL}/payments/checkout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ customer: data, items }),
