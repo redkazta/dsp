@@ -3,9 +3,8 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductList from '../components/product/ProductList.astro';
-import { getProducts, getCategories } from '../lib/supabase';
+import { getProducts, getCategories, TENANT_SLUG } from '../lib/supabase';
 
-const tenantId = 'dinerosobreproblemas';
 const categoryId = Astro.url.searchParams.get('category') ?? undefined;
 const search = Astro.url.searchParams.get('q') ?? undefined;
 
@@ -14,8 +13,8 @@ let categories: any[] = [];
 
 try {
   const [productsResult, categoriesResult] = await Promise.all([
-    getProducts(tenantId, { page: 1, limit: 24, categoryId, search }),
-    getCategories(tenantId),
+    getProducts(TENANT_SLUG, { page: 1, limit: 24, categoryId, search }),
+    getCategories(TENANT_SLUG),
   ]);
   products = productsResult.data ?? [];
   categories = categoriesResult.data ?? [];

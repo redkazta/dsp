@@ -3,13 +3,11 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/product/ProductCard.astro';
-import { getProducts } from '../lib/supabase';
-
-const tenantId = 'dinerosobreproblemas';
+import { getProducts, TENANT_SLUG } from '../lib/supabase';
 
 let featured: any[] = [];
 try {
-  const { data, error } = await getProducts(tenantId, { page: 1, limit: 8 });
+  const { data, error } = await getProducts(TENANT_SLUG, { page: 1, limit: 8 });
   if (!error && data) featured = data;
 } catch {
   featured = [];

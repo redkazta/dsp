@@ -3,12 +3,11 @@
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getProductById } from '../../lib/supabase';
+import { getProductById, TENANT_SLUG } from '../../lib/supabase';
 
 const id = Astro.params.slug ?? '';
-const tenantId = 'dinerosobreproblemas';
 
-const { data: product, error: productError } = await getProductById(tenantId, id).catch(() => ({ data: null, error: true }));
+const { data: product, error: productError } = await getProductById(TENANT_SLUG, id).catch(() => ({ data: null, error: true }));
 
 const images = product?.product_images ?? [];
 const variants = product?.product_variants ?? [];
