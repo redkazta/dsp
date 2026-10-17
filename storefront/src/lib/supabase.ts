@@ -138,21 +138,57 @@ export async function getProducts(
 }
 
 /**
- * Un producto por ID, con variantes, categoría e imágenes.
+ * Un producto por slug (o por ID como fallback), con variantes, categoría e imágenes.
  */
-export async function getProductById(tenantSlug: string, id: string) {
+export async function getProductBySlugOrId(tenantSlug: string, slugOrId: string) {
+  try {
+    const tenantId = await getTenantId(tenantSlug);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+
+    const select = '*, product_variants(*), categories(*), product_images(*)';
+
+    const { data, error } = await supabase
+      .from('products')
+      .select(select)
+      .eq('tenant_id', tenantId)
+      .eq(isUuid ? 'id' : 'slug', slugOrId)
+      .eq('is_deleted', false)
+      .maybeSingle();
+
+    return { data, error };
+  } catch (err: any) {
+    return { data: null, error: { message: err?.message ?? String(err) } };
+  }
+}
+
+/**
+ * Productos relacionados (misma categoría, excluyendo el actual).
+ */
+export async function getRelatedProducts(
+  tenantSlug: string,
+  categoryId: string | null,
+  excludeId: string,
+  limit = 4
+) {
   try {
     const tenantId = await getTenantId(tenantSlug);
 
-    return await supabase
+    let query = supabase
       .from('products')
       .select('*, product_variants(*), categories(*), product_images(*)')
       .eq('tenant_id', tenantId)
-      .eq('id', id)
+      .eq('is_active', true)
       .eq('is_deleted', false)
-      .maybeSingle();
-  } catch (err: any) {
-    return { data: null, error: { message: err?.message ?? String(err) } };
+      .neq('id', excludeId)
+      .limit(limit);
+
+    if (categoryId) query = query.eq('category_id', categoryId);
+
+    const { data } = await query;
+    return data ?? [];
+  } catch {
+    return [];
   }
 }
 

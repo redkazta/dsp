@@ -6,6 +6,7 @@
 export interface Props {
   product: {
     id: string;
+    slug?: string | null;
     name: string;
     base_price: number;
     product_variants?: Array<{ id: string; name: string; price: number; stock: number }> | null;
@@ -14,6 +15,7 @@ export interface Props {
 }
 
 const { product } = Astro.props;
+const href = `/producto/${product.slug || product.id}`;
 const price = product.product_variants?.[0]?.price ?? product.base_price;
 const image = product.product_images?.[0]?.url ?? null;
 const totalStock =
@@ -25,7 +27,7 @@ const sizes = [
 ] as string[];
 ---
 
-<a href={`/producto/${product.id}`} class="group block">
+<a href={href} class="group block">
   <!-- Imagen -->
   <div class="relative aspect-[4/5] overflow-hidden bg-white">
     {

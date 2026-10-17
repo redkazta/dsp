@@ -3,11 +3,25 @@
 export const prerender = false;
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getProductById, TENANT_SLUG } from '../../lib/supabase';
+import ProductCard from '../../components/product/ProductCard.astro';
+import {
+  getProductBySlugOrId,
+  getRelatedProducts,
+  TENANT_SLUG,
+} from '../../lib/supabase';
 
-const id = Astro.params.slug ?? '';
+const param = Astro.params.slug ?? '';
 
-const { data: product, error: productError } = await getProductById(TENANT_SLUG, id).catch(() => ({ data: null, error: true }));
+const { data: product, error: productError } = await getProductBySlugOrId(TENANT_SLUG, param).catch(
+  () => ({ data: null, error: true })
+);
+
+// Canonical: si entraron por UUID, apunta al slug
+const canonicalSlug = (product as any)?.slug ?? param;
+
+const related = product
+  ? await getRelatedProducts(TENANT_SLUG, (product as any).category_id ?? null, (product as any).id, 4)
+  : [];
 
 const images = product?.product_images ?? [];
 const variants = product?.product_variants ?? [];
@@ -325,4 +339,22 @@ const productLd = product
       });
     }
   </script>
+
+  {
+    product && related.length > 0 && (
+      <section class="border-t border-plata-metalico/10 bg-negro-carbono">
+        <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-20">
+          <div class="text-center mb-14">
+            <p class="section-label mb-4">También te puede gustar</p>
+            <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto">Completa el look</h2>
+          </div>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-8">
+            {related.map((p: any) => (
+              <ProductCard product={p} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
