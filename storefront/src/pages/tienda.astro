@@ -9,13 +9,20 @@ const tenantId = 'dinerosobreproblemas';
 const categoryId = Astro.url.searchParams.get('category') ?? undefined;
 const search = Astro.url.searchParams.get('q') ?? undefined;
 
-const [productsResult, categoriesResult] = await Promise.all([
-  getProducts(tenantId, { page: 1, limit: 24, categoryId, search }),
-  getCategories(tenantId),
-]);
+let products: any[] = [];
+let categories: any[] = [];
 
-const products = productsResult.data ?? [];
-const categories = categoriesResult.data ?? [];
+try {
+  const [productsResult, categoriesResult] = await Promise.all([
+    getProducts(tenantId, { page: 1, limit: 24, categoryId, search }),
+    getCategories(tenantId),
+  ]);
+  products = productsResult.data ?? [];
+  categories = categoriesResult.data ?? [];
+} catch {
+  products = [];
+  categories = [];
+}
 const activeCategory = categoryId ?? null;
 ---
 

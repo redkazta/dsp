@@ -1,12 +1,19 @@
 ---
+export const prerender = false; // SSR: tolera fallos de Supabase sin romper el build
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/product/ProductCard.astro';
 import { getProducts } from '../lib/supabase';
 
 const tenantId = 'dinerosobreproblemas';
 
-const { data: productsData } = await getProducts(tenantId, { page: 1, limit: 4 });
-const featured = productsData ?? [];
+let featured: any[] = [];
+try {
+  const { data, error } = await getProducts(tenantId, { page: 1, limit: 4 });
+  if (!error && data) featured = data;
+} catch {
+  featured = [];
+}
 
 const collections = [
   {
