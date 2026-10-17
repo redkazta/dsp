@@ -1,92 +1,114 @@
 ---
-export const prerender = false; // SSR: catálogo en vivo desde Supabase
+export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductList from '../components/product/ProductList.astro';
 import { getProducts, getCategories } from '../lib/supabase';
 
-// Tenant por query param (temporal hasta tener subdominios)
-const tenantId = Astro.url.searchParams.get('tenant') ?? 'dinerosobreproblemas';
+const tenantId = 'dinerosobreproblemas';
+const categoryId = Astro.url.searchParams.get('category') ?? undefined;
+const search = Astro.url.searchParams.get('q') ?? undefined;
 
 const [productsResult, categoriesResult] = await Promise.all([
-  getProducts(tenantId, { page: 1, limit: 12 }),
+  getProducts(tenantId, { page: 1, limit: 24, categoryId, search }),
   getCategories(tenantId),
 ]);
 
 const products = productsResult.data ?? [];
 const categories = categoriesResult.data ?? [];
+const activeCategory = categoryId ?? null;
 ---
 
 <BaseLayout
   title="Catálogo | Dinero Sobre Problemas"
-  description="Explora nuestra colección de streetwear premium."
+  description="Explora la colección completa de streetwear premium. Piezas atemporales diseñadas en México."
 >
-  <div class="max-w-7xl mx-auto px-6 py-12">
-    <div class="flex flex-col md:flex-row gap-10">
-      <!-- Filtros -->
-      <aside class="w-full md:w-64 shrink-0">
-        <div class="card p-6">
-          <h3 class="font-titulos text-oro-elegante text-xl mb-6">Filtros</h3>
+  <!-- Header de página -->
+  <section class="border-b border-plata-metalico/10 bg-noise">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-16 lg:py-20">
+      <nav class="mb-6">
+        <ol class="flex items-center gap-2 font-acentos text-[10px] uppercase tracking-[0.2em] text-plata-metalico/40">
+          <li><a href="/" class="hover:text-oro-elegante transition-colors">Inicio</a></li>
+          <li>/</li>
+          <li class="text-oro-elegante">Tienda</li>
+        </ol>
+      </nav>
+      <h1 class="font-titulos text-5xl lg:text-6xl text-blancoRoto mb-4">Catálogo</h1>
+      <p class="text-plata-metalico/60 max-w-xl">
+        {products.length} {products.length === 1 ? 'pieza disponible' : 'piezas disponibles'}
+      </p>
+    </div>
+  </section>
 
-          <div class="mb-8">
-            <h4 class="font-acentos text-plata-claro text-sm uppercase tracking-wider mb-3">
-              Categorías
-            </h4>
-            <ul class="space-y-2">
+  <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+    <div class="flex flex-col lg:flex-row gap-12">
+      <!-- Sidebar -->
+      <aside class="w-full lg:w-56 shrink-0">
+        <div class="lg:sticky lg:top-28">
+          <!-- Buscar -->
+          <div class="mb-10">
+            <h4 class="section-label mb-4">Buscar</h4>
+            <form method="get">
+              <input
+                type="search"
+                name="q"
+                value={search ?? ''}
+                placeholder="Nombre del producto..."
+                class="input-dark text-sm"
+              />
+            </form>
+          </div>
+
+          <!-- Categorías -->
+          <div class="mb-10">
+            <h4 class="section-label mb-4">Categorías</h4>
+            <ul class="space-y-1">
+              <li>
+                <a
+                  href="/tienda"
+                  class:list={[
+                    'block py-2 text-sm transition-colors duration-300',
+                    !activeCategory ? 'text-oro-elegante' : 'text-plata-metalico/70 hover:text-oro-elegante',
+                  ]}
+                >
+                  Todas
+                </a>
+              </li>
               {
-                categories.length === 0 && (
-                  <li class="text-plata-metalico/50 text-sm">Sin categorías</li>
-                )
+                categories.map((cat) => (
+                  <li>
+                    <a
+                      href={`/tienda?category=${cat.id}`}
+                      class:list={[
+                        'block py-2 text-sm transition-colors duration-300',
+                        activeCategory === cat.id
+                          ? 'text-oro-elegante'
+                          : 'text-plata-metalico/70 hover:text-oro-elegante',
+                      ]}
+                    >
+                      {cat.name}
+                    </a>
+                  </li>
+                ))
               }
-              {categories.map((category) => (
-                <li>
-                  <a
-                    href={`/tienda?tenant=${tenantId}&category=${category.id}`}
-                    class="text-plata-metalico hover:text-oro-elegante transition-colors text-sm"
-                  >
-                    {category.name}
-                  </a>
-                </li>
-              ))}
             </ul>
           </div>
 
-          <div class="mb-8">
-            <h4 class="font-acentos text-plata-claro text-sm uppercase tracking-wider mb-3">
-              Precio
-            </h4>
-            <div class="flex gap-2">
-              <input
-                type="number"
-                placeholder="Mín"
-                class="w-full bg-negro-profundo border border-plata-metalico/30 rounded px-3 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
-              />
-              <input
-                type="number"
-                placeholder="Máx"
-                class="w-full bg-negro-profundo border border-plata-metalico/30 rounded px-3 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
-              />
-            </div>
+          <!-- Ordenar -->
+          <div>
+            <h4 class="section-label mb-4">Ordenar</h4>
+            <select class="input-dark text-sm">
+              <option>Más recientes</option>
+              <option>Precio: menor a mayor</option>
+              <option>Precio: mayor a menor</option>
+              <option>Nombre A-Z</option>
+            </select>
           </div>
-
-          <button class="btn-primary w-full text-sm">Aplicar</button>
         </div>
       </aside>
 
-      <!-- Catálogo -->
+      <!-- Productos -->
       <div class="flex-1">
-        <div class="flex justify-between items-center mb-8">
-          <h1 class="font-titulos text-3xl text-blancoRoto">Catálogo</h1>
-          <select
-            class="bg-negro-carbono border border-plata-metalico/30 rounded px-4 py-2 text-plata-claro text-sm focus:border-oro-elegante outline-none"
-          >
-            <option>Más recientes</option>
-            <option>Precio: Bajo a Alto</option>
-            <option>Precio: Alto a Bajo</option>
-            <option>Nombre A-Z</option>
-          </select>
-        </div>
-
         <ProductList products={products} />
       </div>
     </div>

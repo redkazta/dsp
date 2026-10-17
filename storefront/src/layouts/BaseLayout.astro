@@ -1,23 +1,41 @@
 ---
 /**
- * BaseLayout.astro - Layout principal del storefront
- * Paleta: Negro (#0A0A0A), Oro (#D4AF37), Plateado (#C0C0C0)
+ * BaseLayout.astro - Layout principal
+ * Dinero Sobre Problemas · Estética editorial, negro/oro/plata
  */
 import '../styles/global.css';
 
 export interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = 'Dinero Sobre Problemas | Streetwear Premium',
-  description = 'Ropa urbana de alta gama. Diseño minimalista, calidad premium.',
+  description = 'Ropa urbana de alta gama. Diseño minimalista, calidad premium. Envíos a todo México.',
+  image = '/og-image.jpg',
 } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+
+const navLinks = [
+  { href: '/tienda', label: 'Tienda' },
+  { href: '/tienda?cat=nuevo', label: 'Nuevo' },
+  { href: '/nosotros', label: 'Nosotros' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Dinero Sobre Problemas',
+  url: Astro.site,
+  logo: new URL('/favicon.svg', Astro.site ?? Astro.url.origin).toString(),
+};
 ---
 
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es-MX" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,37 +44,118 @@ const {
     <!-- SEO -->
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={Astro.url} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dinero Sobre Problemas" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={Astro.url} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, Astro.site ?? Astro.url.origin).toString()} />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
 
     <!-- Fuentes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   </head>
 
-  <body class="bg-negro-profundo text-blancoRoto font-cuerpo min-h-screen flex flex-col">
+  <body class="min-h-screen flex flex-col bg-negro-profundo">
+    <!-- Barra de anuncio -->
+    <div class="bg-oro-elegante text-negro-profundo text-center py-2">
+      <p class="font-acentos text-[10px] uppercase tracking-[0.3em]">
+        Envío gratis en pedidos superiores a $1,500 MXN
+      </p>
+    </div>
+
     <!-- Header -->
-    <header class="bg-negro-profundo border-b border-oro-elegante/20 sticky top-0 z-50 backdrop-blur">
-      <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-        <a href="/" class="font-titulos text-2xl tracking-wide text-oro-elegante">
-          DINERO SOBRE PROBLEMAS
-        </a>
-        <nav class="hidden md:flex items-center gap-8 font-acentos text-sm uppercase tracking-widest">
-          <a href="/tienda" class="text-plata-claro hover:text-oro-elegante transition-colors">Tienda</a>
-          <a href="/carrito" class="text-plata-claro hover:text-oro-elegante transition-colors">Carrito</a>
-          <a href="/entrar" class="text-plata-claro hover:text-oro-elegante transition-colors">Entrar</a>
-        </nav>
+    <header
+      class="sticky top-0 z-50 bg-negro-profundo/80 backdrop-blur-xl border-b border-plata-metalico/10"
+    >
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-10">
+        <div class="flex items-center justify-between h-20">
+          <!-- Mobile menu -->
+          <button
+            id="menu-toggle"
+            class="lg:hidden text-plata-claro hover:text-oro-elegante transition-colors"
+            aria-label="Abrir menú"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+
+          <!-- Logo -->
+          <a href="/" class="group flex flex-col items-center lg:items-start shrink-0">
+            <span class="font-titulos text-lg lg:text-xl tracking-[0.15em] text-blancoRoto leading-none">
+              DINERO
+            </span>
+            <span class="font-acentos text-[8px] lg:text-[9px] uppercase tracking-[0.45em] text-oro-elegante">
+              Sobre Problemas
+            </span>
+          </a>
+
+          <!-- Nav desktop -->
+          <nav class="hidden lg:flex items-center gap-10">
+            {
+              navLinks.map((link) => (
+                <a
+                  href={link.href}
+                  class="relative font-acentos text-[11px] uppercase tracking-[0.25em] text-plata-metalico hover:text-oro-elegante transition-colors duration-300 group"
+                >
+                  {link.label}
+                  <span class="absolute -bottom-1 left-0 h-px w-0 bg-oro-elegante transition-all duration-400 group-hover:w-full" />
+                </a>
+              ))
+            }
+          </nav>
+
+          <!-- Acciones -->
+          <div class="flex items-center gap-5">
+            <button aria-label="Buscar" class="text-plata-metalico hover:text-oro-elegante transition-colors">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+              </svg>
+            </button>
+            <a href="/carrito" aria-label="Carrito" class="relative text-plata-metalico hover:text-oro-elegante transition-colors">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+              </svg>
+            </a>
+          </div>
+        </div>
       </div>
+
+      <!-- Nav mobile -->
+      <nav
+        id="mobile-menu"
+        class="hidden lg:hidden border-t border-plata-metalico/10 bg-negro-profundo"
+      >
+        <div class="px-6 py-3 flex flex-col gap-1">
+          {
+            navLinks.map((link) => (
+              <a
+                href={link.href}
+                class="py-3 font-acentos text-xs uppercase tracking-[0.25em] text-plata-metalico hover:text-oro-elegante transition-colors border-b border-plata-metalico/5"
+              >
+                {link.label}
+              </a>
+            ))
+          }
+        </div>
+      </nav>
     </header>
 
     <!-- Main -->
@@ -65,27 +164,97 @@ const {
     </main>
 
     <!-- Footer -->
-    <footer class="bg-negro-profundo border-t border-oro-elegante/20 mt-auto">
-      <div class="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-8 text-plata-metalico text-sm">
-        <div>
-          <h3 class="font-titulos text-oro-elegante text-lg mb-3">DSP</h3>
-          <p class="leading-relaxed">Streetwear premium hecho en México.</p>
+    <footer class="mt-auto border-t border-plata-metalico/10 bg-negro-carbono">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-16 lg:py-20">
+        <div class="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
+          <!-- Marca -->
+          <div class="lg:col-span-2">
+            <h3 class="font-titulos text-2xl text-blancoRoto mb-2">Dinero Sobre Problemas</h3>
+            <div class="gold-line mb-5" style="margin-left: 0"></div>
+            <p class="text-sm text-plata-metalico/70 leading-relaxed max-w-md">
+              Streetwear premium diseñado en México. Piezas atemporales para quienes
+              entienden que la elegancia no grita: se nota.
+            </p>
+          </div>
+
+          <!-- Tienda -->
+          <div>
+            <h4 class="section-label mb-5">Tienda</h4>
+            <ul class="space-y-3">
+              {
+                [
+                  { href: '/tienda', label: 'Catálogo' },
+                  { href: '/tienda?cat=nuevo', label: 'Novedades' },
+                  { href: '/tienda?cat=oferta', label: 'Ofertas' },
+                ].map((l) => (
+                  <li>
+                    <a href={l.href} class="text-sm text-plata-metalico/70 hover:text-oro-elegante transition-colors duration-300">
+                      {l.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
+
+          <!-- Ayuda -->
+          <div>
+            <h4 class="section-label mb-5">Ayuda</h4>
+            <ul class="space-y-3">
+              {
+                [
+                  { href: '/nosotros', label: 'Nosotros' },
+                  { href: '/contacto', label: 'Contacto' },
+                  { href: '/envios', label: 'Envíos y devoluciones' },
+                ].map((l) => (
+                  <li>
+                    <a href={l.href} class="text-sm text-plata-metalico/70 hover:text-oro-elegante transition-colors duration-300">
+                      {l.label}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </div>
         </div>
-        <div>
-          <h3 class="font-titulos text-oro-elegante text-lg mb-3">Tienda</h3>
-          <ul class="space-y-2">
-            <li><a href="/tienda" class="hover:text-oro-suave transition-colors">Catálogo</a></li>
-            <li><a href="/blog" class="hover:text-oro-suave transition-colors">Blog</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-titulos text-oro-elegante text-lg mb-3">Contacto</h3>
-          <p>hola@dinerosobreproblemas.com</p>
+
+        <!-- Newsletter -->
+        <div class="mt-16 pt-12 border-t border-plata-metalico/10 grid gap-6 lg:grid-cols-2 lg:items-center">
+          <div>
+            <h4 class="font-titulos text-xl text-blancoRoto mb-1">Únete al círculo</h4>
+            <p class="text-sm text-plata-metalico/60">
+              Acceso anticipado a nuevos drops. Sin spam.
+            </p>
+          </div>
+          <form class="flex gap-0 max-w-md lg:ml-auto w-full">
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              class="input-dark border-r-0 rounded-none"
+              required
+            />
+            <button type="submit" class="btn-gold shrink-0 py-3 px-6">Unirme</button>
+          </form>
         </div>
       </div>
-      <div class="border-t border-plata-metalico/10 py-5 text-center text-xs text-plata-metalico">
-        © {new Date().getFullYear()} Dinero Sobre Problemas. Todos los derechos reservados.
+
+      <!-- Barra inferior -->
+      <div class="border-t border-plata-metalico/10">
+        <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p class="text-[11px] text-plata-metalico/40 font-acentos tracking-wider">
+            © {new Date().getFullYear()} DINERO SOBRE PROBLEMAS
+          </p>
+          <p class="text-[11px] text-plata-metalico/40 font-acentos tracking-wider">
+            Hecho en México
+          </p>
+        </div>
       </div>
     </footer>
+
+    <script>
+      const toggle = document.getElementById('menu-toggle');
+      const menu = document.getElementById('mobile-menu');
+      toggle?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+    </script>
   </body>
 </html>

@@ -4,15 +4,8 @@
  */
 import ProductCard from './ProductCard.astro';
 
-export interface Product {
-  id: string;
-  name: string;
-  base_price: number;
-  product_variants?: Array<{ id: string; name: string; price: number; stock: number }>;
-}
-
 export interface Props {
-  products: Product[];
+  products: any[];
 }
 
 const { products } = Astro.props;
@@ -20,11 +13,12 @@ const { products } = Astro.props;
 
 {
   products.length === 0 ? (
-    <p class="text-plata-metalico text-center py-16">
-      No hay productos disponibles por el momento.
-    </p>
+    <div class="text-center py-24">
+      <p class="font-titulos text-2xl text-plata-metalico/40 mb-2">Sin resultados</p>
+      <p class="text-sm text-plata-metalico/40">No hay productos disponibles por el momento.</p>
+    </div>
   ) : (
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-8">
       {products.map((product) => (
         <ProductCard product={product} />
       ))}

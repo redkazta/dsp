@@ -1,58 +1,202 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/product/ProductCard.astro';
+import { getProducts } from '../lib/supabase';
+
+const tenantId = 'dinerosobreproblemas';
+
+const { data: productsData } = await getProducts(tenantId, { page: 1, limit: 4 });
+const featured = productsData ?? [];
+
+const collections = [
+  {
+    name: 'Essentials',
+    desc: 'Lo básico, elevado',
+    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200&auto=format&fit=crop',
+  },
+  {
+    name: 'Outerwear',
+    desc: 'Capas para el clima urbano',
+    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1200&auto=format&fit=crop',
+  },
+  {
+    name: 'Accesorios',
+    desc: 'El detalle que cierra el look',
+    image: 'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?q=80&w=1200&auto=format&fit=crop',
+  },
+];
 ---
 
-<BaseLayout
-  title="Dinero Sobre Problemas | Streetwear Premium"
-  description="Ropa urbana de alta gama. Diseño minimalista, calidad premium. Envíos a todo México."
->
-  <!-- Hero -->
-  <section class="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-b from-negro-profundo via-negro-carbono to-negro-profundo">
-    <div class="relative z-10 text-center px-6 max-w-4xl">
-      <p class="font-acentos text-oro-elegante text-sm uppercase tracking-[0.3em] mb-6">
-        Nueva Colección
-      </p>
-      <h1 class="font-titulos text-5xl md:text-7xl text-blancoRoto leading-tight mb-8">
-        El lujo está en los <span class="text-oro-elegante">detalles</span>
-      </h1>
-      <p class="text-plata-metalico text-lg md:text-xl mb-10 max-w-2xl mx-auto">
-        Streetwear premium para quienes no necesitan gritar para destacar.
-      </p>
-      <a href="/tienda" class="btn-primary inline-block">
-        Explorar Colección
-      </a>
+<BaseLayout>
+  <!-- ============ HERO ============ -->
+  <section class="relative min-h-[92vh] flex items-center overflow-hidden bg-noise">
+    <!-- Imagen de fondo -->
+    <div class="absolute inset-0">
+      <img
+        src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop"
+        alt=""
+        class="w-full h-full object-cover opacity-25 grayscale"
+        loading="eager"
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-negro-profundo/60 via-negro-profundo/80 to-negro-profundo"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-transparent to-negro-profundo/60"></div>
+    </div>
+
+    <!-- Glow dorado -->
+    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-oro-elegante/10 blur-[120px] pointer-events-none"></div>
+
+    <div class="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-10 w-full">
+      <div class="max-w-3xl">
+        <p class="section-label mb-8 animate-fade-in" style="animation-delay: 0.1s">
+          Drop 04 · Otoño 2026
+        </p>
+
+        <h1
+          class="font-titulos text-6xl md:text-8xl lg:text-[7.5rem] leading-[0.9] text-blancoRoto mb-8 animate-fade-up"
+          style="animation-delay: 0.2s"
+        >
+          El lujo<br />
+          está en<br />
+          los <em class="text-gold-gradient not-italic font-normal">detalles</em>
+        </h1>
+
+        <p
+          class="text-base md:text-lg text-plata-metalico/80 max-w-lg leading-relaxed mb-12 animate-fade-up"
+          style="animation-delay: 0.4s"
+        >
+          Piezas atemporales para quienes no necesitan gritar para destacar.
+          Diseñadas en México, hechas para durar.
+        </p>
+
+        <div class="flex flex-wrap gap-4 animate-fade-up" style="animation-delay: 0.6s">
+          <a href="/tienda" class="btn-gold">Explorar colección</a>
+          <a href="#colecciones" class="btn-outline">Ver colecciones</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador scroll -->
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-3">
+      <span class="font-acentos text-[9px] uppercase tracking-[0.3em] text-plata-metalico/40">Scroll</span>
+      <div class="w-px h-12 bg-gradient-to-b from-oro-elegante to-transparent"></div>
     </div>
   </section>
 
-  <!-- Productos Destacados -->
-  <section class="max-w-7xl mx-auto px-6 py-24">
-    <div class="text-center mb-16">
-      <h2 class="font-titulos text-4xl text-blancoRoto mb-4">Destacados</h2>
-      <div class="w-24 h-px bg-oro-elegante mx-auto"></div>
+  <!-- ============ COLECCIONES ============ -->
+  <section id="colecciones" class="max-w-[1400px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
+    <div class="flex items-end justify-between mb-14">
+      <div>
+        <p class="section-label mb-4">Colecciones</p>
+        <h2 class="font-titulos text-4xl md:text-5xl text-blancoRoto">Explora por categoría</h2>
+      </div>
+      <a
+        href="/tienda"
+        class="hidden md:inline-flex items-center gap-2 font-acentos text-[11px] uppercase tracking-[0.25em] text-plata-metalico hover:text-oro-elegante transition-colors group"
+      >
+        Ver todo
+        <span class="transition-transform duration-300 group-hover:translate-x-1">→</span>
+      </a>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- ProductCard se renderizará aquí dinámicamente desde Supabase -->
-      <div class="card group overflow-hidden">
-        <div class="aspect-square bg-negro-profundo"></div>
-        <div class="p-6">
-          <h3 class="font-acentos text-plata-claro mb-2">Cargando productos...</h3>
-          <p class="text-oro-elegante font-bold">—</p>
-        </div>
+    <div class="grid gap-6 md:grid-cols-3">
+      {
+        collections.map((col, i) => (
+          <a
+            href={`/tienda?cat=${col.name.toLowerCase()}`}
+            class="group relative aspect-[3/4] overflow-hidden border border-plata-metalico/10 hover:border-oro-elegante/40 transition-all duration-500"
+            style={`animation-delay: ${0.1 * i}s`}
+          >
+            <img
+              src={col.image}
+              alt={col.name}
+              class="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-negro-profundo via-negro-profundo/30 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-8">
+              <h3 class="font-titulos text-2xl text-blancoRoto mb-1 group-hover:text-oro-elegante transition-colors">
+                {col.name}
+              </h3>
+              <p class="text-sm text-plata-metalico/70">{col.desc}</p>
+            </div>
+            <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ============ DESTACADOS ============ -->
+  <section class="bg-negro-carbono border-y border-plata-metalico/10">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-24 lg:py-32">
+      <div class="text-center mb-16">
+        <p class="section-label mb-4">Selección</p>
+        <h2 class="font-titulos text-4xl md:text-5xl text-blancoRoto mb-6">Piezas destacadas</h2>
+        <div class="gold-line mx-auto"></div>
+      </div>
+
+      {
+        featured.length === 0 ? (
+          <p class="text-center text-plata-metalico/50 py-16">
+            Próximamente nuevos drops.
+          </p>
+        ) : (
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-8">
+            {featured.map((product) => (
+              <ProductCard product={product} />
+            ))}
+          </div>
+        )
+      }
+
+      <div class="text-center mt-16">
+        <a href="/tienda" class="btn-outline">Ver catálogo completo</a>
       </div>
     </div>
   </section>
 
-  <!-- Storytelling de Marca -->
-  <section class="bg-negro-carbono py-24">
-    <div class="max-w-3xl mx-auto px-6 text-center">
-      <h2 class="font-titulos text-4xl text-oro-elegante mb-8">Nuestra Historia</h2>
-      <p class="text-plata-metalico text-lg leading-relaxed">
-        Dinero Sobre Problemas nace de la convicción de que el estilo es una forma de
-        expresión. Cada prenda está diseñada con intención, fabricada con materiales
-        que resisten el tiempo, y pensada para quienes entienden que la elegancia
-        no grita: se nota.
+  <!-- ============ MARCA ============ -->
+  <section class="relative py-32 lg:py-44 overflow-hidden">
+    <div class="absolute inset-0 bg-noise"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-oro-elegante/5 blur-[100px]"></div>
+
+    <div class="relative max-w-3xl mx-auto px-6 text-center">
+      <p class="section-label mb-6">Nuestra filosofía</p>
+      <blockquote class="font-titulos text-3xl md:text-5xl leading-tight text-blancoRoto mb-8">
+        "No vendemos ropa.<br />
+        Vendemos <span class="text-gold-gradient">actitud</span>."
+      </blockquote>
+      <div class="gold-line mx-auto mb-8"></div>
+      <p class="text-plata-metalico/70 leading-relaxed max-w-xl mx-auto">
+        Cada prenda nace de una idea simple: el estilo es una forma de expresión.
+        Materiales que resisten el tiempo, cortes que favorecen, y un diseño que
+        no sigue tendencias porque las crea.
       </p>
+    </div>
+  </section>
+
+  <!-- ============ NEWSLETTER CTA ============ -->
+  <section class="bg-negro-carbono border-t border-plata-metalico/10">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-24">
+      <div class="relative border border-oro-elegante/20 p-10 lg:p-16 overflow-hidden glow-gold">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-oro-elegante/10 blur-[80px] rounded-full"></div>
+        <div class="relative grid gap-8 lg:grid-cols-2 lg:items-center">
+          <div>
+            <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto mb-4">
+              Acceso anticipado<br />
+              <span class="text-oro-elegante">a cada drop</span>
+            </h2>
+            <p class="text-plata-metalico/70">
+              Únete al círculo y entérate antes que nadie. Sin spam,
+              solo lanzamientos que valen la pena.
+            </p>
+          </div>
+          <form class="flex flex-col sm:flex-row gap-3 lg:justify-end">
+            <input type="email" placeholder="tu@email.com" class="input-dark sm:max-w-xs" required />
+            <button type="submit" class="btn-gold shrink-0">Unirme</button>
+          </form>
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>

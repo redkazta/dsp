@@ -36,7 +36,7 @@ export async function getProducts(tenantId: string, options: GetProductsOptions 
 
   let query = supabase
     .from('products')
-    .select('*, product_variants(*), categories(*)', { count: 'exact' })
+    .select('*, product_variants(*), categories(*), product_images(*)', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .eq('is_active', true)
     .eq('is_deleted', false)
@@ -57,7 +57,7 @@ export async function getProducts(tenantId: string, options: GetProductsOptions 
 export async function getProductById(tenantId: string, id: string) {
   return supabase
     .from('products')
-    .select('*, product_variants(*), categories(*)')
+    .select('*, product_variants(*), categories(*), product_images(*)')
     .eq('tenant_id', tenantId)
     .eq('id', id)
     .eq('is_deleted', false)

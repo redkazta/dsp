@@ -1,35 +1,83 @@
 ---
 /**
  * ProductCard.astro - Tarjeta de producto
+ * Hover con acento dorado, imagen con zoom sutil
  */
 export interface Props {
   product: {
     id: string;
     name: string;
     base_price: number;
-    product_variants?: Array<{ id: string; name: string; price: number; stock: number }>;
+    product_variants?: Array<{ id: string; name: string; price: number; stock: number }> | null;
+    product_images?: Array<{ url: string; alt_text?: string }> | null;
   };
 }
 
 const { product } = Astro.props;
 const price = product.product_variants?.[0]?.price ?? product.base_price;
+const image = product.product_images?.[0]?.url ?? null;
+const totalStock =
+  product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
+const isSoldOut = product.product_variants != null && totalStock === 0;
 ---
 
-<a
-  href={`/producto/${product.id}`}
-  class="card group overflow-hidden block transition-transform duration-300 hover:-translate-y-1"
->
-  <div class="aspect-square bg-negro-profundo flex items-center justify-center overflow-hidden">
-    <span class="text-plata-metalico/30 font-acentos text-xs uppercase tracking-widest">
-      Sin imagen
-    </span>
+<a href={`/producto/${product.id}`} class="product-card">
+  <!-- Imagen -->
+  <div class="relative aspect-[4/5] overflow-hidden bg-negro-elevado">
+    {
+      image ? (
+        <img
+          src={image}
+          alt={product.name}
+          class="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 group-hover:scale-[1.04] transition-all duration-700"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center">
+          <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-plata-metalico/25">
+            Sin imagen
+          </span>
+        </div>
+      )
+    }
+
+    <!-- Overlay hover -->
+    <div class="absolute inset-0 bg-negro-profundo/0 group-hover:bg-negro-profundo/20 transition-colors duration-500"></div>
+
+    <!-- Badges -->
+    <div class="absolute top-4 left-4 flex flex-col gap-2">
+      {
+        isSoldOut && (
+          <span class="bg-negro-profundo/90 backdrop-blur px-3 py-1 border border-plata-metalico/20">
+            <span class="font-acentos text-[9px] uppercase tracking-[0.2em] text-plata-metalico">
+              Agotado
+            </span>
+          </span>
+        )
+      }
+    </div>
+
+    <!-- CTA hover -->
+    <div class="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+      <div class="bg-oro-elegante text-negro-profundo text-center py-3">
+        <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
+          Ver producto
+        </span>
+      </div>
+    </div>
+
+    <!-- Línea dorada top -->
+    <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
   </div>
-  <div class="p-6">
-    <h3 class="font-acentos text-plata-claro mb-2 group-hover:text-oro-elegante transition-colors">
+
+  <!-- Info -->
+  <div class="p-5 lg:p-6">
+    <h3 class="font-acentos text-sm text-plata-claro mb-2 group-hover:text-oro-elegante transition-colors duration-300 line-clamp-2">
       {product.name}
     </h3>
-    <p class="text-oro-elegante font-bold text-lg">
-      ${price.toFixed(2)} MXN
+    <p class="font-acentos text-base text-oro-elegante font-medium tracking-wide">
+      ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })} <span class="text-plata-metalico/50 text-xs">MXN</span>
     </p>
   </div>
 </a>

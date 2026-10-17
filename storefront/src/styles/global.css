@@ -1,40 +1,117 @@
-/* Global Styles for WildForgeLabs Storefront */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles */
-:root {
-  --color-negro-profundo: #0A0A0A;
-  --color-negro-carbono: #1A1A1A;
-  --color-oro-elegante: #D4AF37;
-  --color-oro-suave: #E8C874;
-  --color-plata-metalico: #C0C0C0;
-  --color-plata-claro: #E5E5E5;
-  --color-blanco-roto: #F5F5F5;
+/* ============================================
+   Dinero Sobre Problemas - Global Styles
+   Negro profundo · Oro · Plateado
+   ============================================ */
+
+@layer base {
+  :root {
+    --color-negro-profundo: #0a0a0a;
+    --color-negro-carbono: #121212;
+    --color-negro-elevado: #1a1a1a;
+    --color-oro-elegante: #d4af37;
+    --color-oro-suave: #e8c874;
+    --color-plata-metalico: #c0c0c0;
+    --color-plata-claro: #e5e5e5;
+    --color-blanco-roto: #f5f5f5;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-negro-profundo text-blancoRoto font-cuerpo;
+  }
+
+  ::selection {
+    @apply bg-oro-elegante text-negro-profundo;
+  }
+
+  /* Scrollbar elegante */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-negro-profundo;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-negro-elevado rounded-full border border-oro-elegante/20;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-oro-elegante/40;
+  }
 }
 
-/* Dark mode por defecto */
-html {
-  scroll-behavior: smooth;
+@layer components {
+  /* Botón principal dorado */
+  .btn-gold {
+    @apply relative inline-flex items-center justify-center gap-2
+      bg-oro-elegante text-negro-profundo font-acentos font-medium
+      text-xs uppercase tracking-[0.2em]
+      px-8 py-4 overflow-hidden
+      transition-all duration-400
+      hover:bg-oro-suave hover:tracking-[0.28em];
+  }
+
+  /* Botón outline plateado */
+  .btn-outline {
+    @apply inline-flex items-center justify-center
+      border border-plata-metalico/30 text-plata-claro font-acentos
+      text-xs uppercase tracking-[0.2em] px-8 py-4
+      transition-all duration-400
+      hover:border-oro-elegante hover:text-oro-elegante;
+  }
+
+  /* Línea decorativa dorada */
+  .gold-line {
+    @apply h-px w-16 bg-gradient-to-r from-transparent via-oro-elegante to-transparent;
+  }
+
+  /* Etiqueta de sección */
+  .section-label {
+    @apply font-acentos text-[10px] uppercase tracking-[0.35em] text-oro-elegante;
+  }
+
+  /* Card de producto */
+  .product-card {
+    @apply group relative block overflow-hidden bg-negro-carbono
+      border border-plata-metalico/10
+      transition-all duration-500
+      hover:border-oro-elegante/40;
+  }
+
+  /* Input oscuro */
+  .input-dark {
+    @apply w-full bg-negro-profundo border border-plata-metalico/20
+      px-4 py-3 text-sm text-plata-claro placeholder:text-plata-metalico/40
+      outline-none transition-colors duration-300
+      focus:border-oro-elegante;
+  }
 }
 
-body {
-  @apply bg-negro-profundo text-plata-claro antialiased;
-  font-family: theme('fontFamily.cuerpo');
-}
+@layer utilities {
+  /* Texto con degradado dorado */
+  .text-gold-gradient {
+    @apply bg-gradient-to-r from-oro-elegante via-oro-suave to-oro-elegante
+      bg-clip-text text-transparent;
+  }
 
-/* Botones principales */
-.btn-primary {
-  @apply bg-oro-elegante text-negro-profundo font-acentos font-bold py-3 px-6 rounded-lg transition-all duration-300 hover:bg-oro-suave shadow-lg hover:shadow-2xl;
-}
+  /* Fondo con textura sutil */
+  .bg-noise {
+    background-image: radial-gradient(
+      rgba(212, 175, 55, 0.03) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
 
-/* Cards oscuras */
-.card {
-  @apply bg-negro-carbono rounded-xl shadow-lg border border-plata-metalico;
-}
-
-/* Gradiente dorado */
-.gradient-gold {
-  background: linear-gradient(135deg, #D4AF37 0%, #E8C874 100%);
+  /* Glow dorado suave */
+  .glow-gold {
+    box-shadow: 0 0 60px -15px rgba(212, 175, 55, 0.35);
+  }
 }
