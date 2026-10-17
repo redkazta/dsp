@@ -60,19 +60,20 @@ try {
         </div>
 
         <h1
-          class="font-titulos text-6xl md:text-8xl lg:text-[7.5rem] leading-[0.9] text-blancoRoto mb-8 animate-fade-up"
+          class="font-titulos text-6xl md:text-8xl lg:text-[7rem] leading-[0.9] text-blancoRoto mb-8 animate-fade-up"
           style="animation-delay: 0.2s"
         >
-          Brilla en la<br />
-          <em class="text-gold-gradient not-italic font-normal">oscuridad</em>
+          Del suelo<br />
+          al cielo,<br />
+          <em class="text-gold-gradient not-italic font-normal">sin miedo</em>
         </h1>
 
         <p
           class="text-base md:text-lg text-plata-metalico/80 max-w-lg leading-relaxed mb-12 animate-fade-up"
           style="animation-delay: 0.4s"
         >
-          Siete acabados del logo ¡D$P!. Diseño callejero
-          con energía de lujo. Para los que destacan sin decir una palabra.
+          Streetwear artesanal prensado a mano, una pieza a la vez.
+          Diseño callejero con raíces mexicanas. No seguimos modas, las creamos.
         </p>
 
         <div class="flex flex-wrap gap-4 animate-fade-up" style="animation-delay: 0.6s">
@@ -136,17 +137,34 @@ try {
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-oro-elegante/5 blur-[100px]"></div>
 
     <div class="relative max-w-3xl mx-auto px-6 text-center">
-      <p class="section-label mb-6">Nuestra filosofía</p>
+      <p class="section-label mb-6">Streetwear artesanal</p>
       <blockquote class="font-titulos text-3xl md:text-5xl leading-tight text-blancoRoto mb-8">
-        "No vendemos ropa.<br />
-        Vendemos <span class="text-gold-gradient">actitud</span>."
+        "Que el silencio también<br />
+        hace <span class="text-gold-gradient">ruido</span>."
       </blockquote>
       <div class="gold-line mx-auto mb-8"></div>
       <p class="text-plata-metalico/70 leading-relaxed max-w-xl mx-auto">
-        Cada prenda nace de una idea simple: el estilo es una forma de expresión.
-        Materiales que resisten el tiempo, cortes que favorecen, y un diseño que
-        no sigue tendencias porque las crea.
+        Diseñamos prendas con atención al detalle, prensadas a mano una por una.
+        Cada pieza refleja el balance entre estilo callejero y calidad artesanal —
+        hecha para quienes valoran la autenticidad por encima de las tendencias.
       </p>
+
+      <div class="grid gap-6 sm:grid-cols-3 mt-14">
+        {
+          [
+            { t: 'Prensado a mano', d: 'Una pieza a la vez. Nada de producción en masa.' },
+            { t: 'Raíces mexicanas', d: 'Nacimos en Durango, hoy con base en DFW.' },
+            { t: 'Ediciones limitadas', d: 'Cuando se agota, no vuelve igual.' },
+          ].map((item) => (
+            <div class="border border-plata-metalico/10 p-6">
+              <h3 class="font-acentos text-[11px] uppercase tracking-[0.2em] text-oro-elegante mb-2">
+                {item.t}
+              </h3>
+              <p class="text-xs text-plata-metalico/50 leading-relaxed">{item.d}</p>
+            </div>
+          ))
+        }
+      </div>
     </div>
   </section>
 
@@ -158,11 +176,11 @@ try {
         <div class="relative grid gap-8 lg:grid-cols-2 lg:items-center">
           <div>
             <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto mb-4">
-              Acceso anticipado<br />
-              <span class="text-oro-elegante">a cada drop</span>
+              Únete a<br />
+              <span class="text-oro-elegante">nuestra familia</span>
             </h2>
             <p class="text-plata-metalico/70">
-              Únete al círculo y entérate antes que nadie. Sin spam,
+              Entérate de cada drop antes que nadie. Sin spam,
               solo lanzamientos que valen la pena.
             </p>
           </div>
