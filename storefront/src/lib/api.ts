@@ -3,7 +3,8 @@
  * Llamadas a la API de .NET (hosteada en Render)
  */
 
-const API_URL = import.meta.env.PUBLIC_API_URL || 'https://wildforgelabs-api.onrender.com/api/v1';
+const API_URL =
+  import.meta.env.PUBLIC_API_URL || 'https://wildforgelabs-api.onrender.com/api/v1';
 
 export class ApiClient {
   private baseUrl: string;
@@ -11,12 +12,12 @@ export class ApiClient {
 
   constructor(baseUrl: string = API_URL) {
     this.baseUrl = baseUrl;
-    this.token = localStorage.getItem('auth_token');
+    this.token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
   }
 
   setToken(token: string) {
     this.token = token;
-    localStorage.setItem('auth_token', token);
+    if (typeof localStorage !== 'undefined') localStorage.setItem('auth_token', token);
   }
 
   private getHeaders(): HeadersInit {

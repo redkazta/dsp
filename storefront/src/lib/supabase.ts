@@ -1,18 +1,21 @@
 /**
  * Supabase Client para el storefront (Astro)
- * Consultas directas al catálogo: productos, variantes, categorías, imágenes
+ *
+ * La anon key es PÚBLICA por diseño: viaja al navegador en cualquier app Supabase.
+ * La seguridad real la da Row Level Security (RLS) en Postgres, no el secreto de la key.
+ * Por eso aquí van constantes: evita fallos por env vars mal configuradas en Vercel.
+ *
+ * Si quieres apuntar a otro proyecto, define PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY.
  */
 
 import { createClient } from '@supabase/supabase-js';
 
-// La anon key es pública por diseño (viaja al navegador); RLS protege los datos.
-// Se usan env vars si existen, con fallback al proyecto de producción.
-const FALLBACK_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
-const FALLBACK_ANON_KEY =
+const SUPABASE_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
+const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cnh3bXl4eGhqb25oYmZnZnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NTI5MTQsImV4cCI6MjEwNzMyODkxNH0.U4Nuekvw7JcM4xx39OHKxIjReyM7_4xrs0iDURu--lY';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || FALLBACK_URL;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || FALLBACK_ANON_KEY;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { persistSession: false },
@@ -21,20 +24,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 /** Slug del tenant actual (multi-tenant: cambiar por subdominio en el futuro) */
 export const TENANT_SLUG = 'dinerosobreproblemas';
 
-/** UUID del tenant de producción (fallback si la resolución falla) */
-const FALLBACK_TENANT_ID = '11111111-1111-1111-1111-111111111111';
+/** UUID del tenant de producción (única fuente de verdad para el MVP single-tenant) */
+const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 
-// Cache en memoria del UUID del tenant (se resuelve una vez por proceso)
+// Cache en memoria del UUID del tenant
 let cachedTenantId: string | null = null;
 
 /**
  * Resuelve el UUID del tenant a partir de su slug.
- * La tabla `products` usa tenant_id (UUID), no el slug.
+ * Los productos usan tenant_id (UUID), no el slug.
  */
-export async function getTenantId(slug: string = TENANT_SLUG): Promise<string | null> {
+export async function getTenantId(slug: string = TENANT_SLUG): Promise<string> {
   if (cachedTenantId) return cachedTenantId;
 
-  // Si ya parece un UUID, úsalo directo
+  // UUID directo
   if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)) {
     cachedTenantId = slug;
     return slug;
@@ -52,15 +55,12 @@ export async function getTenantId(slug: string = TENANT_SLUG): Promise<string | 
       cachedTenantId = data.id;
       return data.id;
     }
-
-    console.error('[supabase] No se pudo resolver el tenant:', slug, error);
-  } catch (err) {
-    console.error('[supabase] Error resolviendo tenant:', err);
+  } catch {
+    // cae al fallback
   }
 
-  // Fallback: tenant principal del proyecto (MVP single-tenant)
-  cachedTenantId = FALLBACK_TENANT_ID;
-  return cachedTenantId;
+  cachedTenantId = TENANT_ID;
+  return TENANT_ID;
 }
 
 export interface GetProductsOptions {
@@ -76,7 +76,7 @@ export interface GetProductsOptions {
 export interface ProductsResult {
   data: any[] | null;
   count: number;
-  error: unknown;
+  error: string | null;
 }
 
 /**
@@ -98,63 +98,78 @@ export async function getProducts(
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const tenantId = await getTenantId(tenantSlug);
-  if (!tenantId) return { data: [], count: 0, error: 'tenant-not-found' };
+  try {
+    const tenantId = await getTenantId(tenantSlug);
 
-  let filtered = supabase
-    .from('products')
-    .select('*, product_variants(*), categories(*), product_images(*)', { count: 'exact' })
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true)
-    .eq('is_deleted', false);
+    let query = supabase
+      .from('products')
+      .select('*, product_variants(*), categories(*), product_images(*)', {
+        count: 'exact',
+      })
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .eq('is_deleted', false);
 
-  if (categoryId) filtered = filtered.eq('category_id', categoryId);
-  if (search) filtered = filtered.ilike('name', `%${search}%`);
-  if (minPrice != null) filtered = filtered.gte('base_price', minPrice);
-  if (maxPrice != null) filtered = filtered.lte('base_price', maxPrice);
+    if (categoryId) query = query.eq('category_id', categoryId);
+    if (search) query = query.ilike('name', `%${search}%`);
+    if (minPrice != null) query = query.gte('base_price', minPrice);
+    if (maxPrice != null) query = query.lte('base_price', maxPrice);
 
-  const sortMap: Record<string, { column: string; ascending: boolean }> = {
-    newest: { column: 'created_at', ascending: false },
-    'price-asc': { column: 'base_price', ascending: true },
-    'price-desc': { column: 'base_price', ascending: false },
-    'name-asc': { column: 'name', ascending: true },
-  };
-  const { column, ascending } = sortMap[sort] ?? sortMap.newest;
+    const sortMap: Record<string, { column: string; ascending: boolean }> = {
+      newest: { column: 'created_at', ascending: false },
+      'price-asc': { column: 'base_price', ascending: true },
+      'price-desc': { column: 'base_price', ascending: false },
+      'name-asc': { column: 'name', ascending: true },
+    };
+    const { column, ascending } = sortMap[sort] ?? sortMap.newest;
 
-  const { data, count, error } = await filtered
-    .order(column, { ascending })
-    .range(from, to);
+    const { data, count, error } = await query
+      .order(column, { ascending })
+      .range(from, to);
 
-  return { data, count: count ?? 0, error };
+    if (error) {
+      return { data: [], count: 0, error: `${error.code ?? ''} ${error.message}`.trim() };
+    }
+
+    return { data: data ?? [], count: count ?? 0, error: null };
+  } catch (err: any) {
+    return { data: [], count: 0, error: err?.message ?? String(err) };
+  }
 }
 
 /**
  * Un producto por ID, con variantes, categoría e imágenes.
  */
 export async function getProductById(tenantSlug: string, id: string) {
-  const tenantId = await getTenantId(tenantSlug);
-  if (!tenantId) return { data: null, error: 'tenant-not-found' };
+  try {
+    const tenantId = await getTenantId(tenantSlug);
 
-  return supabase
-    .from('products')
-    .select('*, product_variants(*), categories(*), product_images(*)')
-    .eq('tenant_id', tenantId)
-    .eq('id', id)
-    .eq('is_deleted', false)
-    .maybeSingle();
+    return await supabase
+      .from('products')
+      .select('*, product_variants(*), categories(*), product_images(*)')
+      .eq('tenant_id', tenantId)
+      .eq('id', id)
+      .eq('is_deleted', false)
+      .maybeSingle();
+  } catch (err: any) {
+    return { data: null, error: { message: err?.message ?? String(err) } };
+  }
 }
 
 /**
  * Categorías del tenant.
  */
 export async function getCategories(tenantSlug: string) {
-  const tenantId = await getTenantId(tenantSlug);
-  if (!tenantId) return { data: [], error: 'tenant-not-found' };
+  try {
+    const tenantId = await getTenantId(tenantSlug);
 
-  return supabase
-    .from('categories')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .eq('is_deleted', false)
-    .order('name');
+    return await supabase
+      .from('categories')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('is_deleted', false)
+      .order('name');
+  } catch (err: any) {
+    return { data: [], error: { message: err?.message ?? String(err) } };
+  }
 }
