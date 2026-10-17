@@ -6,117 +6,203 @@ import ProductList from '../components/product/ProductList.astro';
 import { getProducts, getCategories, TENANT_SLUG } from '../lib/supabase';
 
 const categoryId = Astro.url.searchParams.get('category') ?? undefined;
-const search = Astro.url.searchParams.get('q') ?? undefined;
+const search = Astro.url.searchParams.get('q') ?? '';
+const sortParam = Astro.url.searchParams.get('sort') ?? 'newest';
+const sort = ['newest', 'price-asc', 'price-desc', 'name-asc'].includes(sortParam)
+  ? (sortParam as 'newest' | 'price-asc' | 'price-desc' | 'name-asc')
+  : 'newest';
 
 let products: any[] = [];
 let categories: any[] = [];
+let errorMessage: string | null = null;
 
 try {
   const [productsResult, categoriesResult] = await Promise.all([
-    getProducts(TENANT_SLUG, { page: 1, limit: 24, categoryId, search }),
+    getProducts(TENANT_SLUG, { page: 1, limit: 48, categoryId, search: search || undefined, sort }),
     getCategories(TENANT_SLUG),
   ]);
-  products = productsResult.data ?? [];
+
+  if (productsResult.error) {
+    errorMessage =
+      typeof productsResult.error === 'string'
+        ? productsResult.error
+        : ((productsResult.error as any)?.message ?? JSON.stringify(productsResult.error));
+  } else {
+    products = productsResult.data ?? [];
+  }
   categories = categoriesResult.data ?? [];
-} catch {
-  products = [];
-  categories = [];
+} catch (err: any) {
+  errorMessage = err?.message ?? String(err);
 }
-const activeCategory = categoryId ?? null;
+
+const sortOptions = [
+  { value: 'newest', label: 'Más recientes' },
+  { value: 'price-asc', label: 'Precio: menor a mayor' },
+  { value: 'price-desc', label: 'Precio: mayor a menor' },
+  { value: 'name-asc', label: 'Nombre A-Z' },
+];
+
+const buildUrl = (overrides: Record<string, string | undefined>) => {
+  const params = new URLSearchParams();
+  const base = { category: categoryId, q: search || undefined, sort, ...overrides };
+  for (const [k, v] of Object.entries(base)) {
+    if (v) params.set(k, v);
+  }
+  const qs = params.toString();
+  return `/tienda${qs ? `?${qs}` : ''}`;
+};
 ---
 
 <BaseLayout
-  title="Catálogo | Dinero Sobre Problemas"
-  description="Explora la colección completa de streetwear premium. Piezas atemporales diseñadas en México."
+  title="Tienda | Dinero Sobre Problemas"
+  description="Catálogo completo de playeras ¡D$P!. Siete acabados, tallas S a XL, envío a todo México."
 >
-  <!-- Header de página -->
-  <section class="border-b border-plata-metalico/10 bg-noise">
-    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-16 lg:py-20">
-      <nav class="mb-6">
+  <!-- Encabezado -->
+  <section class="relative border-b border-plata-metalico/10 overflow-hidden">
+    <div class="absolute inset-0 bg-noise"></div>
+    <div class="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-oro-elegante/5 blur-[110px] pointer-events-none"></div>
+
+    <div class="relative max-w-[1400px] mx-auto px-6 lg:px-10 pt-10 pb-12 lg:pt-14 lg:pb-16">
+      <nav class="mb-8">
         <ol class="flex items-center gap-2 font-acentos text-[10px] uppercase tracking-[0.2em] text-plata-metalico/40">
           <li><a href="/" class="hover:text-oro-elegante transition-colors">Inicio</a></li>
           <li>/</li>
           <li class="text-oro-elegante">Tienda</li>
         </ol>
       </nav>
-      <h1 class="font-titulos text-5xl lg:text-6xl text-blancoRoto mb-4">Catálogo</h1>
-      <p class="text-plata-metalico/60 max-w-xl">
-        {products.length} {products.length === 1 ? 'pieza disponible' : 'piezas disponibles'}
-      </p>
+
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div>
+          <p class="section-label mb-4">Colección</p>
+          <h1 class="font-titulos text-5xl lg:text-6xl text-blancoRoto leading-none mb-4">
+            {categoryId ? categories.find((c: any) => c.id === categoryId)?.name ?? 'Tienda' : 'Todas las piezas'}
+          </h1>
+          <p class="text-sm text-plata-metalico/50">
+            {products.length} {products.length === 1 ? 'producto' : 'productos'}
+            {search ? ` para “${search}”` : ''}
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="/carrito" class="btn-outline">Ver carrito</a>
+        </div>
+      </div>
     </div>
   </section>
 
-  <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
-    <div class="flex flex-col lg:flex-row gap-12">
-      <!-- Sidebar -->
-      <aside class="w-full lg:w-56 shrink-0">
-        <div class="lg:sticky lg:top-28">
-          <!-- Buscar -->
-          <div class="mb-10">
-            <h4 class="section-label mb-4">Buscar</h4>
-            <form method="get">
-              <input
-                type="search"
-                name="q"
-                value={search ?? ''}
-                placeholder="Nombre del producto..."
-                class="input-dark text-sm"
-              />
-            </form>
-          </div>
+  <!-- Barra de filtros -->
+  <section class="sticky top-20 z-40 bg-negro-profundo/90 backdrop-blur-xl border-b border-plata-metalico/10">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-5 py-4">
+        <!-- Chips de categoría -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+          <a
+            href={buildUrl({ category: undefined })}
+            class:list={[
+              'shrink-0 px-4 py-2 font-acentos text-[10px] uppercase tracking-[0.2em] border transition-colors duration-300',
+              !categoryId
+                ? 'border-oro-elegante text-oro-elegante bg-oro-elegante/5'
+                : 'border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante/60 hover:text-oro-elegante',
+            ]}
+          >
+            Todas
+          </a>
+          {
+            categories.map((cat: any) => (
+              <a
+                href={buildUrl({ category: cat.id })}
+                class:list={[
+                  'shrink-0 px-4 py-2 font-acentos text-[10px] uppercase tracking-[0.2em] border transition-colors duration-300',
+                  categoryId === cat.id
+                    ? 'border-oro-elegante text-oro-elegante bg-oro-elegante/5'
+                    : 'border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante/60 hover:text-oro-elegante',
+                ]}
+              >
+                {cat.name}
+              </a>
+            ))
+          }
+        </div>
 
-          <!-- Categorías -->
-          <div class="mb-10">
-            <h4 class="section-label mb-4">Categorías</h4>
-            <ul class="space-y-1">
-              <li>
-                <a
-                  href="/tienda"
-                  class:list={[
-                    'block py-2 text-sm transition-colors duration-300',
-                    !activeCategory ? 'text-oro-elegante' : 'text-plata-metalico/70 hover:text-oro-elegante',
-                  ]}
-                >
-                  Todas
-                </a>
-              </li>
+        <div class="flex-1"></div>
+
+        <!-- Buscar + ordenar -->
+        <div class="flex flex-col sm:flex-row gap-3 lg:shrink-0">
+          <form method="get" class="flex">
+            <input
+              type="search"
+              name="q"
+              value={search}
+              placeholder="Buscar..."
+              class="input-dark text-xs py-2 w-full sm:w-52"
+            />
+            {categoryId && <input type="hidden" name="category" value={categoryId} />}
+            <input type="hidden" name="sort" value={sort} />
+          </form>
+
+          <form method="get" class="flex">
+            <select
+              name="sort"
+              data-autosubmit
+              class="input-dark text-xs py-2 pr-8 cursor-pointer"
+            >
               {
-                categories.map((cat) => (
-                  <li>
-                    <a
-                      href={`/tienda?category=${cat.id}`}
-                      class:list={[
-                        'block py-2 text-sm transition-colors duration-300',
-                        activeCategory === cat.id
-                          ? 'text-oro-elegante'
-                          : 'text-plata-metalico/70 hover:text-oro-elegante',
-                      ]}
-                    >
-                      {cat.name}
-                    </a>
-                  </li>
+                sortOptions.map((opt) => (
+                  <option value={opt.value} selected={sort === opt.value}>
+                    {opt.label}
+                  </option>
                 ))
               }
-            </ul>
-          </div>
-
-          <!-- Ordenar -->
-          <div>
-            <h4 class="section-label mb-4">Ordenar</h4>
-            <select class="input-dark text-sm">
-              <option>Más recientes</option>
-              <option>Precio: menor a mayor</option>
-              <option>Precio: mayor a menor</option>
-              <option>Nombre A-Z</option>
             </select>
-          </div>
+            {categoryId && <input type="hidden" name="category" value={categoryId} />}
+            {search && <input type="hidden" name="q" value={search} />}
+          </form>
         </div>
-      </aside>
-
-      <!-- Productos -->
-      <div class="flex-1">
-        <ProductList products={products} />
       </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Grid -->
+  <section class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+    {
+      errorMessage ? (
+        <div class="max-w-xl mx-auto text-center py-20">
+          <div class="w-12 h-12 mx-auto mb-6 border border-red-500/40 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5">
+              <path d="M12 9v4M12 17h.01" /><circle cx="12" cy="12" r="9" />
+            </svg>
+          </div>
+          <h2 class="font-titulos text-2xl text-blancoRoto mb-3">No pudimos cargar el catálogo</h2>
+          <p class="text-sm text-plata-metalico/50 mb-6">
+            Revisa la conexión con Supabase o las variables de entorno.
+          </p>
+          <pre class="text-left text-[11px] text-red-300/80 bg-negro-carbono border border-plata-metalico/10 p-4 overflow-x-auto">
+            {errorMessage}
+          </pre>
+        </div>
+      ) : products.length === 0 ? (
+        <div class="max-w-md mx-auto text-center py-24">
+          <p class="font-titulos text-3xl text-plata-metalico/40 mb-3">Sin resultados</p>
+          <p class="text-sm text-plata-metalico/40 mb-8">
+            {search
+              ? `No encontramos piezas para “${search}”.`
+              : 'Todavía no hay productos publicados en esta colección.'}
+          </p>
+          <div class="flex flex-wrap gap-3 justify-center">
+            <a href="/tienda" class="btn-gold">Ver todo</a>
+            <a href="/" class="btn-outline">Ir al inicio</a>
+          </div>
+        </div>
+      ) : (
+        <ProductList products={products} />
+      )
+    }
+  </section>
 </BaseLayout>
+
+<script>
+  // Enviar el formulario al cambiar el orden
+  document.querySelectorAll<HTMLSelectElement>('select[data-autosubmit]').forEach((sel) => {
+    sel.addEventListener('change', () => sel.form?.submit());
+  });
+</script>

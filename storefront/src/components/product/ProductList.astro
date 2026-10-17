@@ -18,7 +18,7 @@ const { products } = Astro.props;
       <p class="text-sm text-plata-metalico/40">No hay productos disponibles por el momento.</p>
     </div>
   ) : (
-    <div class="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-12 lg:gap-x-8 lg:gap-y-16">
       {products.map((product) => (
         <ProductCard product={product} />
       ))}

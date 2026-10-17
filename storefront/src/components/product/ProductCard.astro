@@ -27,13 +27,13 @@ const sizes = [
 
 <a href={`/producto/${product.id}`} class="group block">
   <!-- Imagen -->
-  <div class="relative aspect-[4/5] overflow-hidden bg-[#f2f2f2]">
+  <div class="relative aspect-[4/5] overflow-hidden bg-white">
     {
       image ? (
         <img
           src={image}
           alt={product.name}
-          class="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-[1.06]"
+          class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.05]"
           loading="lazy"
           decoding="async"
         />
@@ -68,6 +68,9 @@ const sizes = [
 
     <!-- Línea dorada -->
     <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10"></div>
+
+    <!-- Marco sutil -->
+    <div class="absolute inset-0 ring-1 ring-inset ring-negro-profundo/5 group-hover:ring-oro-elegante/30 transition-all duration-500 pointer-events-none"></div>
   </div>
 
   <!-- Info -->

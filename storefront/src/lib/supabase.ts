@@ -59,6 +59,7 @@ export interface GetProductsOptions {
   search?: string;
   minPrice?: number;
   maxPrice?: number;
+  sort?: 'newest' | 'price-asc' | 'price-desc' | 'name-asc';
 }
 
 export interface ProductsResult {
@@ -74,28 +75,45 @@ export async function getProducts(
   tenantSlug: string,
   options: GetProductsOptions = {}
 ): Promise<ProductsResult> {
-  const { page = 1, limit = 20, categoryId, search, minPrice, maxPrice } = options;
+  const {
+    page = 1,
+    limit = 20,
+    categoryId,
+    search,
+    minPrice,
+    maxPrice,
+    sort = 'newest',
+  } = options;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
   const tenantId = await getTenantId(tenantSlug);
   if (!tenantId) return { data: [], count: 0, error: 'tenant-not-found' };
 
-  let query = supabase
+  let filtered = supabase
     .from('products')
     .select('*, product_variants(*), categories(*), product_images(*)', { count: 'exact' })
     .eq('tenant_id', tenantId)
     .eq('is_active', true)
-    .eq('is_deleted', false)
-    .range(from, to)
-    .order('created_at', { ascending: false });
+    .eq('is_deleted', false);
 
-  if (categoryId) query = query.eq('category_id', categoryId);
-  if (search) query = query.ilike('name', `%${search}%`);
-  if (minPrice != null) query = query.gte('base_price', minPrice);
-  if (maxPrice != null) query = query.lte('base_price', maxPrice);
+  if (categoryId) filtered = filtered.eq('category_id', categoryId);
+  if (search) filtered = filtered.ilike('name', `%${search}%`);
+  if (minPrice != null) filtered = filtered.gte('base_price', minPrice);
+  if (maxPrice != null) filtered = filtered.lte('base_price', maxPrice);
 
-  const { data, count, error } = await query;
+  const sortMap: Record<string, { column: string; ascending: boolean }> = {
+    newest: { column: 'created_at', ascending: false },
+    'price-asc': { column: 'base_price', ascending: true },
+    'price-desc': { column: 'base_price', ascending: false },
+    'name-asc': { column: 'name', ascending: true },
+  };
+  const { column, ascending } = sortMap[sort] ?? sortMap.newest;
+
+  const { data, count, error } = await filtered
+    .order(column, { ascending })
+    .range(from, to);
+
   return { data, count: count ?? 0, error };
 }
 
