@@ -19,13 +19,35 @@ try {
   <section class="relative min-h-[92vh] flex items-center overflow-hidden bg-noise">
     <div class="absolute inset-0">
       <img
-        src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?q=80&w=2000&auto=format&fit=crop"
+        src="/img/DSP_3.jpg"
         alt=""
-        class="w-full h-full object-cover opacity-30 grayscale"
+        class="w-full h-full object-cover opacity-20 grayscale"
         loading="eager"
       />
-      <div class="absolute inset-0 bg-gradient-to-b from-negro-profundo/60 via-negro-profundo/85 to-negro-profundo"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-negro-profundo/40 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-negro-profundo/70 via-negro-profundo/90 to-negro-profundo"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-negro-profundo/50 to-transparent"></div>
+    </div>
+
+    <!-- Cinta de producto en el hero -->
+    <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-3 pr-10 z-10">
+      {
+        [
+          { src: '/img/DSP_2.jpg', label: 'Aurora' },
+          { src: '/img/DSP_3.jpg', label: 'Silver' },
+          { src: '/img/DSP_5.jpg', label: 'Violet' },
+          { src: '/img/DSP_6.jpg', label: 'Crimson' },
+        ].map((p) => (
+          <a
+            href="/tienda"
+            class="group relative w-20 h-24 overflow-hidden border border-plata-metalico/15 bg-[#f2f2f2] hover:border-oro-elegante transition-colors duration-300"
+          >
+            <img src={p.src} alt={p.label} class="w-full h-full object-contain p-1" loading="lazy" />
+            <span class="absolute inset-x-0 bottom-0 bg-negro-profundo/85 text-center py-1 font-acentos text-[8px] uppercase tracking-[0.2em] text-plata-claro opacity-0 group-hover:opacity-100 transition-opacity">
+              {p.label}
+            </span>
+          </a>
+        ))
+      }
     </div>
 
     <div class="absolute top-1/3 left-1/3 w-[600px] h-[600px] rounded-full bg-oro-elegante/10 blur-[130px] pointer-events-none"></div>
@@ -49,7 +71,7 @@ try {
           class="text-base md:text-lg text-plata-metalico/80 max-w-lg leading-relaxed mb-12 animate-fade-up"
           style="animation-delay: 0.4s"
         >
-          Camisas reflectivas que cambian con la luz. Diseño callejero
+          Siete acabados del logo ¡D$P!. Diseño callejero
           con energía de lujo. Para los que destacan sin decir una palabra.
         </p>
 

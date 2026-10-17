@@ -1,7 +1,7 @@
 ---
 /**
  * ProductCard.astro - Tarjeta de producto
- * Hover con acento dorado, imagen con zoom sutil
+ * Fondos claros para fotos sobre blanco; hover con acento dorado
  */
 export interface Props {
   product: {
@@ -18,45 +18,44 @@ const price = product.product_variants?.[0]?.price ?? product.base_price;
 const image = product.product_images?.[0]?.url ?? null;
 const totalStock =
   product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
-const isSoldOut = product.product_variants != null && totalStock === 0;
+const isSoldOut = product.product_variants != null && product.product_variants.length > 0 && totalStock === 0;
+
+const sizes = [
+  ...new Set((product.product_variants ?? []).map((v: any) => v.size).filter(Boolean)),
+] as string[];
 ---
 
-<a href={`/producto/${product.id}`} class="product-card group">
+<a href={`/producto/${product.id}`} class="group block">
   <!-- Imagen -->
-  <div class="relative aspect-[4/5] overflow-hidden bg-negro-elevado">
+  <div class="relative aspect-[4/5] overflow-hidden bg-[#f2f2f2]">
     {
       image ? (
         <img
           src={image}
           alt={product.name}
-          class="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 group-hover:scale-[1.04] transition-all duration-700"
+          class="w-full h-full object-contain p-4 transition-transform duration-700 group-hover:scale-[1.06]"
           loading="lazy"
           decoding="async"
         />
       ) : (
         <div class="w-full h-full flex items-center justify-center">
-          <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-plata-metalico/25">
+          <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-negro-profundo/20">
             Sin imagen
           </span>
         </div>
       )
     }
 
-    <!-- Overlay hover -->
-    <div class="absolute inset-0 bg-negro-profundo/0 group-hover:bg-negro-profundo/20 transition-colors duration-500"></div>
-
-    <!-- Badges -->
-    <div class="absolute top-4 left-4 flex flex-col gap-2">
-      {
-        isSoldOut && (
-          <span class="bg-negro-profundo/90 backdrop-blur px-3 py-1 border border-plata-metalico/20">
-            <span class="font-acentos text-[9px] uppercase tracking-[0.2em] text-plata-metalico">
-              Agotado
-            </span>
+    <!-- Badge agotado -->
+    {
+      isSoldOut && (
+        <span class="absolute top-3 left-3 bg-negro-profundo/90 backdrop-blur px-3 py-1 border border-plata-metalico/20">
+          <span class="font-acentos text-[9px] uppercase tracking-[0.2em] text-plata-metalico">
+            Agotado
           </span>
-        )
-      }
-    </div>
+        </span>
+      )
+    }
 
     <!-- CTA hover -->
     <div class="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
@@ -67,17 +66,26 @@ const isSoldOut = product.product_variants != null && totalStock === 0;
       </div>
     </div>
 
-    <!-- Línea dorada top -->
-    <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+    <!-- Línea dorada -->
+    <div class="absolute top-0 left-0 w-full h-px bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10"></div>
   </div>
 
   <!-- Info -->
-  <div class="p-5 lg:p-6">
-    <h3 class="font-acentos text-sm text-plata-claro mb-2 group-hover:text-oro-elegante transition-colors duration-300 line-clamp-2">
-      {product.name}
-    </h3>
-    <p class="font-acentos text-base text-oro-elegante font-medium tracking-wide">
-      ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })} <span class="text-plata-metalico/50 text-xs">MXN</span>
+  <div class="pt-4 flex items-start justify-between gap-4">
+    <div>
+      <h3 class="font-acentos text-sm text-plata-claro group-hover:text-oro-elegante transition-colors duration-300">
+        {product.name}
+      </h3>
+      {
+        sizes.length > 0 && (
+          <p class="mt-1 text-[11px] text-plata-metalico/40">
+            {sizes.join(' · ')}
+          </p>
+        )
+      }
+    </div>
+    <p class="font-acentos text-sm text-oro-elegante whitespace-nowrap">
+      ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
     </p>
   </div>
 </a>
