@@ -114,4 +114,12 @@
   .glow-gold {
     box-shadow: 0 0 60px -15px rgba(212, 175, 55, 0.35);
   }
+
+  /* Truncar a 2 líneas */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }

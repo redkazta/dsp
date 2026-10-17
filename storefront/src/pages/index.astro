@@ -1,5 +1,5 @@
 ---
-export const prerender = false; // SSR: tolera fallos de Supabase sin romper el build
+export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/product/ProductCard.astro';
@@ -17,19 +17,22 @@ try {
 
 const collections = [
   {
-    name: 'Essentials',
-    desc: 'Lo básico, elevado',
-    image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200&auto=format&fit=crop',
+    name: 'Camisas',
+    id: 'c0000001-0000-0000-0000-000000000001',
+    desc: 'Reflective · Aurora · Silver',
+    image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?q=80&w=1200&auto=format&fit=crop',
   },
   {
-    name: 'Outerwear',
-    desc: 'Capas para el clima urbano',
-    image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1200&auto=format&fit=crop',
+    name: 'Hoodies',
+    id: 'c0000001-0000-0000-0000-000000000002',
+    desc: 'Felpa premium, bordado metálico',
+    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1200&auto=format&fit=crop',
   },
   {
     name: 'Accesorios',
+    id: 'c0000001-0000-0000-0000-000000000004',
     desc: 'El detalle que cierra el look',
-    image: 'https://images.unsplash.com/photo-1523206489230-c012c64b2b48?q=80&w=1200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?q=80&w=1200&auto=format&fit=crop',
   },
 ];
 ---
@@ -37,55 +40,64 @@ const collections = [
 <BaseLayout>
   <!-- ============ HERO ============ -->
   <section class="relative min-h-[92vh] flex items-center overflow-hidden bg-noise">
-    <!-- Imagen de fondo -->
     <div class="absolute inset-0">
       <img
-        src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2000&auto=format&fit=crop"
+        src="https://images.unsplash.com/photo-1523398002811-999ca8dec234?q=80&w=2000&auto=format&fit=crop"
         alt=""
-        class="w-full h-full object-cover opacity-25 grayscale"
+        class="w-full h-full object-cover opacity-30 grayscale"
         loading="eager"
       />
-      <div class="absolute inset-0 bg-gradient-to-b from-negro-profundo/60 via-negro-profundo/80 to-negro-profundo"></div>
-      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-transparent to-negro-profundo/60"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-negro-profundo/60 via-negro-profundo/85 to-negro-profundo"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-negro-profundo/40 to-transparent"></div>
     </div>
 
-    <!-- Glow dorado -->
-    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-oro-elegante/10 blur-[120px] pointer-events-none"></div>
+    <div class="absolute top-1/3 left-1/3 w-[600px] h-[600px] rounded-full bg-oro-elegante/10 blur-[130px] pointer-events-none"></div>
 
     <div class="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-10 w-full">
       <div class="max-w-3xl">
-        <p class="section-label mb-8 animate-fade-in" style="animation-delay: 0.1s">
-          Drop 04 · Otoño 2026
-        </p>
+        <div class="inline-flex items-center gap-3 mb-8 animate-fade-in" style="animation-delay: 0.1s">
+          <span class="w-2 h-2 rounded-full bg-oro-elegante animate-pulse"></span>
+          <span class="section-label">Drop Reflective · Disponible ahora</span>
+        </div>
 
         <h1
           class="font-titulos text-6xl md:text-8xl lg:text-[7.5rem] leading-[0.9] text-blancoRoto mb-8 animate-fade-up"
           style="animation-delay: 0.2s"
         >
-          El lujo<br />
-          está en<br />
-          los <em class="text-gold-gradient not-italic font-normal">detalles</em>
+          Brilla en la<br />
+          <em class="text-gold-gradient not-italic font-normal">oscuridad</em>
         </h1>
 
         <p
           class="text-base md:text-lg text-plata-metalico/80 max-w-lg leading-relaxed mb-12 animate-fade-up"
           style="animation-delay: 0.4s"
         >
-          Piezas atemporales para quienes no necesitan gritar para destacar.
-          Diseñadas en México, hechas para durar.
+          Camisas reflectivas que cambian con la luz. Diseño callejero
+          con energía de lujo. Para los que destacan sin decir una palabra.
         </p>
 
         <div class="flex flex-wrap gap-4 animate-fade-up" style="animation-delay: 0.6s">
-          <a href="/tienda" class="btn-gold">Explorar colección</a>
+          <a href="/tienda" class="btn-gold">Comprar el drop</a>
           <a href="#colecciones" class="btn-outline">Ver colecciones</a>
         </div>
-      </div>
-    </div>
 
-    <!-- Indicador scroll -->
-    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-3">
-      <span class="font-acentos text-[9px] uppercase tracking-[0.3em] text-plata-metalico/40">Scroll</span>
-      <div class="w-px h-12 bg-gradient-to-b from-oro-elegante to-transparent"></div>
+        <div class="flex items-center gap-8 mt-12 animate-fade-up" style="animation-delay: 0.8s">
+          <div>
+            <p class="font-acentos text-2xl text-oro-elegante">4.9★</p>
+            <p class="text-[11px] text-plata-metalico/50 uppercase tracking-wider">Valoración</p>
+          </div>
+          <div class="w-px h-10 bg-plata-metalico/20"></div>
+          <div>
+            <p class="font-acentos text-2xl text-oro-elegante">+500</p>
+            <p class="text-[11px] text-plata-metalico/50 uppercase tracking-wider">Clientes felices</p>
+          </div>
+          <div class="w-px h-10 bg-plata-metalico/20"></div>
+          <div>
+            <p class="font-acentos text-2xl text-oro-elegante">24-48h</p>
+            <p class="text-[11px] text-plata-metalico/50 uppercase tracking-wider">Envío express</p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -109,7 +121,7 @@ const collections = [
       {
         collections.map((col, i) => (
           <a
-            href={`/tienda?cat=${col.name.toLowerCase()}`}
+            href={`/tienda?category=${col.id}`}
             class="group relative aspect-[3/4] overflow-hidden border border-plata-metalico/10 hover:border-oro-elegante/40 transition-all duration-500"
             style={`animation-delay: ${0.1 * i}s`}
           >
@@ -144,9 +156,10 @@ const collections = [
 
       {
         featured.length === 0 ? (
-          <p class="text-center text-plata-metalico/50 py-16">
-            Próximamente nuevos drops.
-          </p>
+          <div class="text-center py-16">
+            <p class="text-plata-metalico/50 mb-6">Cargando catálogo...</p>
+            <a href="/tienda" class="btn-outline">Ir a la tienda</a>
+          </div>
         ) : (
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-8">
             {featured.map((product) => (

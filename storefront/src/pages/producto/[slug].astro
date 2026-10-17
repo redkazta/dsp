@@ -132,19 +132,23 @@ const productLd = product
 
               <div class="gold-line mb-8" style="margin-left: 0"></div>
 
-              <p class="text-plata-metalico/70 leading-relaxed mb-8">
+              <p class="text-plata-metalico/70 leading-relaxed mb-8 whitespace-pre-line">
                 {product.description ?? 'Sin descripción disponible.'}
               </p>
 
-              {/* Tallas */}
+              <!-- Tallas -->
               {sizes.length > 0 && (
                 <div class="mb-6">
                   <h3 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-plata-claro mb-4">
                     Talla
                   </h3>
-                  <div class="flex flex-wrap gap-3">
+                  <div class="flex flex-wrap gap-3" id="size-options">
                     {sizes.map((size: any) => (
-                      <button class="min-w-[3rem] px-4 py-3 border border-plata-metalico/20 text-sm text-plata-claro hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300 font-acentos">
+                      <button
+                        type="button"
+                        data-size={size}
+                        class="size-btn min-w-[3rem] px-4 py-3 border border-plata-metalico/20 text-sm text-plata-claro hover:border-oro-elegante transition-all duration-300 font-acentos"
+                      >
                         {size}
                       </button>
                     ))}
@@ -152,15 +156,19 @@ const productLd = product
                 </div>
               )}
 
-              {/* Colores */}
+              <!-- Colores -->
               {colors.length > 0 && (
                 <div class="mb-8">
                   <h3 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-plata-claro mb-4">
-                    Color · <span class="text-plata-metalico/50">{colors[0]}</span>
+                    Color
                   </h3>
-                  <div class="flex flex-wrap gap-3">
+                  <div class="flex flex-wrap gap-3" id="color-options">
                     {colors.map((color: any) => (
-                      <button class="px-5 py-3 border border-plata-metalico/20 text-sm text-plata-claro hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300 font-acentos">
+                      <button
+                        type="button"
+                        data-color={color}
+                        class="color-btn px-5 py-3 border border-plata-metalico/20 text-sm text-plata-claro hover:border-oro-elegante transition-all duration-300 font-acentos"
+                      >
                         {color}
                       </button>
                     ))}
@@ -168,9 +176,14 @@ const productLd = product
                 </div>
               )}
 
-              {/* CTA */}
-              <div class="flex flex-col sm:flex-row gap-3 mb-8">
+              <!-- CTA -->
+              <div class="flex flex-col sm:flex-row gap-3 mb-4">
                 <button
+                  id="add-to-cart"
+                  data-product-id={product.id}
+                  data-product-name={product.name}
+                  data-image={images[0]?.url ?? ''}
+                  data-variants={JSON.stringify(variants)}
                   class:list={[
                     'flex-1 py-5 font-acentos text-xs uppercase tracking-[0.25em] transition-all duration-400',
                     isSoldOut
@@ -181,12 +194,19 @@ const productLd = product
                 >
                   {isSoldOut ? 'Agotado' : 'Agregar al carrito'}
                 </button>
-                <button class="px-6 py-5 border border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300">
+                <a
+                  href="/carrito"
+                  class="px-6 py-5 border border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300 flex items-center justify-center"
+                  aria-label="Ver carrito"
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+                    <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
                   </svg>
-                </button>
+                </a>
               </div>
+
+              <p id="add-feedback" class="hidden text-sm text-oro-elegante mb-6 font-acentos"></p>
 
               {/* Detalles */}
               <div class="border-t border-plata-metalico/10 pt-8 space-y-4">
@@ -219,4 +239,91 @@ const productLd = product
       </>
     )
   }
+
+  <script>
+    import { addToCart } from '../../lib/cart';
+
+    const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
+    if (btn) {
+      const variants: any[] = JSON.parse(btn.dataset.variants || '[]');
+      const feedback = document.getElementById('add-feedback')!;
+
+      let selectedSize: string | null = null;
+      let selectedColor: string | null = null;
+
+      const sizes = [...new Set(variants.map((v) => v.size).filter(Boolean))] as string[];
+      const colors = [...new Set(variants.map((v) => v.color).filter(Boolean))] as string[];
+
+      // Preseleccionar si solo hay una opción
+      if (sizes.length === 1) selectedSize = sizes[0];
+      if (colors.length === 1) selectedColor = colors[0];
+
+      function findVariant() {
+        return variants.find(
+          (v) =>
+            (!selectedSize || v.size === selectedSize) &&
+            (!selectedColor || v.color === selectedColor)
+        );
+      }
+
+      function paint(selector: string, attr: string, value: string | null) {
+        document.querySelectorAll(selector).forEach((el) => {
+          const match = (el as HTMLElement).dataset[attr] === value;
+          el.classList.toggle('border-oro-elegante', match);
+          el.classList.toggle('text-oro-elegante', match);
+          el.classList.toggle('border-plata-metalico/20', !match);
+        });
+      }
+
+      document.querySelectorAll('.size-btn').forEach((el) =>
+        el.addEventListener('click', () => {
+          selectedSize = (el as HTMLElement).dataset.size!;
+          paint('.size-btn', 'size', selectedSize);
+        })
+      );
+      document.querySelectorAll('.color-btn').forEach((el) =>
+        el.addEventListener('click', () => {
+          selectedColor = (el as HTMLElement).dataset.color!;
+          paint('.color-btn', 'color', selectedColor);
+        })
+      );
+
+      paint('.size-btn', 'size', selectedSize);
+      paint('.color-btn', 'color', selectedColor);
+
+      btn.addEventListener('click', () => {
+        if (sizes.length > 0 && !selectedSize) {
+          feedback.textContent = 'Selecciona una talla';
+          feedback.classList.remove('hidden');
+          return;
+        }
+        if (colors.length > 0 && !selectedColor) {
+          feedback.textContent = 'Selecciona un color';
+          feedback.classList.remove('hidden');
+          return;
+        }
+
+        const variant = findVariant();
+        if (!variant) {
+          feedback.textContent = 'Combinación no disponible';
+          feedback.classList.remove('hidden');
+          return;
+        }
+
+        addToCart({
+          variantId: variant.id,
+          productId: btn.dataset.productId!,
+          name: btn.dataset.productName!,
+          variantName: [variant.size, variant.color].filter(Boolean).join(' · '),
+          price: Number(variant.price),
+          qty: 1,
+          image: btn.dataset.image || undefined,
+        });
+
+        feedback.textContent = '✓ Agregado al carrito';
+        feedback.classList.remove('hidden');
+        setTimeout(() => feedback.classList.add('hidden'), 2500);
+      });
+    }
+  </script>
 </BaseLayout>

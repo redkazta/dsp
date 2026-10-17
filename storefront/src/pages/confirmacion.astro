@@ -1,0 +1,39 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const orderId = Astro.url.searchParams.get('order') ?? null;
+---
+
+<BaseLayout title="Pedido confirmado | Dinero Sobre Problemas" description="Tu pedido fue recibido.">
+  <section class="min-h-[70vh] flex items-center justify-center px-6 bg-noise">
+    <div class="max-w-xl text-center">
+      <div class="w-16 h-16 mx-auto mb-8 border border-oro-elegante flex items-center justify-center">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5">
+          <path d="m5 13 4 4L19 7" />
+        </svg>
+      </div>
+
+      <p class="section-label mb-4">Pedido confirmado</p>
+      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">Gracias por tu compra</h1>
+      <div class="gold-line mx-auto mb-8"></div>
+
+      {orderId && (
+        <p class="text-sm text-plata-metalico/60 mb-4">
+          Número de pedido: <span class="text-oro-elegante font-acentos">{orderId}</span>
+        </p>
+      )}
+
+      <p class="text-plata-metalico/70 leading-relaxed mb-10">
+        Te enviamos un correo con la confirmación y el seguimiento.
+        Tu pedido se prepara en las próximas 24 horas.
+      </p>
+
+      <div class="flex flex-wrap gap-4 justify-center">
+        <a href="/tienda" class="btn-gold">Seguir comprando</a>
+        <a href="/" class="btn-outline">Volver al inicio</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

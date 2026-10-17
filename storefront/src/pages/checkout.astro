@@ -1,0 +1,204 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
+---
+
+<BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
+  <section class="border-b border-plata-metalico/10 bg-noise">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
+      <nav class="mb-6">
+        <ol class="flex items-center gap-2 font-acentos text-[10px] uppercase tracking-[0.2em] text-plata-metalico/40">
+          <li><a href="/carrito" class="hover:text-oro-elegante transition-colors">Carrito</a></li>
+          <li>/</li>
+          <li class="text-oro-elegante">Checkout</li>
+        </ol>
+      </nav>
+      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
+    </div>
+  </section>
+
+  <div id="checkout-empty" class="hidden max-w-3xl mx-auto px-6 py-32 text-center">
+    <p class="font-titulos text-3xl text-plata-metalico/40 mb-6">Tu carrito está vacío</p>
+    <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
+  </div>
+
+  <div id="checkout-content" class="hidden max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+    <form id="checkout-form" class="grid lg:grid-cols-3 gap-12">
+      <!-- Datos de envío -->
+      <div class="lg:col-span-2 space-y-10">
+        <!-- Contacto -->
+        <div>
+          <div class="flex items-center gap-3 mb-6">
+            <span class="w-6 h-6 border border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-xs">1</span>
+            <h2 class="font-acentos text-sm uppercase tracking-[0.2em] text-plata-claro">Contacto</h2>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <input name="firstName" placeholder="Nombre" required class="input-dark" />
+            <input name="lastName" placeholder="Apellidos" required class="input-dark" />
+            <input name="email" type="email" placeholder="Email" required class="input-dark sm:col-span-2" />
+            <input name="phone" type="tel" placeholder="Teléfono (10 dígitos)" required class="input-dark sm:col-span-2" />
+          </div>
+        </div>
+
+        <!-- Envío -->
+        <div>
+          <div class="flex items-center gap-3 mb-6">
+            <span class="w-6 h-6 border border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-xs">2</span>
+            <h2 class="font-acentos text-sm uppercase tracking-[0.2em] text-plata-claro">Dirección de envío</h2>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <input name="street" placeholder="Calle y número" required class="input-dark sm:col-span-2" />
+            <input name="colonia" placeholder="Colonia" required class="input-dark" />
+            <input name="postalCode" placeholder="Código postal" required class="input-dark" />
+            <input name="city" placeholder="Ciudad" required class="input-dark" />
+            <input name="state" placeholder="Estado" required class="input-dark" />
+            <input name="references" placeholder="Referencias (opcional)" class="input-dark sm:col-span-2" />
+          </div>
+        </div>
+
+        <!-- Pago -->
+        <div>
+          <div class="flex items-center gap-3 mb-6">
+            <span class="w-6 h-6 border border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-xs">3</span>
+            <h2 class="font-acentos text-sm uppercase tracking-[0.2em] text-plata-claro">Pago</h2>
+          </div>
+          <div class="border border-oro-elegante/30 bg-negro-carbono p-6 flex items-start gap-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5" class="mt-0.5 shrink-0">
+              <path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z" /><path d="m9 12 2 2 4-4" />
+            </svg>
+            <div>
+              <p class="text-sm text-plata-claro mb-1">Pago seguro procesado por Stripe</p>
+              <p class="text-xs text-plata-metalico/60">
+                Serás redirigido a la pasarela de pago. Aceptamos tarjetas de crédito y débito.
+                No almacenamos datos de tarjetas.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <aside class="lg:col-span-1">
+        <div class="lg:sticky lg:top-28 border border-plata-metalico/15 p-8 bg-negro-carbono">
+          <h2 class="font-titulos text-xl text-blancoRoto mb-6">Tu pedido</h2>
+          <div id="checkout-items" class="divide-y divide-plata-metalico/10 mb-6"></div>
+
+          <div class="space-y-3 pb-4 border-b border-plata-metalico/10 text-sm">
+            <div class="flex justify-between">
+              <span class="text-plata-metalico/70">Subtotal</span>
+              <span id="co-subtotal" class="text-plata-claro">$0.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-plata-metalico/70">Envío</span>
+              <span id="co-shipping" class="text-plata-claro">—</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center py-5">
+            <span class="font-acentos text-sm uppercase tracking-[0.2em] text-plata-claro">Total</span>
+            <span id="co-total" class="font-acentos text-2xl text-oro-elegante font-medium">$0.00</span>
+          </div>
+
+          <button
+            type="submit"
+            id="pay-btn"
+            class="btn-gold w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Pagar ahora
+          </button>
+
+          <p id="pay-error" class="hidden mt-4 text-xs text-red-400 text-center"></p>
+
+          <p class="mt-6 text-[10px] text-plata-metalico/40 text-center leading-relaxed">
+            Al confirmar aceptas nuestros términos y política de privacidad.
+          </p>
+        </div>
+      </aside>
+    </form>
+  </div>
+
+  <script>
+    import { getCart, cartSubtotal, formatMXN, clearCart } from '../lib/cart';
+
+    const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
+    const FREE_SHIPPING = 1500;
+
+    function render() {
+      const items = getCart();
+      const empty = document.getElementById('checkout-empty')!;
+      const content = document.getElementById('checkout-content')!;
+
+      if (items.length === 0) {
+        empty.classList.remove('hidden');
+        content.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      content.classList.remove('hidden');
+      content.classList.add('grid');
+
+      document.getElementById('checkout-items')!.innerHTML = items
+        .map(
+          (i) => `
+        <div class="flex justify-between items-center py-3">
+          <div>
+            <p class="text-sm text-plata-claro">${i.name}</p>
+            <p class="text-xs text-plata-metalico/50">${i.variantName} × ${i.qty}</p>
+          </div>
+          <span class="text-sm font-acentos text-oro-elegante">$${formatMXN(i.price * i.qty)}</span>
+        </div>`
+        )
+        .join('');
+
+      const subtotal = cartSubtotal();
+      document.getElementById('co-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
+      document.getElementById('co-shipping')!.textContent =
+        subtotal >= FREE_SHIPPING ? 'Gratis' : '$150.00';
+      const total = subtotal >= FREE_SHIPPING ? subtotal : subtotal + 150;
+      document.getElementById('co-total')!.textContent = `$${formatMXN(total)}`;
+    }
+
+    document.getElementById('checkout-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const btn = document.getElementById('pay-btn') as HTMLButtonElement;
+      const errorEl = document.getElementById('pay-error')!;
+
+      btn.disabled = true;
+      btn.textContent = 'Procesando...';
+      errorEl.classList.add('hidden');
+
+      const data = Object.fromEntries(new FormData(form).entries());
+      const items = getCart();
+
+      try {
+        const res = await fetch(`${apiUrl}/api/v1/payments/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customer: data, items }),
+        });
+
+        if (!res.ok) throw new Error('No se pudo iniciar el pago');
+
+        const json = await res.json();
+        if (json.url) {
+          clearCart();
+          window.location.href = json.url;
+        } else {
+          throw new Error('Respuesta inválida del servidor');
+        }
+      } catch (err: any) {
+        errorEl.textContent =
+          err.message || 'Error al procesar el pago. Intenta de nuevo.';
+        errorEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Pagar ahora';
+      }
+    });
+
+    render();
+  </script>
+</BaseLayout>

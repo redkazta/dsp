@@ -1,0 +1,156 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Carrito | Dinero Sobre Problemas" description="Revisa tu selección antes de pagar.">
+  <section class="border-b border-plata-metalico/10 bg-noise">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-16">
+      <h1 class="font-titulos text-5xl lg:text-6xl text-blancoRoto">Carrito</h1>
+      <p id="cart-summary-text" class="text-plata-metalico/60 mt-4">Cargando...</p>
+    </div>
+  </section>
+
+  <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+    <div id="cart-empty" class="hidden text-center py-24">
+      <p class="font-titulos text-3xl text-plata-metalico/40 mb-4">Tu carrito está vacío</p>
+      <p class="text-plata-metalico/50 mb-10">Descubre el drop reflectivo.</p>
+      <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
+    </div>
+
+    <div id="cart-content" class="hidden grid lg:grid-cols-3 gap-12">
+      <!-- Items -->
+      <div class="lg:col-span-2">
+        <div id="cart-items" class="divide-y divide-plata-metalico/10"></div>
+      </div>
+
+      <!-- Resumen -->
+      <aside class="lg:col-span-1">
+        <div class="lg:sticky lg:top-28 border border-plata-metalico/15 p-8 bg-negro-carbono">
+          <h2 class="font-titulos text-2xl text-blancoRoto mb-6">Resumen</h2>
+
+          <div class="space-y-4 pb-6 border-b border-plata-metalico/10">
+            <div class="flex justify-between text-sm">
+              <span class="text-plata-metalico/70">Subtotal</span>
+              <span id="sum-subtotal" class="text-plata-claro">$0.00</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-plata-metalico/70">Envío</span>
+              <span id="sum-shipping" class="text-plata-claro">Calculado al pagar</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center py-6">
+            <span class="font-acentos text-sm uppercase tracking-[0.2em] text-plata-claro">Total</span>
+            <span id="sum-total" class="font-acentos text-2xl text-oro-elegante font-medium">$0.00</span>
+          </div>
+
+          <a href="/checkout" class="btn-gold w-full mb-3">Ir a pagar</a>
+          <button id="continue-shopping" class="btn-outline w-full">Seguir comprando</button>
+
+          <div class="mt-8 pt-6 border-t border-plata-metalico/10 space-y-2">
+            <p class="flex items-center gap-2 text-[11px] text-plata-metalico/50">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z"/></svg>
+              Pago seguro con Stripe
+            </p>
+            <p class="flex items-center gap-2 text-[11px] text-plata-metalico/50">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Envío gratis +$1,500 MXN
+            </p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    import { getCart, updateQty, removeFromCart, cartSubtotal, formatMXN } from '../lib/cart';
+
+    const FREE_SHIPPING_THRESHOLD = 1500;
+
+    function render() {
+      const items = getCart();
+      const empty = document.getElementById('cart-empty')!;
+      const content = document.getElementById('cart-content')!;
+      const list = document.getElementById('cart-items')!;
+      const summaryText = document.getElementById('cart-summary-text')!;
+
+      if (items.length === 0) {
+        empty.classList.remove('hidden');
+        content.classList.add('hidden');
+        summaryText.textContent = '0 productos';
+        return;
+      }
+
+      empty.classList.add('hidden');
+      content.classList.remove('hidden');
+      content.classList.add('grid');
+      const count = items.reduce((n, i) => n + i.qty, 0);
+      summaryText.textContent = `${count} ${count === 1 ? 'producto' : 'productos'}`;
+
+      list.innerHTML = items
+        .map(
+          (i) => `
+        <div class="flex gap-5 py-6">
+          <div class="w-24 h-32 bg-negro-elevado border border-plata-metalico/10 overflow-hidden shrink-0">
+            ${i.image ? `<img src="${i.image}" alt="${i.name}" class="w-full h-full object-cover">` : ''}
+          </div>
+          <div class="flex-1 flex flex-col justify-between">
+            <div>
+              <h3 class="font-acentos text-sm text-plata-claro mb-1">${i.name}</h3>
+              <p class="text-xs text-plata-metalico/50">${i.variantName}</p>
+            </div>
+            <div class="flex items-end justify-between">
+              <div class="flex items-center border border-plata-metalico/20">
+                <button data-dec="${i.variantId}" class="w-8 h-8 text-plata-metalico hover:text-oro-elegante transition-colors">−</button>
+                <span class="w-8 text-center text-sm text-plata-claro">${i.qty}</span>
+                <button data-inc="${i.variantId}" class="w-8 h-8 text-plata-metalico hover:text-oro-elegante transition-colors">+</button>
+              </div>
+              <div class="text-right">
+                <p class="font-acentos text-oro-elegante">$${formatMXN(i.price * i.qty)}</p>
+                <button data-remove="${i.variantId}" class="text-[10px] text-plata-metalico/40 hover:text-red-400 transition-colors uppercase tracking-wider mt-1">Eliminar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+        )
+        .join('');
+
+      const subtotal = cartSubtotal();
+      document.getElementById('sum-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
+      document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal)}`;
+      document.getElementById('sum-shipping')!.textContent =
+        subtotal >= FREE_SHIPPING_THRESHOLD ? 'Gratis' : 'Calculado al pagar';
+
+      list.querySelectorAll('[data-inc]').forEach((b) =>
+        b.addEventListener('click', (e) => {
+          const id = (e.currentTarget as HTMLElement).dataset.inc!;
+          const item = getCart().find((i) => i.variantId === id);
+          updateQty(id, (item?.qty ?? 0) + 1);
+          render();
+        })
+      );
+      list.querySelectorAll('[data-dec]').forEach((b) =>
+        b.addEventListener('click', (e) => {
+          const id = (e.currentTarget as HTMLElement).dataset.dec!;
+          const item = getCart().find((i) => i.variantId === id);
+          if ((item?.qty ?? 0) <= 1) removeFromCart(id);
+          else updateQty(id, item!.qty - 1);
+          render();
+        })
+      );
+      list.querySelectorAll('[data-remove]').forEach((b) =>
+        b.addEventListener('click', (e) => {
+          removeFromCart((e.currentTarget as HTMLElement).dataset.remove!);
+          render();
+        })
+      );
+    }
+
+    document.getElementById('continue-shopping')?.addEventListener('click', () => {
+      window.location.href = '/tienda';
+    });
+
+    render();
+  </script>
+</BaseLayout>
