@@ -4,7 +4,7 @@
  */
 
 export const API_URL =
-  import.meta.env.PUBLIC_API_URL || 'https://wildforgelabs-api.onrender.com/api/v1';
+  import.meta.env.PUBLIC_API_URL || 'https://dsp-gl11.onrender.com/api/v1';
 
 export class ApiClient {
   private baseUrl: string;
