@@ -18,7 +18,12 @@ const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: { persistSession: false },
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'dsp-auth',
+  },
 });
 
 /** Slug del tenant actual (multi-tenant: cambiar por subdominio en el futuro) */

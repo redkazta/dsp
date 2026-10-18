@@ -11,8 +11,8 @@ const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cnh3bXl4eGhqb25oYmZnZnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NTI5MTQsImV4cCI6MjEwNzMyODkxNH0.U4Nuekvw7JcM4xx39OHKxIjReyM7_4xrs0iDURu--lY';
 
 function extractAccessToken(cookieHeader: string): string | null {
-  // Supabase guarda la sesión en sb-<ref>-auth-token (o en chunks .0, .1)
-  const matches = [...cookieHeader.matchAll(/sb-[a-z0-9]+-auth-token(?:\.\d+)?=([^;]+)/gi)];
+  // Supabase guarda la sesión en dsp-auth (o en chunks dsp-auth.0, .1)
+  const matches = [...cookieHeader.matchAll(/dsp-auth(?:\.\d+)?=([^;]+)/gi)];
   if (matches.length === 0) return null;
 
   const raw = matches.map((m) => decodeURIComponent(m[1])).join('');
