@@ -1,0 +1,165 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Pedidos">
+  <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
+
+  <div id="admin-denied" class="hidden py-20 text-center">
+    <p class="section-label mb-4">Acceso restringido</p>
+    <h1 class="font-titulos text-3xl text-blancoRoto mb-6">No tienes permisos de administrador</h1>
+    <a href="/" class="btn-outline inline-block">Volver al inicio</a>
+  </div>
+
+  <div id="orders-view" class="hidden">
+    <div class="mb-8">
+      <p class="section-label mb-2">Operación</p>
+      <h1 class="font-titulos text-4xl text-blancoRoto">Pedidos</h1>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-8" id="filters">
+      <button data-filter="" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-oro-elegante text-oro-elegante">Todos</button>
+      <button data-filter="pending" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-plata-metalico/20 text-plata-metalico">Pendientes</button>
+      <button data-filter="confirmed" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-plata-metalico/20 text-plata-metalico">Confirmados</button>
+      <button data-filter="preparing" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-plata-metalico/20 text-plata-metalico">Preparando</button>
+      <button data-filter="shipped" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-plata-metalico/20 text-plata-metalico">Enviados</button>
+      <button data-filter="delivered" class="filter-btn px-4 py-2 text-[10px] uppercase tracking-[0.2em] border border-plata-metalico/20 text-plata-metalico">Entregados</button>
+    </div>
+
+    <div class="space-y-3" id="orders-list"></div>
+  </div>
+
+  <script>
+    import { isAdmin, listOrders, updateOrderStatus } from '../../lib/admin';
+    import { TENANT_ID } from '../../lib/constants';
+
+    const STATUS: Record<string, string> = {
+      pending: 'Pendiente',
+      confirmed: 'Confirmado',
+      preparing: 'Preparando',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+      returned: 'Devuelto',
+    };
+
+    const NEXT_STATUS: Record<string, string[]> = {
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['preparing', 'cancelled'],
+      preparing: ['shipped', 'cancelled'],
+      shipped: ['delivered', 'returned'],
+      delivered: ['returned'],
+      cancelled: [],
+      returned: [],
+    };
+
+    let orders: any[] = [];
+    let filter = '';
+
+    function render() {
+      const list = filter ? orders.filter((o) => o.status === filter) : orders;
+      const container = document.getElementById('orders-list')!;
+
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-sm text-plata-metalico/40 py-10 text-center">Sin pedidos.</p>`;
+        return;
+      }
+
+      container.innerHTML = list
+        .map((o) => {
+          const next = NEXT_STATUS[o.status] ?? [];
+          return `
+          <div class="border border-plata-metalico/10 p-5">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div>
+                <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
+                <p class="text-[11px] text-plata-metalico/50 mt-1">
+                  ${new Date(o.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  · ${o.order_items?.length ?? 0} artículos
+                </p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="px-3 py-1 border border-plata-metalico/20 text-[10px] uppercase tracking-wider text-plata-metalico">
+                  ${STATUS[o.status] ?? o.status}
+                </span>
+                <p class="font-acentos text-oro-elegante">$${Number(o.total_amount).toLocaleString('es-MX')}</p>
+              </div>
+            </div>
+
+            ${(o.order_items ?? [])
+              .map(
+                (i: any) => `
+              <div class="flex justify-between text-xs text-plata-metalico/60 py-1">
+                <span>${i.product_variants?.name ?? 'Producto'} × ${i.quantity}</span>
+                <span>$${Number(i.unit_price).toLocaleString('es-MX')}</span>
+              </div>`
+              )
+              .join('')}
+
+            ${
+              next.length > 0
+                ? `<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-plata-metalico/10">
+                     ${next
+                       .map(
+                         (s) => `<button data-order="${o.id}" data-status="${s}"
+                           class="px-3 py-2 text-[10px] uppercase tracking-wider border border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante hover:text-oro-elegante transition-colors">
+                           → ${STATUS[s]}
+                         </button>`
+                       )
+                       .join('')}
+                   </div>`
+                : ''
+            }
+          </div>`;
+        })
+        .join('');
+
+      container.querySelectorAll('[data-order]').forEach((el) =>
+        el.addEventListener('click', async () => {
+          const { order, status } = (el as HTMLElement).dataset;
+          await updateOrderStatus(order!, status!);
+          await refresh();
+        })
+      );
+    }
+
+    async function refresh() {
+      orders = await listOrders(TENANT_ID);
+      render();
+    }
+
+    async function init() {
+      const loading = document.getElementById('admin-loading')!;
+      const denied = document.getElementById('admin-denied')!;
+      const view = document.getElementById('orders-view')!;
+
+      if (!(await isAdmin())) {
+        loading.classList.add('hidden');
+        denied.classList.remove('hidden');
+        return;
+      }
+
+      loading.classList.add('hidden');
+      view.classList.remove('hidden');
+
+      await refresh();
+
+      document.querySelectorAll('.filter-btn').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          filter = (btn as HTMLElement).dataset.filter ?? '';
+          document.querySelectorAll('.filter-btn').forEach((b) => {
+            b.classList.remove('border-oro-elegante', 'text-oro-elegante');
+            b.classList.add('border-plata-metalico/20', 'text-plata-metalico');
+          });
+          btn.classList.add('border-oro-elegante', 'text-oro-elegante');
+          btn.classList.remove('border-plata-metalico/20', 'text-plata-metalico');
+          render();
+        })
+      );
+    }
+
+    init();
+  </script>
+</AdminLayout>

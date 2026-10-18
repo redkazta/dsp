@@ -1,0 +1,118 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Dashboard">
+  <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
+
+  <div id="admin-denied" class="hidden py-20 text-center">
+    <p class="section-label mb-4">Acceso restringido</p>
+    <h1 class="font-titulos text-3xl text-blancoRoto mb-6">No tienes permisos de administrador</h1>
+    <a href="/" class="btn-outline inline-block">Volver al inicio</a>
+  </div>
+
+  <div id="admin-dashboard" class="hidden">
+    <div class="mb-10">
+      <p class="section-label mb-2">Panel</p>
+      <h1 class="font-titulos text-4xl text-blancoRoto">Dashboard</h1>
+    </div>
+
+    <div id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"></div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+      <section>
+        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-5">
+          Pedidos recientes
+        </h2>
+        <div id="recent-orders" class="space-y-3"></div>
+      </section>
+
+      <section>
+        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-5">
+          Accesos rápidos
+        </h2>
+        <div class="grid grid-cols-2 gap-3">
+          <a href="/admin/productos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
+            <p class="font-acentos text-sm text-plata-claro mb-1">Productos</p>
+            <p class="text-xs text-plata-metalico/50">Crear y editar</p>
+          </a>
+          <a href="/admin/pedidos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
+            <p class="font-acentos text-sm text-plata-claro mb-1">Pedidos</p>
+            <p class="text-xs text-plata-metalico/50">Estatus y envíos</p>
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    import { isAdmin, getDashboardStats, listOrders } from '../../lib/admin';
+    import { TENANT_ID } from '../../lib/constants';
+
+    const STATUS: Record<string, string> = {
+      pending: 'Pendiente',
+      confirmed: 'Confirmado',
+      preparing: 'Preparando',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+      returned: 'Devuelto',
+    };
+
+    async function init() {
+      const loading = document.getElementById('admin-loading')!;
+      const denied = document.getElementById('admin-denied')!;
+      const dash = document.getElementById('admin-dashboard')!;
+
+      if (!(await isAdmin())) {
+        loading.classList.add('hidden');
+        denied.classList.remove('hidden');
+        return;
+      }
+
+      const [stats, orders] = await Promise.all([
+        getDashboardStats(TENANT_ID),
+        listOrders(TENANT_ID),
+      ]);
+
+      loading.classList.add('hidden');
+      dash.classList.remove('hidden');
+
+      document.getElementById('stats')!.innerHTML = [
+        { label: 'Ventas del mes', value: `$${stats.monthRevenue.toLocaleString('es-MX')}` },
+        { label: 'Pedidos pendientes', value: String(stats.pendingOrders) },
+        { label: 'Productos activos', value: `${stats.activeProducts}/${stats.products}` },
+        { label: 'Clientes', value: String(stats.customers) },
+      ]
+        .map(
+          (s) => `
+        <div class="card p-5">
+          <p class="text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">${s.label}</p>
+          <p class="font-acentos text-2xl text-oro-elegante">${s.value}</p>
+        </div>`
+        )
+        .join('');
+
+      document.getElementById('recent-orders')!.innerHTML =
+        orders.length === 0
+          ? `<p class="text-xs text-plata-metalico/40">Aún no hay pedidos.</p>`
+          : orders
+              .slice(0, 6)
+              .map(
+                (o: any) => `
+          <a href="/admin/pedidos" class="flex items-center justify-between border border-plata-metalico/10 p-4 hover:border-oro-elegante/30 transition-colors">
+            <div>
+              <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
+              <p class="text-[11px] text-plata-metalico/50">${STATUS[o.status] ?? o.status}</p>
+            </div>
+            <p class="font-acentos text-sm text-oro-elegante">$${Number(o.total_amount).toLocaleString('es-MX')}</p>
+          </a>`
+              )
+              .join('');
+    }
+
+    init();
+  </script>
+</AdminLayout>
