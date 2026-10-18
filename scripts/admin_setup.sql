@@ -91,8 +91,60 @@ CREATE POLICY "admin_write_product_images" ON storage.objects
   WITH CHECK (bucket_id = 'product-images' AND public.is_admin());
 
 -- =====================================================
--- 5. Hazte admin (cambia el email por el tuyo)
+-- 5. Crear usuario admin inicial: admin@wildgvng.com.mx
+--    Password: Pedrito111*
 -- =====================================================
--- UPDATE customer_profiles SET role = 'admin' WHERE email = 'TU_EMAIL@AQUI.COM';
+DO $$
+DECLARE
+  v_user_id UUID;
+BEGIN
+  -- Buscar si ya existe
+  SELECT id INTO v_user_id FROM auth.users WHERE email = 'admin@wildgvng.com.mx';
 
-SELECT id, email, role FROM customer_profiles;
+  IF v_user_id IS NULL THEN
+    v_user_id := gen_random_uuid();
+
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password,
+      email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+      created_at, updated_at, confirmation_token, recovery_token,
+      email_change_token_new, email_change
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_id,
+      'authenticated',
+      'authenticated',
+      'admin@wildgvng.com.mx',
+      crypt('Pedrito111*', gen_salt('bf')),
+      NOW(),
+      '{"provider":"email","providers":["email"]}',
+      '{"full_name":"Admin DSP"}',
+      NOW(), NOW(), '', '', '', ''
+    );
+
+    -- Identidad (necesaria para login por email)
+    INSERT INTO auth.identities (
+      provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at, id
+    ) VALUES (
+      v_user_id::text,
+      v_user_id,
+      jsonb_build_object('sub', v_user_id::text, 'email', 'admin@wildgvng.com.mx', 'email_verified', true),
+      'email',
+      NOW(), NOW(), NOW(),
+      gen_random_uuid()
+    );
+  END IF;
+
+  -- Perfil + rol admin
+  INSERT INTO public.customer_profiles (id, tenant_id, email, full_name, role)
+  VALUES (v_user_id, '11111111-1111-1111-1111-111111111111', 'admin@wildgvng.com.mx', 'Admin DSP', 'admin')
+  ON CONFLICT (id) DO UPDATE SET role = 'admin', email = EXCLUDED.email;
+END $$;
+
+-- =====================================================
+-- Verificación
+-- =====================================================
+SELECT u.id, u.email, u.email_confirmed_at IS NOT NULL AS confirmado, p.role
+FROM auth.users u
+LEFT JOIN public.customer_profiles p ON p.id = u.id
+WHERE u.email = 'admin@wildgvng.com.mx';
