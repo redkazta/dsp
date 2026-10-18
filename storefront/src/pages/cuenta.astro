@@ -1,0 +1,184 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Mi cuenta | Dinero Sobre Problemas" description="Gestiona tu cuenta y pedidos.">
+  <div id="loading" class="min-h-[60vh] flex items-center justify-center">
+    <p class="text-plata-metalico/40 text-sm">Cargando...</p>
+  </div>
+
+  <div id="guest" class="hidden min-h-[60vh] flex items-center justify-center px-6">
+    <div class="text-center max-w-sm">
+      <p class="section-label mb-4">Cuenta</p>
+      <h1 class="font-titulos text-3xl text-blancoRoto mb-6">Inicia sesión para continuar</h1>
+      <div class="flex flex-wrap gap-3 justify-center">
+        <a href="/entrar" class="btn-gold">Iniciar sesión</a>
+        <a href="/registro" class="btn-outline">Crear cuenta</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="account" class="hidden">
+    <!-- Header -->
+    <section class="border-b border-plata-metalico/10 bg-noise">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 flex items-center justify-between gap-6">
+        <div class="flex items-center gap-5">
+          <div id="avatar" class="w-14 h-14 border border-oro-elegante/40 flex items-center justify-center overflow-hidden bg-negro-carbono">
+            <span id="avatar-initial" class="font-titulos text-xl text-oro-elegante">D</span>
+          </div>
+          <div>
+            <p class="section-label mb-1">Mi cuenta</p>
+            <h1 id="profile-name" class="font-titulos text-2xl lg:text-3xl text-blancoRoto">—</h1>
+            <p id="profile-email" class="text-xs text-plata-metalico/50 mt-1">—</p>
+          </div>
+        </div>
+        <button id="logout-btn" class="btn-outline text-xs">Cerrar sesión</button>
+      </div>
+    </section>
+
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
+      <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Pedidos -->
+        <section class="lg:col-span-2">
+          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-6">
+            Mis pedidos
+          </h2>
+          <div id="orders-list" class="space-y-4"></div>
+        </section>
+
+        <!-- Perfil -->
+        <aside>
+          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-6">
+            Mis datos
+          </h2>
+          <form id="profile-form" class="card p-6 space-y-4">
+            <div>
+              <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">
+                Nombre
+              </label>
+              <input name="full_name" class="input-dark" />
+            </div>
+            <div>
+              <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">
+                Teléfono
+              </label>
+              <input name="phone" class="input-dark" placeholder="10 dígitos" />
+            </div>
+            <button type="submit" class="btn-gold w-full text-xs">Guardar</button>
+            <p id="save-ok" class="hidden text-xs text-oro-elegante text-center">Guardado ✓</p>
+          </form>
+
+          <div class="mt-6">
+            <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-4">
+              Mis direcciones
+            </h2>
+            <div id="addresses-list" class="space-y-3"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { getProfile, getMyOrders, getMyAddresses, signOut, updateProfile } from '../lib/auth';
+    import { formatMXN } from '../lib/cart';
+
+    const loading = document.getElementById('loading')!;
+    const guest = document.getElementById('guest')!;
+    const account = document.getElementById('account')!;
+
+    async function init() {
+      const profile = await getProfile();
+
+      loading.classList.add('hidden');
+
+      if (!profile) {
+        guest.classList.remove('hidden');
+        return;
+      }
+
+      account.classList.remove('hidden');
+
+      const name = profile.full_name || profile.email || 'Cliente';
+      document.getElementById('profile-name')!.textContent = name;
+      document.getElementById('profile-email')!.textContent = profile.email ?? '';
+      document.getElementById('avatar-initial')!.textContent = name.charAt(0).toUpperCase();
+
+      if (profile.avatar_url) {
+        document.getElementById('avatar')!.innerHTML =
+          `<img src="${profile.avatar_url}" alt="" class="w-full h-full object-cover">`;
+      }
+
+      const form = document.getElementById('profile-form') as HTMLFormElement;
+      (form.elements.namedItem('full_name') as HTMLInputElement).value = profile.full_name ?? '';
+      (form.elements.namedItem('phone') as HTMLInputElement).value = profile.phone ?? '';
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = new FormData(form);
+        const { error } = await updateProfile({
+          full_name: String(data.get('full_name')),
+          phone: String(data.get('phone')),
+        });
+        if (!error) {
+          const ok = document.getElementById('save-ok')!;
+          ok.classList.remove('hidden');
+          setTimeout(() => ok.classList.add('hidden'), 2000);
+        }
+      });
+
+      // Pedidos
+      const orders = await getMyOrders();
+      const list = document.getElementById('orders-list')!;
+      list.innerHTML =
+        orders.length === 0
+          ? `<div class="border border-plata-metalico/10 p-10 text-center">
+               <p class="text-sm text-plata-metalico/40 mb-4">Aún no tienes pedidos</p>
+               <a href="/tienda" class="btn-outline text-xs inline-block">Ver catálogo</a>
+             </div>`
+          : orders
+              .map(
+                (o: any) => `
+            <div class="border border-plata-metalico/10 p-5 flex items-center justify-between">
+              <div>
+                <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
+                <p class="text-xs text-plata-metalico/50 mt-1">
+                  ${new Date(o.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  · ${o.status}
+                </p>
+              </div>
+              <p class="font-acentos text-oro-elegante">$${formatMXN(Number(o.total_amount))}</p>
+            </div>`
+              )
+              .join('');
+
+      // Direcciones
+      const addresses = await getMyAddresses();
+      const addrList = document.getElementById('addresses-list')!;
+      addrList.innerHTML =
+        addresses.length === 0
+          ? `<p class="text-xs text-plata-metalico/40">Sin direcciones guardadas</p>`
+          : addresses
+              .map(
+                (a: any) => `
+            <div class="border border-plata-metalico/10 p-4">
+              <p class="text-xs text-plata-claro mb-1">${a.label}${a.is_default ? ' · Principal' : ''}</p>
+              <p class="text-xs text-plata-metalico/50 leading-relaxed">
+                ${a.street}${a.colonia ? ', ' + a.colonia : ''}<br>
+                ${a.city}, ${a.state ?? ''} ${a.postal_code ?? ''}
+              </p>
+            </div>`
+              )
+              .join('');
+    }
+
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await signOut();
+      window.location.href = '/';
+    });
+
+    init();
+  </script>
+</BaseLayout>
