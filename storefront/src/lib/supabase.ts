@@ -8,7 +8,7 @@
  * Si quieres apuntar a otro proyecto, define PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 const SUPABASE_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
 const SUPABASE_ANON_KEY =
@@ -17,14 +17,8 @@ const SUPABASE_ANON_KEY =
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'dsp-auth',
-  },
-});
+// createBrowserClient escribe la sesión en cookies → el middleware la ve
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 /** Slug del tenant actual (multi-tenant: cambiar por subdominio en el futuro) */
 export const TENANT_SLUG = 'dinerosobreproblemas';
