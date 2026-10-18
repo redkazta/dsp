@@ -7,12 +7,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 <AdminLayout title="Dashboard">
   <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
 
-  <div id="admin-denied" class="hidden py-20 text-center">
-    <p class="section-label mb-4">Acceso restringido</p>
-    <h1 class="font-titulos text-3xl text-blancoRoto mb-6">No tienes permisos de administrador</h1>
-    <a href="/" class="btn-outline inline-block">Volver al inicio</a>
-  </div>
-
   <div id="admin-dashboard" class="hidden">
     <div class="mb-10">
       <p class="section-label mb-2">Panel</p>
@@ -48,7 +42,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   </div>
 
   <script>
-    import { isAdmin, getDashboardStats, listOrders } from '../../lib/admin';
+    import { getDashboardStats, listOrders } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
 
     const STATUS: Record<string, string> = {
@@ -63,14 +57,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     async function init() {
       const loading = document.getElementById('admin-loading')!;
-      const denied = document.getElementById('admin-denied')!;
       const dash = document.getElementById('admin-dashboard')!;
-
-      if (!(await isAdmin())) {
-        loading.classList.add('hidden');
-        denied.classList.remove('hidden');
-        return;
-      }
 
       const [stats, orders] = await Promise.all([
         getDashboardStats(TENANT_ID),

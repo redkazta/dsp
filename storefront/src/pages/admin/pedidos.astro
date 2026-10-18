@@ -7,12 +7,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 <AdminLayout title="Pedidos">
   <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
 
-  <div id="admin-denied" class="hidden py-20 text-center">
-    <p class="section-label mb-4">Acceso restringido</p>
-    <h1 class="font-titulos text-3xl text-blancoRoto mb-6">No tienes permisos de administrador</h1>
-    <a href="/" class="btn-outline inline-block">Volver al inicio</a>
-  </div>
-
   <div id="orders-view" class="hidden">
     <div class="mb-8">
       <p class="section-label mb-2">Operación</p>
@@ -32,7 +26,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   </div>
 
   <script>
-    import { isAdmin, listOrders, updateOrderStatus } from '../../lib/admin';
+    import { listOrders, updateOrderStatus } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
 
     const STATUS: Record<string, string> = {
@@ -132,14 +126,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     async function init() {
       const loading = document.getElementById('admin-loading')!;
-      const denied = document.getElementById('admin-denied')!;
       const view = document.getElementById('orders-view')!;
-
-      if (!(await isAdmin())) {
-        loading.classList.add('hidden');
-        denied.classList.remove('hidden');
-        return;
-      }
 
       loading.classList.add('hidden');
       view.classList.remove('hidden');
