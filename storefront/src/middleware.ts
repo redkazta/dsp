@@ -31,7 +31,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!context.url.pathname.startsWith('/admin')) return next();
 
   const token = extractAccessToken(context.request.headers.get('cookie') ?? '');
-  if (!token) return context.redirect('/entrar?next=/admin', 302);
+  if (!token) return context.redirect('/entrar', 302);
 
   const supabase = createClient(
     import.meta.env.PUBLIC_SUPABASE_URL || SUPABASE_URL,
@@ -40,7 +40,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   );
 
   const { data: userData, error } = await supabase.auth.getUser(token);
-  if (error || !userData.user) return context.redirect('/entrar?next=/admin', 302);
+  if (error || !userData.user) return context.redirect('/entrar', 302);
 
   const { data: profile } = await supabase
     .from('customer_profiles')
