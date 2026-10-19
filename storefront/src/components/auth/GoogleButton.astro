@@ -1,7 +1,7 @@
 ---
 /**
- * Botón de Google con Google Identity Services (ID Token).
- * Muestra el popup nativo centrado y con tamaño grande.
+ * Botón de Google con Google Identity Services (ID Token flow).
+ * Renderiza el botón programáticamente y se adapta al ancho disponible.
  */
 import { supabase } from '../../lib/supabase';
 
@@ -10,46 +10,40 @@ const GOOGLE_CLIENT_ID =
   '487574117831-d497l5eneq6sn1rm0ouigimaet76frb9.apps.googleusercontent.com';
 ---
 
-<div class="w-full flex flex-col items-center">
-  <!-- Contenedor donde Google inyecta su botón oficial -->
-  <div id="g_id_onload"
-       data-client_id={GOOGLE_CLIENT_ID}
-       data-context="signin"
-       data-ux_mode="popup"
-       data-callback="handleGoogleCredential"
-       data-auto_prompt="false"
-       data-use_fedcm_for_prompt="true">
+<div
+  id="google-auth"
+  class="w-full flex flex-col items-center"
+  data-client-id={GOOGLE_CLIENT_ID}
+>
+  <div id="google-btn-slot" class="w-full flex justify-center">
+    <!-- Fallback mientras carga el SDK -->
+    <button
+      type="button"
+      disabled
+      class="btn-outline w-full opacity-60 cursor-wait"
+    >
+      Cargando Google…
+    </button>
   </div>
 
-  <div class="w-full flex justify-center overflow-hidden rounded-sm">
-    <div
-      id="google-btn-container"
-      class="g_id_signin"
-      data-type="standard"
-      data-theme="outline"
-      data-size="large"
-      data-shape="rectangular"
-      data-text="continue_with"
-      data-logo_alignment="center"
-      data-width="384"
-    ></div>
-  </div>
-
-  <p id="google-error" class="hidden mt-3 text-xs text-red-400 text-center"></p>
+  <p id="google-error" class="hidden mt-3 text-xs text-red-400 text-center leading-relaxed"></p>
 </div>
 
 <script>
   import { supabase } from '../../lib/supabase';
 
-  declare global {
-    interface Window {
-      handleGoogleCredential?: (response: { credential: string }) => void;
-    }
+  const root = document.getElementById('google-auth');
+  const slot = document.getElementById('google-btn-slot');
+  const errorEl = document.getElementById('google-error');
+  const clientId = root?.dataset.clientId ?? '';
+
+  function showError(message: string) {
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
   }
 
-  window.handleGoogleCredential = async (response) => {
-    const errorEl = document.getElementById('google-error');
-
+  async function handleCredential(response: { credential: string }) {
     const { error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: response.credential,
@@ -57,46 +51,69 @@ const GOOGLE_CLIENT_ID =
 
     if (error) {
       console.error('[google] signInWithIdToken:', error.message);
-      if (errorEl) {
-        errorEl.textContent = 'No pudimos iniciar sesión con Google. Intenta de nuevo.';
-        errorEl.classList.remove('hidden');
-      }
+      showError('No pudimos iniciar sesión con Google. Intenta de nuevo.');
       return;
     }
 
     window.location.href = '/cuenta';
-  };
-
-  if (!document.getElementById('gsi-script')) {
-    const s = document.createElement('script');
-    s.id = 'gsi-script';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.async = true;
-    s.defer = true;
-    document.head.appendChild(s);
   }
 
-  // En móvil el botón de 384px no cabe: lo limitamos al ancho disponible
-  const fitGoogleButton = () => {
-    const container = document.getElementById('google-btn-container');
-    if (!container) return;
+  function renderGoogleButton() {
+    const g = (window as any).google;
+    if (!g?.accounts?.id || !slot || !clientId) return;
 
-    const parent = container.parentElement;
-    if (!parent) return;
+    const width = Math.min(384, Math.max(200, slot.clientWidth || 320));
 
-    // Desconta padding del contenedor para evitar desbordes
-    const styles = getComputedStyle(parent);
-    const available =
-      parent.clientWidth -
-      parseFloat(styles.paddingLeft || '0') -
-      parseFloat(styles.paddingRight || '0');
+    slot.innerHTML = '<div id="g-btn"></div>';
+    const target = document.getElementById('g-btn');
+    if (!target) return;
 
-    const width = Math.min(384, Math.max(200, available));
-    container.style.width = `${width}px`;
-    container.style.marginLeft = 'auto';
-    container.style.marginRight = 'auto';
-  };
+    g.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      use_fedcm_for_prompt: true,
+    });
 
-  fitGoogleButton();
-  window.addEventListener('resize', fitGoogleButton);
+    g.accounts.id.renderButton(target, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      shape: 'rectangular',
+      text: 'continue_with',
+      logo_alignment: 'center',
+      width: String(width),
+    });
+  }
+
+  function loadGoogleScript() {
+    if ((window as any).google?.accounts?.id) {
+      renderGoogleButton();
+      return;
+    }
+
+    if (document.getElementById('gsi-script')) {
+      // Script ya insertado, espera a que cargue
+      setTimeout(renderGoogleButton, 300);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'gsi-script';
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = renderGoogleButton;
+    script.onerror = () => showError('No se pudo cargar Google. Revisa tu conexión.');
+    document.head.appendChild(script);
+  }
+
+  let resizeTimer: number | undefined;
+  window.addEventListener('resize', () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(renderGoogleButton, 250);
+  });
+
+  loadGoogleScript();
 </script>
