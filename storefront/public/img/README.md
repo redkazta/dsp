@@ -1,70 +1,65 @@
 # 📸 Imágenes de productos
 
-Todas las fotos se publican **cuadradas (1:1), con la prenda centrada y el
-mismo margen**. El catálogo, la ficha, el carrito y los favoritos muestran ese
-cuadrado, así que cualquier foto que respete el estándar queda alineada sola.
+La carpeta replica la estructura del disco original: **una carpeta por prenda**.
+Así se ve de inmediato a qué producto pertenece cada archivo.
 
-> Guía completa y cómo regenerarlas: [`docs/IMAGENES_PRODUCTO.md`](../../../docs/IMAGENES_PRODUCTO.md)
+```
+img/
+├── camisas/
+│   ├── dsp_1.jpg … dsp_7.jpg            ← Camisas V3 (showroom)
+└── jeans/
+    ├── gris-metalico/
+    │   ├── gris-metalico-01-frente.jpg
+    │   ├── gris-metalico-02-espalda.jpg
+    │   ├── gris-metalico-03-frente-flash.jpg
+    │   └── gris-metalico-04-espalda-flash.jpg
+    ├── morado-reflectivo/   (mismos 4)
+    └── naranja-reflextivo/  (2: frente y frente con flash)
+```
 
----
+## Regla de nombres
 
-## Especificaciones
+```
+/img/camisas/dsp_<n>.jpg
+/img/jeans/<color>/<color>-<nn>-<vista>.jpg
+```
+
+`<nn>` y `<vista>`:
+
+| Orden | Vista | Cuándo |
+|---|---|---|
+| 01 | `frente` | siempre |
+| 02 | `espalda` | si existe `no_flash_back` |
+| 03 | `frente-flash` | si existe `flash_front` |
+| 04 | `espalda-flash` | si existe `flash_back` |
+
+Traducción desde el nombre original:
+
+| Original | Destino |
+|---|---|
+| `no_flash_front.jpg` | `…-01-frente.jpg` |
+| `no_flash_back.jpg` | `…-02-espalda.jpg` |
+| `flash_front.jpg` | `…-03-frente-flash.jpg` |
+| `flash_back.jpg` | `…-04-espalda-flash.jpg` |
+
+El orden `01 → 04` es el de la galería: portada, espalda, y luego las mismas
+vistas con flash.
+
+## Especificación técnica
 
 | Dato | Valor |
-|------|-------|
-| Formato | JPG (calidad ~90) o WebP |
-| Tamaño | **1200 × 1200 px** (1:1) |
-| Peso | menos de **150 KB** |
-| Fondo | blanco estudio (#FFFFFF) |
-| Prenda | centrada, ~38 % del área, margen mínimo del 6 % |
+|---|---|
+| Formato | JPG (calidad ~90) |
+| Tamaño | 1200 × 1200 px (1:1) |
+| Fondo | blanco estudio |
+| Prenda | centrada, ~38 % del área, margen mínimo 6 % |
 
-Si una foto llega en 4:5, el marco `.product-frame` la centra igual, pero el
-estándar es 1:1.
+## Regenerar desde el disco
 
----
-
-## Nombres
-
-```
-DSP_<n>.jpg                         Camisas: DSP_1.jpg … DSP_7.jpg
-DSP-JEANS-<color>-<nn>.jpg          Jeans sin flash (frente, espalda)
-DSP-JEANS-<color>-<nn>-flash.jpg    Jeans con flash (reflejo)
+```powershell
+powershell -File scripts/folders-mirror.ps1     # copia el origen a public/img-src
+powershell -File scripts/folders-normalize.ps1  # recorta y exporta a public/img
 ```
 
-Colores: `gris`, `morado`, `naranja`. Orden: `01` frente, `02` espalda.
-
----
-
-## Cómo conectarlas a un producto
-
-La primera imagen (`position = 0`) es la portada del catálogo; las demás salen
-como miniaturas en la ficha.
-
-```sql
-INSERT INTO product_images (product_id, url, alt_text, position) VALUES
-('a0000001-0000-4000-8000-000000000001', '/img/DSP_1.jpg', 'Camisa ¡D$P!', 0);
-```
-
----
-
-## IDs de productos disponibles
-
-| Producto | product_id |
-|----------|-----------|
-| Camisas V3 (Azul acero … Jade) | `a0000001-0000-4000-8000-00000000000{n}` (n = 1…7) |
-| Jeans gris metálico | `a0000001-0000-4000-8000-0000000000b1` |
-| Jeans morado reflectivo | `a0000001-0000-4000-8000-0000000000b2` |
-| Jeans naranja reflextivo | `a0000001-0000-4000-8000-0000000000b3` |
-
-> Existen solo si ejecutaste `scripts/seed_dsp_products.sql`.
-
----
-
-## Ver imágenes actuales
-
-```sql
-SELECT p.name, i.url, i.position
-FROM product_images i
-JOIN products p ON p.id = i.product_id
-ORDER BY p.sku, i.position;
-```
+`folders-normalize.ps1` borra todo lo anterior en `img/` (excepto este README)
+y vuelve a generar las 17 fotos con la estructura de arriba.

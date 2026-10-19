@@ -113,29 +113,33 @@ INSERT INTO product_variants (product_id, name, size, color, price, stock) VALUE
   ('a0000001-0000-4000-8000-0000000000b3', 'Unitalla · Naranja',       NULL, 'Naranja',       35.00, 999);
 
 -- =====================================================
--- IMÁGENES (una por producto)
+-- IMÁGENES
+-- Se replica la estructura de la carpeta original:
+--   /img/camisas/dsp_<n>.jpg                      (Camisas V3)
+--   /img/jeans/<color>/<color>-<nn>-<vista>.jpg   (Jeans)
+-- Vista: 01 frente · 02 espalda · 03 frente con flash · 04 espalda con flash
 -- =====================================================
 INSERT INTO product_images (product_id, url, alt_text, position) VALUES
-  ('a0000001-0000-4000-8000-000000000001', '/img/DSP_1.jpg', 'Camisa ¡D$P! V3 Azul acero', 0),
-  ('a0000001-0000-4000-8000-000000000002', '/img/DSP_2.jpg', 'Camisa ¡D$P! V3 Aurora',     0),
-  ('a0000001-0000-4000-8000-000000000003', '/img/DSP_3.jpg', 'Camisa ¡D$P! V3 Silver',     0),
-  ('a0000001-0000-4000-8000-000000000004', '/img/DSP_4.jpg', 'Camisa ¡D$P! V3 Glow',       0),
-  ('a0000001-0000-4000-8000-000000000005', '/img/DSP_5.jpg', 'Camisa ¡D$P! V3 Violet',     0),
-  ('a0000001-0000-4000-8000-000000000006', '/img/DSP_6.jpg', 'Camisa ¡D$P! V3 Crimson',    0),
-  ('a0000001-0000-4000-8000-000000000007', '/img/DSP_7.jpg', 'Camisa ¡D$P! V3 Jade',       0),
+  ('a0000001-0000-4000-8000-000000000001', '/img/camisas/dsp_1.jpg', 'Camisa ¡D$P! V3 Azul acero', 0),
+  ('a0000001-0000-4000-8000-000000000002', '/img/camisas/dsp_2.jpg', 'Camisa ¡D$P! V3 Aurora',     0),
+  ('a0000001-0000-4000-8000-000000000003', '/img/camisas/dsp_3.jpg', 'Camisa ¡D$P! V3 Silver',     0),
+  ('a0000001-0000-4000-8000-000000000004', '/img/camisas/dsp_4.jpg', 'Camisa ¡D$P! V3 Glow',       0),
+  ('a0000001-0000-4000-8000-000000000005', '/img/camisas/dsp_5.jpg', 'Camisa ¡D$P! V3 Violet',     0),
+  ('a0000001-0000-4000-8000-000000000006', '/img/camisas/dsp_6.jpg', 'Camisa ¡D$P! V3 Crimson',    0),
+  ('a0000001-0000-4000-8000-000000000007', '/img/camisas/dsp_7.jpg', 'Camisa ¡D$P! V3 Jade',       0),
 
-  ('a0000001-0000-4000-8000-0000000000b1', '/img/DSP-JEANS-gris-01.jpg',       'Jeans gris metálico, frente',            0),
-  ('a0000001-0000-4000-8000-0000000000b1', '/img/DSP-JEANS-gris-02.jpg',       'Jeans gris metálico, espalda',           1),
-  ('a0000001-0000-4000-8000-0000000000b1', '/img/DSP-JEANS-gris-03-flash.jpg', 'Jeans gris metálico, frente con flash',  2),
-  ('a0000001-0000-4000-8000-0000000000b1', '/img/DSP-JEANS-gris-04-flash.jpg', 'Jeans gris metálico, espalda con flash', 3),
+  ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-01-frente.jpg',       'Jeans gris metálico, frente',            0),
+  ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-02-espalda.jpg',      'Jeans gris metálico, espalda',           1),
+  ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-03-frente-flash.jpg', 'Jeans gris metálico, frente con flash',  2),
+  ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-04-espalda-flash.jpg','Jeans gris metálico, espalda con flash', 3),
 
-  ('a0000001-0000-4000-8000-0000000000b2', '/img/DSP-JEANS-morado-01.jpg',       'Jeans morado, frente',            0),
-  ('a0000001-0000-4000-8000-0000000000b2', '/img/DSP-JEANS-morado-02.jpg',       'Jeans morado, espalda',           1),
-  ('a0000001-0000-4000-8000-0000000000b2', '/img/DSP-JEANS-morado-03-flash.jpg', 'Jeans morado, frente con flash',  2),
-  ('a0000001-0000-4000-8000-0000000000b2', '/img/DSP-JEANS-morado-04-flash.jpg', 'Jeans morado, espalda con flash', 3),
+  ('a0000001-0000-4000-8000-0000000000b2', '/img/jeans/morado-reflectivo/morado-reflectivo-01-frente.jpg',       'Jeans morado, frente',            0),
+  ('a0000001-0000-4000-8000-0000000000b2', '/img/jeans/morado-reflectivo/morado-reflectivo-02-espalda.jpg',      'Jeans morado, espalda',           1),
+  ('a0000001-0000-4000-8000-0000000000b2', '/img/jeans/morado-reflectivo/morado-reflectivo-03-frente-flash.jpg', 'Jeans morado, frente con flash',  2),
+  ('a0000001-0000-4000-8000-0000000000b2', '/img/jeans/morado-reflectivo/morado-reflectivo-04-espalda-flash.jpg','Jeans morado, espalda con flash', 3),
 
-  ('a0000001-0000-4000-8000-0000000000b3', '/img/DSP-JEANS-naranja-01.jpg',       'Jeans naranja, frente',           0),
-  ('a0000001-0000-4000-8000-0000000000b3', '/img/DSP-JEANS-naranja-02-flash.jpg', 'Jeans naranja, frente con flash', 1);
+  ('a0000001-0000-4000-8000-0000000000b3', '/img/jeans/naranja-reflextivo/naranja-reflextivo-01-frente.jpg',       'Jeans naranja, frente',           0),
+  ('a0000001-0000-4000-8000-0000000000b3', '/img/jeans/naranja-reflextivo/naranja-reflextivo-03-frente-flash.jpg', 'Jeans naranja, frente con flash', 1);
 
 -- Verificación
 SELECT c.name AS categoria, p.name, p.base_price, p.slug, count(i.id) AS imagenes
