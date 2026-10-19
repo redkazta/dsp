@@ -120,22 +120,56 @@ const productLd = product
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
             {/* Galería */}
             <div>
-              <div class="product-frame border-2 border-white/25">
-                {images.length > 0 ? (
-                  <img
-                    id="gallery-main"
-                    src={images[0].url}
-                    alt={images[0].alt_text ?? product.name}
-                    loading="eager"
-                  />
-                ) : (
-                  <div class="absolute inset-0 flex items-center justify-center">
-                    <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
-                      Sin imagen
-                    </span>
+              {images.length > 1 ? (
+                <div class="pdp-carousel">
+                  <div class="pdp-track" id="pdp-track" tabindex="0" aria-label={`${product.name}: fotos`}>
+                    {images.map((img: any, i: number) => (
+                      <div class="pdp-slide" data-index={i}>
+                        <div class="product-frame border-2 border-white/25">
+                          <img
+                            src={img.url}
+                            alt={img.alt_text ?? product.name}
+                            loading={i === 0 ? 'eager' : 'lazy'}
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
+
+                  <button type="button" class="pdp-arrow pdp-arrow--prev" data-pdp-dir="-1" aria-label="Foto anterior">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <button type="button" class="pdp-arrow pdp-arrow--next" data-pdp-dir="1" aria-label="Foto siguiente">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+
+                  <div class="pdp-dots">
+                    {images.map((img: any, i: number) => (
+                      <span
+                        class:list={['pdp-dot', { 'is-active': i === 0 }]}
+                        data-pdp-dot={i}
+                        title={viewLabel(img.url)}
+                      ></span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div class="product-frame border-2 border-white/25">
+                  {images.length > 0 ? (
+                    <img src={images[0].url} alt={images[0].alt_text ?? product.name} loading="eager" />
+                  ) : (
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
+                        Sin imagen
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {images.length > 1 && (
                 <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3" id="gallery-thumbs">
@@ -148,8 +182,7 @@ const productLd = product
                           ? 'border-oro-brillo'
                           : 'border-white/25 hover:border-oro-brillo',
                       ]}
-                      data-gallery-src={img.url}
-                      data-gallery-alt={img.alt_text ?? product.name}
+                      data-gallery-index={i}
                       aria-pressed={i === 0 ? 'true' : 'false'}
                       aria-label={`Ver ${viewLabel(img.url)}`}
                     >
@@ -309,8 +342,87 @@ const productLd = product
   }
 
   <style>
+    /* ---------- Carrusel de la ficha ---------- */
+    .pdp-carousel {
+      position: relative;
+    }
+
+    .pdp-track {
+      position: relative;
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      outline: none;
+    }
+
+    .pdp-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pdp-slide {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
+    }
+
+    .pdp-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 5;
+      width: 46px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(6, 6, 6, 0.86);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: #ffffff;
+      transition:
+        border-color 0.2s ease,
+        color 0.2s ease;
+    }
+
+    .pdp-arrow:hover {
+      border-color: #ffe28a;
+      color: #ffe28a;
+    }
+
+    .pdp-arrow--prev {
+      left: 10px;
+    }
+
+    .pdp-arrow--next {
+      right: 10px;
+    }
+
+    .pdp-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pdp-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .pdp-dot.is-active {
+      background: #ffe28a;
+      transform: scale(1.2);
+    }
+
     /* Etiqueta de vista en la miniatura: Frente / Espalda / · flash */
-    [data-gallery-src] {
+    [data-gallery-index] {
       position: relative;
     }
 
@@ -337,6 +449,17 @@ const productLd = product
         letter-spacing: 0.05em;
         padding: 1px 2px;
       }
+
+      .pdp-arrow {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pdp-track {
+        scroll-behavior: auto;
+      }
     }
   </style>
 
@@ -346,26 +469,55 @@ const productLd = product
     import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
 
     // ---------- Galería ----------
-    // Las miniaturas cambian la imagen principal. El orden ya viene
-    // resuelto del servidor: frente, espalda, frente con flash, espalda con flash.
-    const galleryMain = document.getElementById('gallery-main') as HTMLImageElement | null;
-    const thumbs = [...document.querySelectorAll<HTMLButtonElement>('[data-gallery-src]')];
+    // Carrusel principal + miniaturas sincronizadas. El orden ya viene del
+    // servidor: frente, espalda, frente con flash, espalda con flash.
+    const track = document.getElementById('pdp-track') as HTMLElement | null;
+    const slides = [...(track?.querySelectorAll<HTMLElement>('.pdp-slide') ?? [])];
+    const dots = [...document.querySelectorAll<HTMLElement>('[data-pdp-dot]')];
+    const thumbs = [...document.querySelectorAll<HTMLButtonElement>('[data-gallery-index]')];
+    let currentImage = (btn?.dataset.image as string) || '';
 
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener('click', () => {
-        if (!galleryMain) return;
+    function goTo(index: number) {
+      if (!track || slides.length === 0) return;
+      const target = slides[Math.max(0, Math.min(index, slides.length - 1))];
+      if (!target) return;
+      track.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+    }
 
-        galleryMain.src = thumb.dataset.gallerySrc ?? '';
-        galleryMain.alt = thumb.dataset.galleryAlt ?? '';
+    function syncGallery() {
+      if (!track) return;
 
-        thumbs.forEach((t) => {
-          const active = t === thumb;
-          t.setAttribute('aria-pressed', String(active));
-          t.classList.toggle('border-oro-brillo', active);
-          t.classList.toggle('border-white/25', !active);
-        });
+      const index = Math.round(track.scrollLeft / Math.max(track.clientWidth, 1));
+
+      dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+      thumbs.forEach((t, i) => {
+        const active = i === index;
+        t.setAttribute('aria-pressed', String(active));
+        t.classList.toggle('border-oro-brillo', active);
+        t.classList.toggle('border-white/25', !active);
       });
-    });
+
+      const visible = slides[index]?.querySelector('img') as HTMLImageElement | null;
+      if (visible) currentImage = visible.src;
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-pdp-dir]').forEach((arrow) =>
+      arrow.addEventListener('click', () => {
+        if (!track) return;
+        const dir = Number(arrow.dataset.pdpDir ?? '1');
+        track.scrollBy({ left: track.clientWidth * dir, behavior: 'smooth' });
+      })
+    );
+
+    thumbs.forEach((thumb) =>
+      thumb.addEventListener('click', () => goTo(Number(thumb.dataset.galleryIndex ?? '0')))
+    );
+
+    dots.forEach((dot) =>
+      dot.addEventListener('click', () => goTo(Number(dot.dataset.pdpDot ?? '0')))
+    );
+
+    track?.addEventListener('scroll', () => syncGallery(), { passive: true });
     import { sanitizeVariants } from '../../lib/product-variants';
 
     const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
@@ -443,7 +595,7 @@ const productLd = product
           variantName: [variant.size, variant.color].filter(Boolean).join(' · '),
           price: Number(variant.price),
           qty: 1,
-          image: galleryMain?.src || btn.dataset.image || undefined,
+          image: currentImage || btn.dataset.image || undefined,
           size: variant.size ?? null,
           color: variant.color ?? null,
         });

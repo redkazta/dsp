@@ -1,7 +1,10 @@
 ---
 /**
  * ProductCard.astro - Tarjeta de producto
- * Fondos claros para fotos sobre blanco; hover con acento dorado
+ *
+ * Si el producto tiene más de una foto, la imagen es un carrusel:
+ * flechas al hacer hover (desktop) o swipe (móvil) + puntos de posición.
+ * El clic en una flecha no navega al producto.
  */
 export interface Props {
   product: {
@@ -10,14 +13,27 @@ export interface Props {
     name: string;
     base_price: number;
     product_variants?: Array<{ id: string; name: string; price: number; stock: number }> | null;
-    product_images?: Array<{ url: string; alt_text?: string }> | null;
+    product_images?: Array<{ url: string; alt_text?: string; position?: number }> | null;
   };
 }
 
 const { product } = Astro.props;
 const href = `/producto/${product.slug || product.id}`;
 const price = product.product_variants?.[0]?.price ?? product.base_price;
-const image = product.product_images?.[0]?.url ?? null;
+
+// Mismo orden que la ficha: frente, espalda, frente con flash, espalda con flash
+// (aunque la base traiga otro `position`).
+function viewRank(url: string): number {
+  const file = url.toLowerCase();
+  const back = file.includes('back') ? 1 : 0;
+  const flash = /flash/.test(file.replace(/no_flash/g, '')) ? 2 : 0;
+  return flash + back;
+}
+
+const images = [...(product.product_images ?? [])].sort(
+  (a: any, b: any) => viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
+);
+
 const totalStock =
   product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
 const isSoldOut = product.product_variants != null && product.product_variants.length > 0 && totalStock === 0;
@@ -25,6 +41,8 @@ const isSoldOut = product.product_variants != null && product.product_variants.l
 const sizes = [
   ...new Set((product.product_variants ?? []).map((v: any) => v.size).filter(Boolean)),
 ] as string[];
+
+const trackId = `card-track-${product.id}`;
 ---
 
 <div class="product-card-wrap">
@@ -35,7 +53,7 @@ const sizes = [
     data-wish-slug={product.slug ?? ''}
     data-wish-name={product.name}
     data-wish-price={price}
-    data-wish-image={image ?? ''}
+    data-wish-image={images[0]?.url ?? ''}
     aria-pressed="false"
     aria-label={`Guardar ${product.name} en favoritos`}
   >
@@ -45,71 +63,113 @@ const sizes = [
   </button>
 
   <a href={href} class="block">
-  <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
-  <div class="product-frame border-2 product-media transition-colors duration-300">
-    {
-      image ? (
-        <img
-          src={image}
-          alt={product.name}
-          class="transition-transform duration-700 ease-out"
-          loading="lazy"
-          decoding="async"
-        />
+    <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
+    <div class="product-frame border-2 product-media transition-colors duration-300">
+      {images.length > 0 ? (
+        <>
+          {images.length > 1 ? (
+            <div class="card-carousel" data-card-carousel>
+              <div class="card-track" id={trackId} tabindex="0" aria-label={`${product.name}: fotos`}>
+                {images.map((img: any, i: number) => (
+                  <div class="card-slide" data-index={i}>
+                    <img
+                      src={img.url}
+                      alt={i === 0 ? product.name : `${product.name} · foto ${i + 1}`}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                class="card-arrow card-arrow--prev"
+                data-track={trackId}
+                data-dir="-1"
+                aria-label="Foto anterior"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="card-arrow card-arrow--next"
+                data-track={trackId}
+                data-dir="1"
+                aria-label="Foto siguiente"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+
+              <div class="card-dots">
+                {images.map((_: any, i: number) => (
+                  <span
+                    class:list={['card-dot', { 'is-active': i === 0 }]}
+                    data-dot={trackId}
+                    data-index={i}
+                  ></span>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <img
+              src={images[0].url}
+              alt={product.name}
+              class="transition-transform duration-700 ease-out"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
+        </>
       ) : (
         <div class="absolute inset-0 flex items-center justify-center">
           <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-negro-profundo/20">
             Sin imagen
           </span>
         </div>
-      )
-    }
+      )}
 
-    <!-- Badge agotado -->
-    {
-      isSoldOut && (
+      <!-- Badge agotado -->
+      {isSoldOut && (
         <span class="absolute top-3 left-3 bg-negro-profundo px-3 py-1 border-2 border-white/50">
           <span class="font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto">
             Agotado
           </span>
         </span>
-      )
-    }
+      )}
 
-    <!-- Barra inferior (CTA en desktop, siempre visible en touch) -->
-    <div class="product-cta absolute bottom-0 left-0 right-0 transition-transform duration-500">
-      <div class="bg-oro-brillo text-negro-profundo text-center py-3">
-        <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
-          Ver producto
-        </span>
+      <!-- Barra inferior (CTA en desktop, siempre visible en touch) -->
+      <div class="product-cta absolute bottom-0 left-0 right-0 transition-transform duration-500">
+        <div class="bg-oro-brillo text-negro-profundo text-center py-3">
+          <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
+            Ver producto
+          </span>
+        </div>
       </div>
+
+      <!-- Línea dorada -->
+      <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-brillo scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
+
+      <!-- Marco sutil -->
+      <div class="absolute inset-0 ring-2 ring-inset ring-transparent transition-all duration-500 pointer-events-none"></div>
     </div>
 
-    <!-- Línea dorada -->
-    <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-brillo scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
-
-    <!-- Marco sutil -->
-    <div class="absolute inset-0 ring-2 ring-inset ring-transparent transition-all duration-500 pointer-events-none"></div>
-  </div>
-
-  <!-- Info -->
-  <div class="pt-4 flex items-start justify-between gap-4">
-    <div class="min-w-0">
-      <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
-        {product.name}
-      </h3>
-      {
-        sizes.length > 0 && (
-          <p class="mt-1.5 text-xs text-muted">
-            {sizes.join(' · ')}
-          </p>
-        )
-      }
+    <!-- Info -->
+    <div class="pt-4 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
+          {product.name}
+        </h3>
+        {sizes.length > 0 && <p class="mt-1.5 text-xs text-muted">{sizes.join(' · ')}</p>}
+      </div>
+      <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap">
+        ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
     </div>
-    <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap">
-      ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-    </p>
-  </div>
   </a>
 </div>
 
@@ -133,7 +193,7 @@ const sizes = [
   }
 
   .product-card-wrap:hover .product-media img {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 
   .product-card-wrap:hover .product-line {
@@ -151,6 +211,122 @@ const sizes = [
 
     .product-card-wrap:hover .product-cta {
       transform: translateY(0);
+    }
+  }
+
+  /* ---------- Carrusel dentro de la tarjeta ---------- */
+  .card-carousel {
+    position: absolute;
+    inset: 0;
+  }
+
+  .card-track {
+    display: flex;
+    height: 100%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    outline: none;
+  }
+
+  .card-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .card-slide {
+    flex: 0 0 100%;
+    height: 100%;
+    scroll-snap-align: start;
+  }
+
+  .card-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6%;
+  }
+
+  .card-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6, 6, 6, 0.86);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: #ffffff;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .card-arrow--prev {
+    left: 8px;
+  }
+
+  .card-arrow--next {
+    right: 8px;
+  }
+
+  .card-carousel:hover .card-arrow,
+  .card-track:focus-visible ~ .card-arrow {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .card-arrow:hover {
+    border-color: #ffe28a;
+    color: #ffe28a;
+  }
+
+  /* En touch no hay hover: las flechas se quedan visibles */
+  @media (hover: none) {
+    .card-arrow {
+      opacity: 1;
+      pointer-events: auto;
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  .card-dots {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .card-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(6, 6, 6, 0.35);
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .card-dot.is-active {
+    background: #060606;
+    transform: scale(1.15);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-track {
+      scroll-behavior: auto;
     }
   }
 </style>
@@ -199,4 +375,31 @@ const sizes = [
     (window as WishWindow).__dspWishBound = true;
     initWishCards();
   }
+
+  // ---------- Carrusel de la tarjeta ----------
+  function syncDots(track: HTMLElement) {
+    const dots = document.querySelectorAll<HTMLElement>(`[data-dot="${track.id}"]`);
+    if (dots.length === 0) return;
+
+    const index = Math.round(track.scrollLeft / Math.max(track.clientWidth, 1));
+    dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-track]').forEach((arrow) => {
+    arrow.addEventListener('click', (e) => {
+      // No navegar a la ficha del producto
+      e.preventDefault();
+      e.stopPropagation();
+
+      const track = document.getElementById(arrow.dataset.track ?? '');
+      if (!track) return;
+
+      const dir = Number(arrow.dataset.dir ?? '1');
+      track.scrollBy({ left: track.clientWidth * dir, behavior: 'smooth' });
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-card-carousel] .card-track').forEach((track) => {
+    track.addEventListener('scroll', () => syncDots(track), { passive: true });
+  });
 </script>
