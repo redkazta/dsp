@@ -89,9 +89,13 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   const isStaff = isStaffRole(role);
 
   // ---------- Rutas privadas del panel ----------
-  if (pathname.startsWith('/admin')) {
-    if (!user) return context.redirect(`/entrar?next=${encodeURIComponent(pathname)}`, 302);
-    if (!isStaff) return new Response('No encontrado', { status: 404, headers: NOT_FOUND_HEADERS });
+  // Para cualquier visitante sin permisos de staff (con o sin sesión) el panel
+  // no existe: se manda a la portada con un redirect normal, sin 401/403 que
+  // delaten que /admin es una ruta real.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    if (!user || !isStaff) {
+      return context.redirect('/', 307);
+    }
   }
 
   // ---------- Rutas privadas del cliente ----------
