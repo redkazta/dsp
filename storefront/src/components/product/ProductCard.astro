@@ -42,7 +42,8 @@ const sizes = [
   ...new Set((product.product_variants ?? []).map((v: any) => v.size).filter(Boolean)),
 ] as string[];
 
-const trackId = `card-track-${product.id}`;
+const trackId = `card-carousel-${product.id}`;
+void trackId;
 ---
 
 <div class="product-card-wrap">
@@ -68,10 +69,10 @@ const trackId = `card-track-${product.id}`;
       {images.length > 0 ? (
         <>
           {images.length > 1 ? (
-            <div class="card-carousel" data-card-carousel>
-              <div class="card-track" id={trackId} tabindex="0" aria-label={`${product.name}: fotos`}>
+            <div class="card-carousel" data-carousel-scope>
+              <div class="card-track" data-carousel-track tabindex="0" aria-label={`${product.name}: fotos`}>
                 {images.map((img: any, i: number) => (
-                  <div class="card-slide" data-index={i}>
+                  <div class="card-slide" data-carousel-slide>
                     <img
                       src={img.url}
                       alt={i === 0 ? product.name : `${product.name} · foto ${i + 1}`}
@@ -85,8 +86,7 @@ const trackId = `card-track-${product.id}`;
               <button
                 type="button"
                 class="card-arrow card-arrow--prev"
-                data-track={trackId}
-                data-dir="-1"
+                data-carousel-dir="-1"
                 aria-label="Foto anterior"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -96,8 +96,7 @@ const trackId = `card-track-${product.id}`;
               <button
                 type="button"
                 class="card-arrow card-arrow--next"
-                data-track={trackId}
-                data-dir="1"
+                data-carousel-dir="1"
                 aria-label="Foto siguiente"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,8 +108,7 @@ const trackId = `card-track-${product.id}`;
                 {images.map((_: any, i: number) => (
                   <span
                     class:list={['card-dot', { 'is-active': i === 0 }]}
-                    data-dot={trackId}
-                    data-index={i}
+                    data-carousel-dot={i}
                   ></span>
                 ))}
               </div>
@@ -287,6 +285,10 @@ const trackId = `card-track-${product.id}`;
     color: #ffe28a;
   }
 
+  .card-arrow[data-edge] {
+    opacity: 0.3;
+  }
+
   /* En touch no hay hover: las flechas se quedan visibles */
   @media (hover: none) {
     .card-arrow {
@@ -332,6 +334,7 @@ const trackId = `card-track-${product.id}`;
 </style>
 
 <script>
+  import '../../lib/carousel';
   import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
   type WishWindow = Window & { __dspWishBound?: boolean };
 
@@ -376,30 +379,7 @@ const trackId = `card-track-${product.id}`;
     initWishCards();
   }
 
-  // ---------- Carrusel de la tarjeta ----------
-  function syncDots(track: HTMLElement) {
-    const dots = document.querySelectorAll<HTMLElement>(`[data-dot="${track.id}"]`);
-    if (dots.length === 0) return;
-
-    const index = Math.round(track.scrollLeft / Math.max(track.clientWidth, 1));
-    dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
-  }
-
-  document.querySelectorAll<HTMLElement>('[data-track]').forEach((arrow) => {
-    arrow.addEventListener('click', (e) => {
-      // No navegar a la ficha del producto
-      e.preventDefault();
-      e.stopPropagation();
-
-      const track = document.getElementById(arrow.dataset.track ?? '');
-      if (!track) return;
-
-      const dir = Number(arrow.dataset.dir ?? '1');
-      track.scrollBy({ left: track.clientWidth * dir, behavior: 'smooth' });
-    });
-  });
-
-  document.querySelectorAll<HTMLElement>('[data-card-carousel] .card-track').forEach((track) => {
-    track.addEventListener('scroll', () => syncDots(track), { passive: true });
-  });
+  // ---------- Carrusel ----------
+  // El comportamiento (flechas, puntos, avance automático) vive en
+  // `lib/carousel.ts`, que se inicializa por delegación una sola vez.
 </script>
