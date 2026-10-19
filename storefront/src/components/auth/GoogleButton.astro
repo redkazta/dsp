@@ -10,7 +10,7 @@ const GOOGLE_CLIENT_ID =
   '487574117831-d497l5eneq6sn1rm0ouigimaet76frb9.apps.googleusercontent.com';
 ---
 
-<div class="w-full">
+<div class="w-full flex flex-col items-center">
   <!-- Contenedor donde Google inyecta su botón oficial -->
   <div id="g_id_onload"
        data-client_id={GOOGLE_CLIENT_ID}
@@ -21,10 +21,10 @@ const GOOGLE_CLIENT_ID =
        data-use_fedcm_for_prompt="true">
   </div>
 
-  <div class="flex justify-center w-full">
+  <div class="w-full flex justify-center overflow-hidden rounded-sm">
     <div
       id="google-btn-container"
-      class="g_id_signin w-full"
+      class="g_id_signin"
       data-type="standard"
       data-theme="outline"
       data-size="large"
@@ -75,4 +75,28 @@ const GOOGLE_CLIENT_ID =
     s.defer = true;
     document.head.appendChild(s);
   }
+
+  // En móvil el botón de 384px no cabe: lo limitamos al ancho disponible
+  const fitGoogleButton = () => {
+    const container = document.getElementById('google-btn-container');
+    if (!container) return;
+
+    const parent = container.parentElement;
+    if (!parent) return;
+
+    // Desconta padding del contenedor para evitar desbordes
+    const styles = getComputedStyle(parent);
+    const available =
+      parent.clientWidth -
+      parseFloat(styles.paddingLeft || '0') -
+      parseFloat(styles.paddingRight || '0');
+
+    const width = Math.min(384, Math.max(200, available));
+    container.style.width = `${width}px`;
+    container.style.marginLeft = 'auto';
+    container.style.marginRight = 'auto';
+  };
+
+  fitGoogleButton();
+  window.addEventListener('resize', fitGoogleButton);
 </script>
