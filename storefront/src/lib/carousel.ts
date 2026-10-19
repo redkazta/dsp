@@ -161,8 +161,6 @@ document.addEventListener(
 );
 
 // Pausa solo mientras el puntero está sobre un carrusel
-let hovering = 0;
-
 document.addEventListener(
   'pointerenter',
   (e) => {
