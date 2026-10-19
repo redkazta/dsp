@@ -311,6 +311,67 @@
       transition: none;
     }
   }
+
+  /* Botón flotante del header (carrito, favoritos) */
+  .header-icon {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: #121212;
+    color: #ffffff;
+    box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.9);
+    transition:
+      border-color 0.25s ease,
+      color 0.25s ease,
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .header-icon:hover {
+    border-color: #ffe28a;
+    color: #ffe28a;
+    transform: translateY(-2px);
+    box-shadow: 0 0 26px -6px rgba(255, 226, 138, 0.65);
+  }
+
+  /* Contador en la esquina superior derecha */
+  .header-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ffe28a;
+    color: #060606;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 21px;
+    text-align: center;
+    border: 2px solid #060606;
+  }
+
+  /* Favoritos: fondo cálido para distinguirlos del carrito */
+  .header-icon--wish {
+    background: #1a1710;
+  }
+
+  .header-icon--wish:hover {
+    background: rgba(255, 226, 138, 0.14);
+  }
+
+  @media (max-width: 640px) {
+    .header-icon {
+      width: 42px;
+      height: 42px;
+    }
+  }
 </style>
 
 <script>

@@ -160,35 +160,6 @@ const jsonLd = {
               </svg>
             </a>
 
-            <!-- Wishlist flotante -->
-            <button
-              type="button"
-              id="header-wishlist"
-              class="header-icon header-icon--wish"
-              aria-label="Abrir favoritos"
-              aria-haspopup="dialog"
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
-              </svg>
-              <span id="header-wish-count" class="header-badge hidden">0</span>
-            </button>
-
-            <!-- Carrito flotante -->
-            <button
-              type="button"
-              id="header-cart"
-              class="header-icon"
-              aria-label="Abrir carrito"
-              aria-haspopup="dialog"
-            >
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              <span id="header-cart-count" class="header-badge hidden">0</span>
-            </button>
-
             {
               isAuth ? (
                 <div class="relative" id="profile-dropdown">
@@ -743,31 +714,6 @@ const jsonLd = {
       document.dispatchEvent(event);
     });
   }
-
-  // Actualizar contadores en el header
-  const updateHeaderCounts = () => {
-    const wishCount = document.getElementById('wish-count');
-    const cartCount = document.getElementById('cart-count');
-    const headerWishCount = document.getElementById('header-wish-count');
-    const headerCartCount = document.getElementById('header-cart-count');
-
-    if (wishCount && headerWishCount) {
-      headerWishCount.textContent = wishCount.textContent;
-      headerWishCount.classList.toggle('hidden', wishCount.textContent === '0');
-    }
-
-    if (cartCount && headerCartCount) {
-      headerCartCount.textContent = cartCount.textContent;
-      headerCartCount.classList.toggle('hidden', cartCount.textContent === '0');
-    }
-  };
-
-  // Actualizar contadores cuando cambien
-  document.addEventListener('wishlist:updated', updateHeaderCounts);
-  document.addEventListener('cart:updated', updateHeaderCounts);
-
-  // Inicializar contadores
-  updateHeaderCounts();
 
   // Sign out button
   const signoutBtn = document.getElementById('btn-signout');
