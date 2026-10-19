@@ -545,11 +545,13 @@ const jsonLd = {
 
       // ---------- Carrito y favoritos desde el menú móvil ----------
       // Abren el mismo panel lateral que los iconos del header.
-      document.querySelectorAll<HTMLElement>('[data-open-drawer]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const tab = (btn.dataset.openDrawer as 'cart' | 'wishlist') ?? 'cart';
-          window.dispatchEvent(new CustomEvent('store:open', { detail: { tab } }));
-        });
+      // Delegación en `document`: funciona aunque el menú se repinte.
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-open-drawer]');
+        if (!btn) return;
+        e.preventDefault();
+        const tab = (btn.dataset.openDrawer as 'cart' | 'wishlist') ?? 'cart';
+        window.dispatchEvent(new CustomEvent('store:open', { detail: { tab } }));
       });
 
       // Contadores del menú móvil
