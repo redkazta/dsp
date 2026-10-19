@@ -5,7 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Mis favoritos | Dinero Sobre Problemas" description="Las piezas que guardaste para después.">
-  <section class="border-b-2 border-white/25 bg-noise">
+  <section class="border-b-2 border-white/30 bg-noise">
     <div class="page-container py-12 sm:py-16">
       <p class="section-label mb-3">Lista</p>
       <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Favoritos</h1>
@@ -22,6 +22,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <a href="/tienda" class="btn-gold inline-flex">Ver catálogo</a>
     </div>
 
+    <div id="wish-loading" class="text-center py-16">
+      <p class="text-white/80">Cargando favoritos…</p>
+    </div>
+
     <div id="wish-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-x-8"></div>
   </div>
 
@@ -36,6 +40,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     async function render() {
       const items = await getWishlist();
 
+      document.getElementById('wish-loading')?.classList.add('hidden');
       summary.textContent = `${items.length} ${items.length === 1 ? 'pieza' : 'piezas'}`;
 
       if (items.length === 0) {

@@ -7,20 +7,34 @@
 ---
 
 <!-- Disparadores -->
-<button type="button" id="drawer-open-cart" class="header-icon" aria-label="Abrir carrito" aria-haspopup="dialog">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-    <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
-  </svg>
-  <span id="cart-count" class="header-badge hidden">0</span>
-</button>
+<div class="store-actions">
+  <button
+    type="button"
+    id="drawer-open-wishlist"
+    class="header-icon header-icon--wish"
+    aria-label="Abrir favoritos"
+    aria-haspopup="dialog"
+  >
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+    </svg>
+    <span id="wish-count" class="header-badge hidden">0</span>
+  </button>
 
-<button type="button" id="drawer-open-wishlist" class="header-icon" aria-label="Abrir favoritos" aria-haspopup="dialog">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
-  </svg>
-  <span id="wish-count" class="header-badge hidden">0</span>
-</button>
+  <button
+    type="button"
+    id="drawer-open-cart"
+    class="header-icon"
+    aria-label="Abrir carrito"
+    aria-haspopup="dialog"
+  >
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+      <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+    </svg>
+    <span id="cart-count" class="header-badge hidden">0</span>
+  </button>
+</div>
 
 <!-- Overlay + panel -->
 <div id="drawer" class="drawer" hidden>
@@ -75,7 +89,15 @@
 </div>
 
 <style>
-  /* El botón y la badge vienen del header (BaseLayout). */
+  /* Los dos botones flotan juntos arriba a la derecha */
+  .store-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 60;
+  }
+
   .drawer {
     position: fixed;
     inset: 0;

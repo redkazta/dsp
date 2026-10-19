@@ -24,17 +24,29 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (user) {
     const meta = user.user_metadata ?? {};
 
-    const { data: profile } = await supabase
-      .from('customer_profiles')
-      .select('first_name, full_name, phone, role')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Si el perfil falla (RLS, red), el header no se cae: usa los metadatos.
+    let profile: { first_name: string | null; full_name: string | null; phone: string | null; role: string | null } | null =
+      null;
+
+    try {
+      const { data } = await supabase
+        .from('customer_profiles')
+        .select('first_name, full_name, phone, role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      profile = data;
+    } catch {
+      profile = null;
+    }
+
+    const fallbackName = (profile?.full_name as string) ?? (meta.full_name as string) ?? '';
 
     firstName =
       profile?.first_name ??
       (meta.given_name as string) ??
       (meta.first_name as string) ??
-      ((profile?.full_name as string) ?? (meta.full_name as string) ?? '').split(' ')[0] ||
+      fallbackName.split(' ')[0] ||
       (user.email ?? '').split('@')[0];
 
     phone = profile?.phone ?? (meta.phone as string) ?? null;
@@ -42,7 +54,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
     // Rutas privadas: solo staff
     if (pathname.startsWith('/admin')) {
-      if (!role || !['admin', 'seller'].includes(role)) {
+      if (!role || ['admin', 'seller'].includes(role) === false) {
         return context.redirect('/', 302);
       }
     }
@@ -64,8 +76,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const response = await next();
 
   if (response.headers.get('content-type')?.includes('text/html')) {
-    response.headers.set('x-authenticated', user ? '1' : '0');
-    response.headers.set('Cache-Control', 'private, no-store');
+    // Las cookies del refresh que escribe `next()` deben conservarse
+    const out = new Response(response.body, response);
+    out.headers.set('x-authenticated', user ? '1' : '0');
+    out.headers.set('Cache-Control', 'private, no-store');
+    return out;
   }
 
   return response;

@@ -176,14 +176,12 @@ const jsonLd = {
             <a
               href="/tienda"
               aria-label="Buscar"
-              class="header-icon hidden md:inline-flex"
+              class="header-icon hidden lg:inline-flex"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
               </svg>
             </a>
-
-            <StoreDrawer />
 
             <a
               href={accountHref}
@@ -194,6 +192,8 @@ const jsonLd = {
                 <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
               </svg>
             </a>
+
+            <StoreDrawer />
           </div>
         </div>
       </div>
@@ -519,5 +519,22 @@ const jsonLd = {
     line-height: 20px;
     text-align: center;
     border: 2px solid #060606;
+  }
+
+  /* Favoritos: mismo botón pero con un punto dorado sutil para distinguirlo */
+  .header-icon--wish {
+    background: #1a1710;
+  }
+
+  .header-icon--wish:hover {
+    background: rgba(255, 226, 138, 0.14);
+  }
+
+  /* En móvil los dos botones quedan más compactos */
+  @media (max-width: 640px) {
+    .header-icon {
+      width: 42px;
+      height: 42px;
+    }
   }
 </style>

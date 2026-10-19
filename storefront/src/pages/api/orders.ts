@@ -103,7 +103,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         customer,
         items,
       }),
-    }).catch(() => {});
+    })
+      .then(() => undefined)
+      .catch(() => undefined);
   }
 
   return json({ id: order.id, orderNumber: order.order_number });
