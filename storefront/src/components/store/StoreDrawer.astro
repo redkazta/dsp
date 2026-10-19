@@ -4,10 +4,15 @@
  * Se abre desde el header o desde cualquier página que emita
  * `store:open` con detail { tab: 'cart' | 'wishlist' }.
  */
+export interface Props {
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
 ---
 
 <!-- Disparadores -->
-<div class="store-actions">
+<div class={`store-actions ${className}`}>
   <button
     type="button"
     id="drawer-open-wishlist"
@@ -96,6 +101,22 @@
     gap: 0.5rem;
     position: relative;
     z-index: 60;
+  }
+
+  /* Ocultar por defecto en desktop, mostrar al hover del contenedor */
+  @media (min-width: 641px) {
+    .store-actions {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(8px);
+      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+    }
+  }
+
+  .group:hover .store-actions {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
   }
 
   .drawer {
