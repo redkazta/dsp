@@ -23,7 +23,31 @@ const related = product
   ? await getRelatedProducts(TENANT_SLUG, (product as any).category_id ?? null, (product as any).id, 4)
   : [];
 
-const images = product?.product_images ?? [];
+const rawImages = product?.product_images ?? [];
+
+// Orden de galería según el nombre del archivo:
+//   1. frente sin flash (portada)  2. espalda sin flash
+//   3. frente con flash            4. espalda con flash
+function viewRank(url: string): number {
+  const file = url.toLowerCase();
+  const back = file.includes('back') ? 1 : 0;
+  const flash = /flash/.test(file.replace(/no_flash/g, '')) ? 2 : 0;
+  return flash + back;
+}
+
+const images = [...rawImages].sort(
+  (a: any, b: any) =>
+    viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
+);
+
+function viewLabel(url: string) {
+  const file = url.toLowerCase();
+  const back = file.includes('back');
+  const flash = /flash/.test(file.replace(/no_flash/g, ''));
+  if (flash) return back ? 'Espalda · flash' : 'Frente · flash';
+  return back ? 'Espalda' : 'Frente';
+}
+
 const variants = product?.product_variants ?? [];
 const price = variants[0]?.price ?? product?.base_price ?? 0;
 const totalStock = variants.reduce((sum: number, v: any) => sum + (v.stock ?? 0), 0);
@@ -99,8 +123,9 @@ const productLd = product
               <div class="product-frame border-2 border-white/25">
                 {images.length > 0 ? (
                   <img
+                    id="gallery-main"
                     src={images[0].url}
-                    alt={product.name}
+                    alt={images[0].alt_text ?? product.name}
                     loading="eager"
                   />
                 ) : (
@@ -113,11 +138,24 @@ const productLd = product
               </div>
 
               {images.length > 1 && (
-                <div class="grid grid-cols-4 gap-3 mt-3">
-                  {images.slice(0, 4).map((img: any) => (
-                    <div class="product-frame border-2 border-white/25 hover:border-oro-brillo transition-colors">
-                      <img src={img.url} alt={img.alt_text ?? product.name} loading="lazy" />
-                    </div>
+                <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3" id="gallery-thumbs">
+                  {images.map((img: any, i: number) => (
+                    <button
+                      type="button"
+                      class:list={[
+                        'product-frame border-2 transition-colors',
+                        i === 0
+                          ? 'border-oro-brillo'
+                          : 'border-white/25 hover:border-oro-brillo',
+                      ]}
+                      data-gallery-src={img.url}
+                      data-gallery-alt={img.alt_text ?? product.name}
+                      aria-pressed={i === 0 ? 'true' : 'false'}
+                      aria-label={`Ver ${viewLabel(img.url)}`}
+                    >
+                      <img src={img.url} alt="" loading="lazy" />
+                      <span class="gallery-tag">{viewLabel(img.url)}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -270,10 +308,64 @@ const productLd = product
     )
   }
 
+  <style>
+    /* Etiqueta de vista en la miniatura: Frente / Espalda / · flash */
+    [data-gallery-src] {
+      position: relative;
+    }
+
+    .gallery-tag {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2px 4px;
+      background: rgba(6, 6, 6, 0.82);
+      color: #ffffff;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    @media (max-width: 640px) {
+      .gallery-tag {
+        font-size: 8px;
+        letter-spacing: 0.05em;
+        padding: 1px 2px;
+      }
+    }
+  </style>
+
   <script>
     import { addToCart } from '../../lib/cart';
     import { openStoreDrawer } from '../../lib/store-drawer';
     import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
+
+    // ---------- Galería ----------
+    // Las miniaturas cambian la imagen principal. El orden ya viene
+    // resuelto del servidor: frente, espalda, frente con flash, espalda con flash.
+    const galleryMain = document.getElementById('gallery-main') as HTMLImageElement | null;
+    const thumbs = [...document.querySelectorAll<HTMLButtonElement>('[data-gallery-src]')];
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', () => {
+        if (!galleryMain) return;
+
+        galleryMain.src = thumb.dataset.gallerySrc ?? '';
+        galleryMain.alt = thumb.dataset.galleryAlt ?? '';
+
+        thumbs.forEach((t) => {
+          const active = t === thumb;
+          t.setAttribute('aria-pressed', String(active));
+          t.classList.toggle('border-oro-brillo', active);
+          t.classList.toggle('border-white/25', !active);
+        });
+      });
+    });
     import { sanitizeVariants } from '../../lib/product-variants';
 
     const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
@@ -351,7 +443,7 @@ const productLd = product
           variantName: [variant.size, variant.color].filter(Boolean).join(' · '),
           price: Number(variant.price),
           qty: 1,
-          image: btn.dataset.image || undefined,
+          image: galleryMain?.src || btn.dataset.image || undefined,
           size: variant.size ?? null,
           color: variant.color ?? null,
         });
