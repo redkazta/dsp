@@ -4,36 +4,35 @@
 
 /* ============================================
    Dinero Sobre Problemas - Global Styles
-   Negro profundo · Oro · Plateado
+   Negro profundo · Oro brillante · Blanco
+   Regla: alto contraste, sin grises apagados.
    ============================================ */
 
 @layer base {
   :root {
-    --color-negro-profundo: #0a0a0a;
-    --color-negro-carbono: #121212;
-    --color-negro-elevado: #1a1a1a;
-    --color-oro-elegante: #d4af37;
-    --color-oro-suave: #e8c874;
-    --color-plata-metalico: #c0c0c0;
-    --color-plata-claro: #e5e5e5;
-    --color-blanco-roto: #f5f5f5;
+    --color-negro-profundo: #060606;
+    --color-negro-carbono: #0e0e0e;
+    --color-negro-elevado: #161616;
+    --color-oro-elegante: #f2c94c;
+    --color-oro-suave: #ffda6b;
+    --color-blanco: #ffffff;
+    --color-blanco-suave: #f2f2f2;
   }
 
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Evita zoom automático en iOS al enfocar inputs */
     -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-negro-profundo text-blancoRoto font-cuerpo;
-    /* Evita scroll horizontal por elementos decorativos */
     overflow-x: hidden;
+    font-size: 1.0625rem;
+    line-height: 1.7;
   }
 
-  /* Área táctil mínima recomendada (44px) */
   button,
   a,
   input,
@@ -46,19 +45,23 @@
     @apply bg-oro-elegante text-negro-profundo;
   }
 
-  /* Scrollbar elegante (solo desktop) */
+  /* Texto secundario: blanco al 75%, nunca gris apagado */
+  .text-muted {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
   @media (min-width: 1024px) {
     ::-webkit-scrollbar {
-      width: 10px;
+      width: 12px;
     }
     ::-webkit-scrollbar-track {
       @apply bg-negro-profundo;
     }
     ::-webkit-scrollbar-thumb {
-      @apply bg-negro-elevado rounded-full border border-oro-elegante/20;
+      @apply bg-negro-elevado border-2 border-oro-elegante/30;
     }
     ::-webkit-scrollbar-thumb:hover {
-      @apply bg-oro-elegante/40;
+      @apply bg-oro-elegante/50;
     }
   }
 }
@@ -67,82 +70,91 @@
   /* Botón principal dorado */
   .btn-gold {
     @apply relative inline-flex items-center justify-center gap-2
-      bg-oro-elegante text-negro-profundo font-acentos font-medium
-      text-xs uppercase tracking-[0.2em]
-      px-6 sm:px-8 py-4 min-h-[48px]
+      bg-oro-elegante text-negro-profundo font-acentos font-semibold
+      text-sm uppercase tracking-[0.18em]
+      px-7 sm:px-9 py-4 min-h-[52px]
+      border-2 border-oro-elegante
       transition-[background-color,box-shadow] duration-300
-      hover:bg-oro-suave
+      hover:bg-oro-suave hover:border-oro-suave
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-elegante focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
       disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  /* Botón outline plateado */
+  /* Botón outline con contraste alto */
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2
-      border border-plata-metalico/30 text-plata-claro font-acentos
-      text-xs uppercase tracking-[0.2em] px-6 sm:px-8 py-4 min-h-[48px]
+      border-2 border-blancoRoto/60 text-blancoRoto font-acentos font-semibold
+      text-sm uppercase tracking-[0.18em] px-7 sm:px-9 py-4 min-h-[52px]
       transition-[border-color,color,background-color] duration-300
       hover:border-oro-elegante hover:text-oro-elegante
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-elegante focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
       disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  /* Línea decorativa dorada */
+  /* Línea decorativa dorada (más gruesa) */
   .gold-line {
-    @apply h-px w-16 bg-gradient-to-r from-transparent via-oro-elegante to-transparent;
+    @apply h-0.5 w-24 bg-gradient-to-r from-transparent via-oro-elegante to-transparent;
   }
 
   /* Etiqueta de sección */
   .section-label {
-    @apply font-acentos text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.35em] text-oro-elegante;
+    @apply font-acentos text-xs uppercase tracking-[0.25em] sm:tracking-[0.32em] text-oro-elegante font-semibold;
   }
 
-  /* Card de producto (usar junto con la clase `group` en el markup) */
+  /* Card de producto */
   .product-card {
     @apply relative block overflow-hidden bg-negro-carbono
-      border border-plata-metalico/10
+      border border-blancoRoto/15
       transition-colors duration-300
-      hover:border-oro-elegante/40;
+      hover:border-oro-elegante;
   }
 
   /* Input oscuro — 16px en móvil evita zoom de iOS */
   .input-dark {
-    @apply w-full bg-negro-profundo border border-plata-metalico/20
-      px-4 py-3 min-h-[48px] text-base sm:text-sm
-      text-plata-claro placeholder:text-plata-metalico/40
+    @apply w-full bg-negro-elevado border-2 border-blancoRoto/35
+      px-4 py-3.5 min-h-[52px] text-base sm:text-base
+      text-blancoRoto placeholder:text-blancoRoto/60
       outline-none transition-colors duration-300
       focus:border-oro-elegante
-      focus-visible:ring-1 focus-visible:ring-oro-elegante/40;
+      focus-visible:ring-2 focus-visible:ring-oro-elegante/40;
+  }
+
+  /* Selector de fecha legible sobre fondo oscuro */
+  .input-dark[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.8;
+    cursor: pointer;
   }
 
   /* Contenedor de página consistente */
   .page-container {
     @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-10;
   }
+
+  /* Card oscura con borde visible */
+  .card {
+    @apply bg-negro-carbono border-2 border-blancoRoto/15;
+  }
 }
 
 @layer utilities {
-  /* Texto con degradado dorado */
   .text-gold-gradient {
     @apply bg-gradient-to-r from-oro-elegante via-oro-suave to-oro-elegante
       bg-clip-text text-transparent;
   }
 
-  /* Fondo con textura sutil */
   .bg-noise {
     background-image: radial-gradient(
-      rgba(212, 175, 55, 0.03) 1px,
+      rgba(242, 201, 76, 0.04) 1px,
       transparent 1px
     );
     background-size: 24px 24px;
   }
 
-  /* Glow dorado suave */
   .glow-gold {
-    box-shadow: 0 0 60px -15px rgba(212, 175, 55, 0.35);
+    box-shadow: 0 0 60px -15px rgba(242, 201, 76, 0.45);
   }
 
-  /* Truncar a 2 líneas */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -150,7 +162,6 @@
     overflow: hidden;
   }
 
-  /* Ocultar scrollbar en carruseles horizontales */
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -159,7 +170,6 @@
     display: none;
   }
 
-  /* Respeto a prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

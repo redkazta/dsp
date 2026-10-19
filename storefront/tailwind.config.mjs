@@ -1,6 +1,7 @@
 /**
  * Tailwind Configuration - Dinero Sobre Problemas
- * Paleta: Negro (#0A0A0A), Oro (#D4AF37), Plateado (#C0C0C0)
+ * Negro profundo · Oro brillante · Blanco de alto contraste
+ * Regla: sobre fondo oscuro siempre texto claro (nunca gris apagado).
  */
 export default {
   darkMode: 'class',
@@ -9,26 +10,42 @@ export default {
     extend: {
       colors: {
         negro: {
-          profundo: '#0A0A0A',
-          carbono: '#121212',
-          elevado: '#1A1A1A',
+          profundo: '#060606',
+          carbono: '#0E0E0E',
+          elevado: '#161616',
         },
         oro: {
-          elegante: '#D4AF37',
-          suave: '#E8C874',
-          oscuro: '#A88A28',
+          elegante: '#F2C94C', // oro más brillante
+          suave: '#FFDA6B',
+          oscuro: '#C9A227',
         },
+        // Alias heredados: usan currentColor para que NUNCA se vean grises.
+        // Sobre fondo oscuro heredan el blanco y se regulan con opacidad.
         plata: {
-          metalico: '#C0C0C0',
-          claro: '#E5E5E5',
-          oscuro: '#8A8A8A',
+          metalico: 'inherit',
+          claro: 'inherit',
+          oscuro: 'inherit',
         },
-        blancoRoto: '#F5F5F5',
+        blancoRoto: '#FFFFFF',
       },
       fontFamily: {
         titulos: ['"Playfair Display"', 'Georgia', 'serif'],
         cuerpo: ['Inter', 'system-ui', 'sans-serif'],
         acentos: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+      },
+      fontSize: {
+        // Escala ligeramente más generosa
+        xs: ['0.875rem', { lineHeight: '1.5' }],
+        sm: ['0.9375rem', { lineHeight: '1.6' }],
+        base: ['1.0625rem', { lineHeight: '1.7' }],
+        lg: ['1.1875rem', { lineHeight: '1.7' }],
+        xl: ['1.3125rem', { lineHeight: '1.6' }],
+      },
+      borderWidth: {
+        DEFAULT: '1px',
+        // líneas más gruesas
+        2: '2px',
+        3: '3px',
       },
       letterSpacing: {
         mega: '0.35em',

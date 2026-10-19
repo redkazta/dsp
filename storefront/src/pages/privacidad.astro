@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const updated = '17 de octubre de 2026';
@@ -11,9 +13,9 @@ const updated = '17 de octubre de 2026';
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
     <p class="section-label mb-4">Legal</p>
     <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Política de Privacidad</h1>
-    <p class="text-xs text-plata-metalico/40 mb-12">Última actualización: {updated}</p>
+    <p class="text-sm text-plata-metalico/85 mb-12">Última actualización: {updated}</p>
 
-    <div class="space-y-10 text-sm text-plata-metalico/70 leading-relaxed">
+    <div class="space-y-10 text-base text-plata-metalico/85 leading-relaxed">
       <section>
         <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-4">
           1. Quiénes somos

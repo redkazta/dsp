@@ -4,16 +4,17 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Mi cuenta | Dinero Sobre Problemas" description="Gestiona tu cuenta y pedidos.">
+<BaseLayout title="Mi cuenta | Dinero Sobre Problemas" description="Gestiona tu cuenta, tus datos y tus pedidos.">
   <div id="loading" class="min-h-[60vh] flex items-center justify-center">
-    <p class="text-plata-metalico/40 text-sm">Cargando...</p>
+    <p class="text-muted text-sm">Cargando…</p>
   </div>
 
-  <div id="guest" class="hidden min-h-[60vh] flex items-center justify-center px-6">
+  <div id="guest" class="hidden min-h-[60vh] flex items-center justify-center px-5">
     <div class="text-center max-w-sm">
       <p class="section-label mb-4">Cuenta</p>
-      <h1 class="font-titulos text-3xl text-blancoRoto mb-6">Inicia sesión para continuar</h1>
-      <div class="flex flex-wrap gap-3 justify-center">
+      <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto mb-4">Inicia sesión para continuar</h1>
+      <div class="gold-line mx-auto mb-8"></div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
         <a href="/entrar" class="btn-gold">Iniciar sesión</a>
         <a href="/registro" class="btn-outline">Crear cuenta</a>
       </div>
@@ -21,65 +22,86 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
   <div id="account" class="hidden">
-    <!-- Header -->
-    <section class="border-b border-plata-metalico/10 bg-noise">
-      <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 flex items-center justify-between gap-6">
-        <div class="flex items-center gap-5">
-          <div id="avatar" class="w-14 h-14 border border-oro-elegante/40 flex items-center justify-center overflow-hidden bg-negro-carbono">
-            <span id="avatar-initial" class="font-titulos text-xl text-oro-elegante">D</span>
+    <!-- Encabezado -->
+    <section class="border-b-2 border-blancoRoto/15 bg-noise">
+      <div class="page-container py-10 sm:py-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div class="flex items-center gap-5 min-w-0">
+          <div id="avatar" class="w-16 h-16 shrink-0 border-2 border-oro-elegante/60 flex items-center justify-center overflow-hidden bg-negro-carbono">
+            <span id="avatar-initial" class="font-titulos text-2xl text-oro-elegante">D</span>
           </div>
-          <div>
+          <div class="min-w-0">
             <p class="section-label mb-1">Mi cuenta</p>
-            <h1 id="profile-name" class="font-titulos text-2xl lg:text-3xl text-blancoRoto">—</h1>
-            <p id="profile-email" class="text-xs text-plata-metalico/50 mt-1">—</p>
+            <h1 id="profile-name" class="font-titulos text-2xl lg:text-3xl text-blancoRoto truncate">—</h1>
+            <p id="profile-email" class="text-sm text-muted mt-1 truncate">—</p>
           </div>
         </div>
-        <button id="logout-btn" class="btn-outline text-xs">Cerrar sesión</button>
+        <button id="logout-btn" class="btn-outline self-start sm:self-auto">Cerrar sesión</button>
       </div>
     </section>
 
-    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
-      <div class="grid lg:grid-cols-3 gap-8">
+    <div class="page-container py-10 sm:py-14">
+      <div class="grid lg:grid-cols-3 gap-8 lg:gap-10">
         <!-- Pedidos -->
-        <section class="lg:col-span-2">
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-6">
-            Mis pedidos
-          </h2>
+        <section class="lg:col-span-2 order-2 lg:order-1">
+          <h2 class="section-label mb-6">Mis pedidos</h2>
           <div id="orders-list" class="space-y-4"></div>
+
+          <h2 class="section-label mt-10 mb-4">Mis direcciones</h2>
+          <div id="addresses-list" class="space-y-3"></div>
         </section>
 
-        <!-- Perfil -->
-        <aside>
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-6">
-            Mis datos
-          </h2>
-          <form id="profile-form" class="card p-6 space-y-4">
-            <div>
-              <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">
-                Nombre
-              </label>
-              <input name="full_name" class="input-dark" />
-            </div>
-            <div>
-              <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">
-                Teléfono
-              </label>
-              <input name="phone" class="input-dark" placeholder="10 dígitos" />
-            </div>
-            <button type="submit" class="btn-gold w-full text-xs">Guardar</button>
-            <p id="save-ok" class="hidden text-xs text-oro-elegante text-center">Guardado ✓</p>
-          </form>
+        <!-- Datos -->
+        <aside class="order-1 lg:order-2">
+          <h2 class="section-label mb-6">Mis datos</h2>
+          <form id="profile-form" class="card p-5 sm:p-6 space-y-4">
+            <label class="block">
+              <span class="field-label">Nombre *</span>
+              <input name="first_name" class="input-dark" autocomplete="given-name" required />
+            </label>
 
-          <div class="mt-6">
-            <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-4">
-              Mis direcciones
-            </h2>
-            <div id="addresses-list" class="space-y-3"></div>
-          </div>
+            <label class="block">
+              <span class="field-label">Apellidos</span>
+              <input name="last_name" class="input-dark" autocomplete="family-name" />
+            </label>
+
+            <label class="block">
+              <span class="field-label">Teléfono</span>
+              <input name="phone" class="input-dark" placeholder="10 dígitos" inputmode="tel" autocomplete="tel" />
+            </label>
+
+            <label class="block">
+              <span class="field-label">Fecha de nacimiento</span>
+              <input name="birthdate" type="date" class="input-dark" />
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer pt-1">
+              <input name="marketing_opt_in" type="checkbox" class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0" />
+              <span class="text-sm text-muted leading-relaxed">
+                Recibir novedades y drops exclusivos por correo.
+              </span>
+            </label>
+
+            <button type="submit" class="btn-gold w-full">Guardar cambios</button>
+            <p id="save-ok" role="status" class="hidden text-sm text-oro-elegante text-center">Guardado ✓</p>
+            <p id="save-error" role="alert" class="hidden text-sm text-red-400 text-center"></p>
+          </form>
         </aside>
       </div>
     </div>
   </div>
+
+  <style>
+    .field-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f2c94c;
+    }
+  </style>
 
   <script>
     import { getProfile, getMyOrders, getMyAddresses, signOut, updateProfile } from '../lib/auth';
@@ -88,6 +110,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const loading = document.getElementById('loading')!;
     const guest = document.getElementById('guest')!;
     const account = document.getElementById('account')!;
+    const form = document.getElementById('profile-form') as HTMLFormElement;
+    const saveOk = document.getElementById('save-ok')!;
+    const saveError = document.getElementById('save-error')!;
+
+    const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
 
     async function init() {
       const profile = await getProfile();
@@ -101,7 +128,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       account.classList.remove('hidden');
 
-      const name = profile.full_name || profile.email || 'Cliente';
+      const name =
+        [profile.first_name, profile.last_name].filter(Boolean).join(' ') ||
+        profile.full_name ||
+        profile.email ||
+        'Cliente';
+
       document.getElementById('profile-name')!.textContent = name;
       document.getElementById('profile-email')!.textContent = profile.email ?? '';
       document.getElementById('avatar-initial')!.textContent = name.charAt(0).toUpperCase();
@@ -111,22 +143,44 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           `<img src="${profile.avatar_url}" alt="" class="w-full h-full object-cover">`;
       }
 
-      const form = document.getElementById('profile-form') as HTMLFormElement;
-      (form.elements.namedItem('full_name') as HTMLInputElement).value = profile.full_name ?? '';
-      (form.elements.namedItem('phone') as HTMLInputElement).value = profile.phone ?? '';
+      field('first_name').value = profile.first_name ?? '';
+      field('last_name').value = profile.last_name ?? '';
+      field('phone').value = profile.phone ?? '';
+      field('birthdate').value = profile.birthdate ? String(profile.birthdate).slice(0, 10) : '';
+      field('marketing_opt_in').checked = Boolean(profile.marketing_opt_in);
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const data = new FormData(form);
+        saveOk.classList.add('hidden');
+        saveError.classList.add('hidden');
+
+        const submit = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        submit.disabled = true;
+
         const { error } = await updateProfile({
-          full_name: String(data.get('full_name')),
-          phone: String(data.get('phone')),
+          first_name: field('first_name').value.trim(),
+          last_name: field('last_name').value.trim(),
+          phone: field('phone').value.trim(),
+          birthdate: field('birthdate').value || null,
+          marketing_opt_in: field('marketing_opt_in').checked,
         });
-        if (!error) {
-          const ok = document.getElementById('save-ok')!;
-          ok.classList.remove('hidden');
-          setTimeout(() => ok.classList.add('hidden'), 2000);
+
+        submit.disabled = false;
+
+        if (error) {
+          saveError.textContent = 'No pudimos guardar tus datos. Intenta de nuevo.';
+          saveError.classList.remove('hidden');
+          return;
         }
+
+        const updated =
+          [field('first_name').value.trim(), field('last_name').value.trim()].filter(Boolean).join(' ') ||
+          'Cliente';
+        document.getElementById('profile-name')!.textContent = updated;
+        document.getElementById('avatar-initial')!.textContent = updated.charAt(0).toUpperCase();
+
+        saveOk.classList.remove('hidden');
+        setTimeout(() => saveOk.classList.add('hidden'), 2500);
       });
 
       // Pedidos
@@ -134,22 +188,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const list = document.getElementById('orders-list')!;
       list.innerHTML =
         orders.length === 0
-          ? `<div class="border border-plata-metalico/10 p-10 text-center">
-               <p class="text-sm text-plata-metalico/40 mb-4">Aún no tienes pedidos</p>
-               <a href="/tienda" class="btn-outline text-xs inline-block">Ver catálogo</a>
+          ? `<div class="card p-8 sm:p-10 text-center">
+               <p class="text-muted mb-5">Aún no tienes pedidos.</p>
+               <a href="/tienda" class="btn-outline inline-flex">Ver catálogo</a>
              </div>`
           : orders
               .map(
                 (o: any) => `
-            <div class="border border-plata-metalico/10 p-5 flex items-center justify-between">
-              <div>
-                <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
-                <p class="text-xs text-plata-metalico/50 mt-1">
+            <div class="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? String(o.id).slice(0, 8)}</p>
+                <p class="text-sm text-muted mt-1">
                   ${new Date(o.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
                   · ${o.status}
                 </p>
               </div>
-              <p class="font-acentos text-oro-elegante">$${formatMXN(Number(o.total_amount))}</p>
+              <p class="font-acentos text-lg text-oro-elegante shrink-0">$${formatMXN(Number(o.total_amount))}</p>
             </div>`
               )
               .join('');
@@ -159,13 +213,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const addrList = document.getElementById('addresses-list')!;
       addrList.innerHTML =
         addresses.length === 0
-          ? `<p class="text-xs text-plata-metalico/40">Sin direcciones guardadas</p>`
+          ? `<p class="text-sm text-muted">Sin direcciones guardadas.</p>`
           : addresses
               .map(
                 (a: any) => `
-            <div class="border border-plata-metalico/10 p-4">
-              <p class="text-xs text-plata-claro mb-1">${a.label}${a.is_default ? ' · Principal' : ''}</p>
-              <p class="text-xs text-plata-metalico/50 leading-relaxed">
+            <div class="card p-4">
+              <p class="text-sm text-blancoRoto mb-1">${a.label}${a.is_default ? ' · Principal' : ''}</p>
+              <p class="text-sm text-muted leading-relaxed">
                 ${a.street}${a.colonia ? ', ' + a.colonia : ''}<br>
                 ${a.city}, ${a.state ?? ''} ${a.postal_code ?? ''}
               </p>

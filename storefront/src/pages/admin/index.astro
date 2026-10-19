@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Dashboard">
-  <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
+  <div id="admin-loading" class="py-20 text-center text-plata-metalico/75 text-sm">Cargando...</div>
 
   <div id="admin-dashboard" class="hidden">
     <div class="mb-10">
@@ -30,11 +30,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <div class="grid grid-cols-2 gap-3">
           <a href="/admin/productos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
             <p class="font-acentos text-sm text-plata-claro mb-1">Productos</p>
-            <p class="text-xs text-plata-metalico/50">Crear y editar</p>
+            <p class="text-xs text-plata-metalico/80">Crear y editar</p>
           </a>
           <a href="/admin/pedidos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
             <p class="font-acentos text-sm text-plata-claro mb-1">Pedidos</p>
-            <p class="text-xs text-plata-metalico/50">Estatus y envíos</p>
+            <p class="text-xs text-plata-metalico/80">Estatus y envíos</p>
           </a>
         </div>
       </section>
@@ -76,7 +76,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         .map(
           (s) => `
         <div class="card p-5">
-          <p class="text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">${s.label}</p>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-2">${s.label}</p>
           <p class="font-acentos text-2xl text-oro-elegante">${s.value}</p>
         </div>`
         )
@@ -84,7 +84,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       document.getElementById('recent-orders')!.innerHTML =
         orders.length === 0
-          ? `<p class="text-xs text-plata-metalico/40">Aún no hay pedidos.</p>`
+          ? `<p class="text-xs text-plata-metalico/75">Aún no hay pedidos.</p>`
           : orders
               .slice(0, 6)
               .map(
@@ -92,7 +92,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <a href="/admin/pedidos" class="flex items-center justify-between border border-plata-metalico/10 p-4 hover:border-oro-elegante/30 transition-colors">
             <div>
               <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
-              <p class="text-[11px] text-plata-metalico/50">${STATUS[o.status] ?? o.status}</p>
+              <p class="text-[11px] text-plata-metalico/80">${STATUS[o.status] ?? o.status}</p>
             </div>
             <p class="font-acentos text-sm text-oro-elegante">$${Number(o.total_amount).toLocaleString('es-MX')}</p>
           </a>`

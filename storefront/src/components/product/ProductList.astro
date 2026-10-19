@@ -1,6 +1,7 @@
 ---
 /**
  * ProductList.astro - Grid de productos
+ * 2 columnas en móvil, 3 en tablet, 4 en desktop.
  */
 import ProductCard from './ProductCard.astro';
 
@@ -13,12 +14,13 @@ const { products } = Astro.props;
 
 {
   products.length === 0 ? (
-    <div class="text-center py-24">
-      <p class="font-titulos text-2xl text-plata-metalico/40 mb-2">Sin resultados</p>
-      <p class="text-sm text-plata-metalico/40">No hay productos disponibles por el momento.</p>
+    <div class="text-center py-20 sm:py-24">
+      <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">Sin resultados</p>
+      <div class="gold-line mx-auto mb-5" />
+      <p class="text-muted">No hay productos disponibles por el momento.</p>
     </div>
   ) : (
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-12 lg:gap-x-8 lg:gap-y-16">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16">
       {products.map((product) => (
         <ProductCard product={product} />
       ))}

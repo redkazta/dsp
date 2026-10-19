@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Productos">
-  <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
+  <div id="admin-loading" class="py-20 text-center text-plata-metalico/75 text-sm">Cargando...</div>
 
   <div id="products-view" class="hidden">
     <div class="flex items-center justify-between mb-8">
@@ -33,7 +33,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </select>
 
         <div class="sm:col-span-2">
-          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-3">
+          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-3">
             Tallas
           </label>
           <div class="flex flex-wrap gap-2">
@@ -52,10 +52,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <input name="color" placeholder="Color" value="Negro" class="input-dark" />
 
         <div class="sm:col-span-2">
-          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/50 mb-2">
+          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-2">
             Imagen
           </label>
-          <input id="image-input" type="file" accept="image/*" class="block text-xs text-plata-metalico/60 file:mr-4 file:py-2 file:px-4 file:border file:border-plata-metalico/20 file:bg-transparent file:text-xs file:text-plata-claro hover:file:border-oro-elegante file:cursor-pointer" />
+          <input id="image-input" type="file" accept="image/*" class="block text-xs text-plata-metalico/85 file:mr-4 file:py-2 file:px-4 file:border file:border-plata-metalico/20 file:bg-transparent file:text-xs file:text-plata-claro hover:file:border-oro-elegante file:cursor-pointer" />
           <div id="image-preview" class="hidden mt-3 w-24 h-30 bg-white overflow-hidden">
             <img class="w-full h-full object-contain" />
           </div>
@@ -91,7 +91,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     function render(list: any[]) {
       const container = document.getElementById('products-list')!;
       if (list.length === 0) {
-        container.innerHTML = `<p class="text-sm text-plata-metalico/40 py-10 text-center">Sin productos. Crea el primero.</p>`;
+        container.innerHTML = `<p class="text-sm text-plata-metalico/75 py-10 text-center">Sin productos. Crea el primero.</p>`;
         return;
       }
 
@@ -106,7 +106,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
             <div class="flex-1 min-w-0">
               <p class="font-acentos text-sm text-plata-claro truncate">${p.name}</p>
-              <p class="text-[11px] text-plata-metalico/50">
+              <p class="text-[11px] text-plata-metalico/80">
                 ${p.categories?.name ?? 'Sin categoría'} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
               </p>
             </div>

@@ -1,46 +1,160 @@
 ---
 /**
  * Botón de Google con Google Identity Services (ID Token flow).
- * Renderiza el botón programáticamente y se adapta al ancho disponible.
+ *
+ * El botón es nuestro (mismo estilo que .btn-outline) para que siempre quede
+ * centrado e igual al resto de la UI. GIS solo se usa para el popup OAuth,
+ * así que no hay iframe, no hay desfases y no hay íconos que se "desordenan".
  */
-import { supabase } from '../../lib/supabase';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ||
   '487574117831-d497l5eneq6sn1rm0ouigimaet76frb9.apps.googleusercontent.com';
 ---
 
-<div
-  id="google-auth"
-  class="w-full flex flex-col items-center"
-  data-client-id={GOOGLE_CLIENT_ID}
->
-  <div id="google-btn-slot" class="w-full flex justify-center">
-    <!-- Fallback mientras carga el SDK -->
-    <button
-      type="button"
-      disabled
-      class="btn-outline w-full opacity-60 cursor-wait"
-    >
-      Cargando Google…
-    </button>
-  </div>
+<div id="google-auth" class="w-full" data-client-id={GOOGLE_CLIENT_ID}>
+  <button type="button" id="google-btn" class="google-btn" aria-label="Continuar con Google">
+    <span class="google-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path
+          fill="#EA4335"
+          d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+        ></path>
+        <path
+          fill="#4285F4"
+          d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+        ></path>
+        <path
+          fill="#FBBC05"
+          d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+        ></path>
+        <path
+          fill="#34A853"
+          d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.9l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+        ></path>
+      </svg>
+    </span>
+    <span id="google-btn-label">Continuar con Google</span>
+  </button>
 
-  <p id="google-error" class="hidden mt-3 text-xs text-red-400 text-center leading-relaxed"></p>
+  <p id="google-error" class="hidden mt-3 text-sm text-red-400 text-center leading-relaxed"></p>
 </div>
+
+<style>
+  .google-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 52px;
+    padding: 0.875rem 1.75rem;
+    background: #ffffff;
+    color: #111111;
+    border: 2px solid #ffffff;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease,
+      opacity 0.25s ease;
+  }
+
+  .google-btn:hover:not(:disabled) {
+    background: #f2c94c;
+    border-color: #f2c94c;
+    box-shadow: 0 0 32px -8px rgba(242, 201, 76, 0.6);
+  }
+
+  .google-btn:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px #060606,
+      0 0 0 4px #f2c94c;
+  }
+
+  .google-btn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  /* El ícono nunca se deforma ni se "desparrama" */
+  .google-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    pointer-events: none;
+  }
+
+  .google-icon svg {
+    display: block;
+    transition: transform 0.25s ease;
+  }
+
+  .google-btn:hover:not(:disabled) .google-icon svg {
+    transform: scale(1.08);
+  }
+</style>
 
 <script>
   import { supabase } from '../../lib/supabase';
 
+  const GSI_SRC = 'https://accounts.google.com/gsi/client';
+
   const root = document.getElementById('google-auth');
-  const slot = document.getElementById('google-btn-slot');
+  const button = document.getElementById('google-btn') as HTMLButtonElement | null;
+  const label = document.getElementById('google-btn-label');
   const errorEl = document.getElementById('google-error');
   const clientId = root?.dataset.clientId ?? '';
+
+  let google: any = null;
+  let sdkReady: Promise<void> | null = null;
+
+  function setLoading(isLoading: boolean, text = 'Continuar con Google') {
+    if (button) button.disabled = isLoading;
+    if (label) label.textContent = text;
+  }
 
   function showError(message: string) {
     if (!errorEl) return;
     errorEl.textContent = message;
     errorEl.classList.remove('hidden');
+    setLoading(false);
+  }
+
+  function loadSdk(): Promise<void> {
+    if (sdkReady) return sdkReady;
+
+    sdkReady = new Promise<void>((resolve, reject) => {
+      const existing = (window as any).google?.accounts?.id;
+      if (existing) {
+        google = (window as any).google;
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = GSI_SRC;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        google = (window as any).google;
+        google?.accounts?.id
+          ? resolve()
+          : reject(new Error('Google Identity no disponible'));
+      };
+      script.onerror = () => reject(new Error('No se pudo cargar Google'));
+      document.head.appendChild(script);
+    });
+
+    return sdkReady;
   }
 
   async function handleCredential(response: { credential: string }) {
@@ -55,65 +169,57 @@ const GOOGLE_CLIENT_ID =
       return;
     }
 
-    window.location.href = '/cuenta';
+    const next = new URLSearchParams(window.location.search).get('next');
+    window.location.href = next && next.startsWith('/') ? next : '/cuenta';
   }
 
-  function renderGoogleButton() {
-    const g = (window as any).google;
-    if (!g?.accounts?.id || !slot || !clientId) return;
+  // Acelera el SDK mientras el usuario lee el formulario
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => loadSdk().catch(() => {}));
+  } else {
+    setTimeout(() => loadSdk().catch(() => {}), 1200);
+  }
 
-    const width = Math.min(384, Math.max(200, slot.clientWidth || 320));
+  button?.addEventListener('click', async () => {
+    if (errorEl) errorEl.classList.add('hidden');
+    setLoading(true, 'Abriendo Google…');
 
-    slot.innerHTML = '<div id="g-btn"></div>';
-    const target = document.getElementById('g-btn');
-    if (!target) return;
+    try {
+      await loadSdk();
+    } catch {
+      showError('No se pudo cargar Google. Revisa tu conexión.');
+      return;
+    }
 
-    g.accounts.id.initialize({
+    if (!google?.accounts?.id) {
+      showError('Google no está disponible en este navegador.');
+      return;
+    }
+
+    google.accounts.id.initialize({
       client_id: clientId,
       callback: handleCredential,
       auto_select: false,
       cancel_on_tap_outside: true,
-      use_fedcm_for_prompt: true,
+      ux_mode: 'popup',
     });
 
-    g.accounts.id.renderButton(target, {
-      type: 'standard',
-      theme: 'outline',
-      size: 'large',
-      shape: 'rectangular',
-      text: 'continue_with',
-      logo_alignment: 'center',
-      width: String(width),
+    // Prompt en modo popup: genera el token sin salir de la página
+    google.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+        // FedCM puede no mostrar el diálogo: avisamos en vez de dejar el botón colgado
+        setLoading(false, 'Continuar con Google');
+        const reason = notification.getNotDisplayedReason?.() ?? '';
+        showError(
+          reason === 'suppressed_by_user'
+            ? 'Bloqueaste el acceso con Google. Habilítalo en el ícono de tu navegador.'
+            : 'Google no muestra el diálogo. Revisa que las cookies de terceros estén permitidas.'
+        );
+      }
+
+      if (notification.isDismissedMoment?.()) {
+        setLoading(false, 'Continuar con Google');
+      }
     });
-  }
-
-  function loadGoogleScript() {
-    if ((window as any).google?.accounts?.id) {
-      renderGoogleButton();
-      return;
-    }
-
-    if (document.getElementById('gsi-script')) {
-      // Script ya insertado, espera a que cargue
-      setTimeout(renderGoogleButton, 300);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = 'gsi-script';
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = renderGoogleButton;
-    script.onerror = () => showError('No se pudo cargar Google. Revisa tu conexión.');
-    document.head.appendChild(script);
-  }
-
-  let resizeTimer: number | undefined;
-  window.addEventListener('resize', () => {
-    window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(renderGoogleButton, 250);
   });
-
-  loadGoogleScript();
 </script>

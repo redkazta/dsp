@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Pedidos">
-  <div id="admin-loading" class="py-20 text-center text-plata-metalico/40 text-sm">Cargando...</div>
+  <div id="admin-loading" class="py-20 text-center text-plata-metalico/75 text-sm">Cargando...</div>
 
   <div id="orders-view" class="hidden">
     <div class="mb-8">
@@ -57,7 +57,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       const container = document.getElementById('orders-list')!;
 
       if (list.length === 0) {
-        container.innerHTML = `<p class="text-sm text-plata-metalico/40 py-10 text-center">Sin pedidos.</p>`;
+        container.innerHTML = `<p class="text-sm text-plata-metalico/75 py-10 text-center">Sin pedidos.</p>`;
         return;
       }
 
@@ -69,7 +69,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
               <div>
                 <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
-                <p class="text-[11px] text-plata-metalico/50 mt-1">
+                <p class="text-[11px] text-plata-metalico/80 mt-1">
                   ${new Date(o.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                   · ${o.order_items?.length ?? 0} artículos
                 </p>
@@ -85,7 +85,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             ${(o.order_items ?? [])
               .map(
                 (i: any) => `
-              <div class="flex justify-between text-xs text-plata-metalico/60 py-1">
+              <div class="flex justify-between text-xs text-plata-metalico/85 py-1">
                 <span>${i.product_variants?.name ?? 'Producto'} × ${i.quantity}</span>
                 <span>$${Number(i.unit_price).toLocaleString('es-MX')}</span>
               </div>`

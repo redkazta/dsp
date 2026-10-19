@@ -1,0 +1,374 @@
+---
+/**
+ * AuthForm.astro - Formulario único para login y registro.
+ * Mismo layout, mismos campos base y mismas validaciones
+ * para email/password y Google.
+ */
+import GoogleButton from './GoogleButton.astro';
+
+export interface Props {
+  mode: 'login' | 'register';
+}
+
+const { mode } = Astro.props;
+const isRegister = mode === 'register';
+---
+
+<section class="min-h-[calc(100dvh-8rem)] flex items-start sm:items-center justify-center px-5 sm:px-6 py-10 sm:py-16 bg-noise">
+  <div class="w-full max-w-lg">
+    <!-- Encabezado -->
+    <div class="text-center mb-8 sm:mb-10">
+      <p class="section-label mb-3">{isRegister ? 'Únete' : 'Cuenta'}</p>
+      <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
+        {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
+      </h1>
+      <div class="gold-line mx-auto"></div>
+      <p class="mt-5 text-sm text-muted">
+        {
+          isRegister
+            ? 'Crea tu cuenta para comprar más rápido y seguir tus pedidos.'
+            : 'Entra para ver tus pedidos y guardar tus datos.'
+        }
+      </p>
+    </div>
+
+    <!-- Google (mismo en ambos modos) -->
+    <GoogleButton />
+
+    <div class="flex items-center gap-4 my-7">
+      <div class="flex-1 h-px bg-blancoRoto/30"></div>
+      <span class="font-acentos text-xs uppercase tracking-[0.2em] text-blancoRoto">
+        o
+      </span>
+      <div class="flex-1 h-px bg-blancoRoto/30"></div>
+    </div>
+
+    <!-- Formulario -->
+    <form id="auth-form" class="space-y-4" data-mode={mode} novalidate>
+      {
+        isRegister && (
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="field-label">Nombre *</span>
+              <input
+                type="text"
+                name="firstName"
+                placeholder="Nombre"
+                required
+                class="input-dark"
+                autocomplete="given-name"
+              />
+            </label>
+            <label class="block">
+              <span class="field-label">Apellidos *</span>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Apellidos"
+                required
+                class="input-dark"
+                autocomplete="family-name"
+              />
+            </label>
+          </div>
+        )
+      }
+
+      <label class="block">
+        <span class="field-label">Correo electrónico *</span>
+        <input
+          type="email"
+          name="email"
+          placeholder="tu@correo.com"
+          required
+          class="input-dark"
+          autocomplete="email"
+          inputmode="email"
+        />
+      </label>
+
+      {
+        isRegister && (
+          <>
+            <label class="block">
+              <span class="field-label">Teléfono</span>
+              <input
+                type="tel"
+                name="phone"
+                placeholder="10 dígitos"
+                class="input-dark"
+                autocomplete="tel"
+                inputmode="tel"
+                pattern="[0-9]{10}"
+              />
+            </label>
+
+            <label class="block">
+              <span class="field-label">Fecha de nacimiento</span>
+              <input
+                type="date"
+                name="birthdate"
+                class="input-dark"
+                max={new Date(Date.now() - 18 * 365 * 24 * 3600 * 1000)
+                  .toISOString()
+                  .slice(0, 10)}
+              />
+              <span class="field-hint">Opcional. Solo para promociones de cumpleaños.</span>
+            </label>
+          </>
+        )
+      }
+
+      <label class="block">
+        <span class="field-label">Contraseña *</span>
+        <div class="relative">
+          <input
+            type="password"
+            name="password"
+            placeholder={isRegister ? 'Mínimo 8 caracteres' : 'Tu contraseña'}
+            required
+            minlength={isRegister ? 8 : 6}
+            class="input-dark pr-16"
+            autocomplete={isRegister ? 'new-password' : 'current-password'}
+          />
+          <a
+            id="toggle-password"
+            role="button"
+            tabindex="0"
+            class="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors"
+            aria-label="Mostrar u ocultar contraseña"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </a>
+        </div>
+        {
+          isRegister && (
+            <span class="field-hint">
+              Al menos 8 caracteres. Usa mayúsculas, números o símbolos.
+            </span>
+          )
+        }
+      </label>
+
+      {
+        isRegister && (
+          <>
+            <label class="block">
+              <span class="field-label">Confirmar contraseña *</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                placeholder="Repite tu contraseña"
+                required
+                class="input-dark"
+                autocomplete="new-password"
+              />
+            </label>
+
+            <label class="flex items-start gap-3 pt-1 cursor-pointer">
+              <input
+                type="checkbox"
+                name="marketing"
+                class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0"
+              />
+              <span class="text-sm text-muted leading-relaxed">
+                Quiero recibir novedades y drops exclusivos por correo.
+              </span>
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                name="terms"
+                required
+                class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0"
+              />
+              <span class="text-sm text-muted leading-relaxed">
+                Acepto los
+                <a href="/terminos" class="text-oro-elegante hover:text-oro-suave underline underline-offset-2">
+                  términos y condiciones
+                </a>
+                y la
+                <a href="/privacidad" class="text-oro-elegante hover:text-oro-suave underline underline-offset-2">
+                  política de privacidad
+                </a>.
+              </span>
+            </label>
+          </>
+        )
+      }
+
+      <button type="submit" id="auth-submit" class="btn-gold w-full mt-2">
+        {isRegister ? 'Crear cuenta' : 'Entrar'}
+      </button>
+
+      <p id="auth-error" role="alert" class="hidden text-sm text-red-400 text-center leading-relaxed"></p>
+      <p id="auth-info" role="status" class="hidden text-sm text-oro-elegante text-center leading-relaxed"></p>
+    </form>
+
+    <!-- Cambio de modo -->
+    <p class="mt-8 text-center text-sm text-muted">
+      {
+        isRegister ? (
+          <>
+            ¿Ya tienes cuenta?{' '}
+            <a href="/entrar" class="text-oro-elegante font-semibold hover:text-oro-suave transition-colors">
+              Iniciar sesión
+            </a>
+          </>
+        ) : (
+          <>
+            ¿No tienes cuenta?{' '}
+            <a href="/registro" class="text-oro-elegante font-semibold hover:text-oro-suave transition-colors">
+              Crear cuenta
+            </a>
+          </>
+        )
+      }
+    </p>
+  </div>
+</section>
+
+<style>
+  .field-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #f2c94c;
+  }
+
+  .field-hint {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.7);
+  }
+</style>
+
+<script>
+  import { signIn, signUp } from '../lib/auth';
+
+  const form = document.getElementById('auth-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('auth-submit') as HTMLButtonElement;
+  const errorEl = document.getElementById('auth-error')!;
+  const infoEl = document.getElementById('auth-info')!;
+  const toggleBtn = document.getElementById('toggle-password');
+  const isRegister = form?.dataset.mode === 'register';
+
+  function show(el: HTMLElement, message: string) {
+    el.textContent = message;
+    el.classList.remove('hidden');
+  }
+
+  function clearMessages() {
+    errorEl.classList.add('hidden');
+    infoEl.classList.add('hidden');
+  }
+
+  // Mostrar / ocultar contraseña
+  function togglePassword() {
+    const input = form.elements.namedItem('password') as HTMLInputElement;
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  }
+
+  toggleBtn?.addEventListener('click', togglePassword);
+  toggleBtn?.addEventListener('keydown', (e) => {
+    const key = (e as KeyboardEvent).key;
+    if (key === 'Enter' || key === ' ') {
+      e.preventDefault();
+      togglePassword();
+    }
+  });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearMessages();
+
+    const data = new FormData(form);
+    const email = String(data.get('email') ?? '').trim();
+    const password = String(data.get('password') ?? '');
+
+    submitBtn.disabled = true;
+    const original = submitBtn.textContent;
+    submitBtn.textContent = 'Procesando...';
+
+    try {
+      if (isRegister) {
+        const firstName = String(data.get('firstName') ?? '').trim();
+        const lastName = String(data.get('lastName') ?? '').trim();
+        const confirm = String(data.get('confirmPassword') ?? '');
+        const phone = String(data.get('phone') ?? '').trim();
+        const birthdate = String(data.get('birthdate') ?? '');
+
+        if (!firstName || !lastName) {
+          show(errorEl, 'Escribe tu nombre y apellidos.');
+          return;
+        }
+
+        if (password.length < 8) {
+          show(errorEl, 'La contraseña debe tener al menos 8 caracteres.');
+          return;
+        }
+
+        if (password !== confirm) {
+          show(errorEl, 'Las contraseñas no coinciden.');
+          return;
+        }
+
+        if (!form.querySelector<HTMLInputElement>('input[name="terms"]')?.checked) {
+          show(errorEl, 'Debes aceptar los términos y la política de privacidad.');
+          return;
+        }
+
+        const { data: result, error } = await signUp(email, password, {
+          firstName,
+          lastName,
+          phone,
+          birthdate,
+          marketing: Boolean(data.get('marketing')),
+        });
+
+        if (error) {
+          show(errorEl, error.message);
+          return;
+        }
+
+        if (result.user && !result.session) {
+          show(infoEl, 'Revisa tu correo para confirmar tu cuenta.');
+          return;
+        }
+
+        window.location.href = '/cuenta';
+      } else {
+        const { error } = await signIn(email, password);
+
+        if (error) {
+          show(
+            errorEl,
+            error.message === 'Invalid login credentials'
+              ? 'Correo o contraseña incorrectos.'
+              : error.message
+          );
+          return;
+        }
+
+        const next = new URLSearchParams(window.location.search).get('next');
+        window.location.href = next && next.startsWith('/') ? next : '/cuenta';
+      }
+    } catch (err: any) {
+      show(errorEl, err?.message ?? 'Algo salió mal. Intenta de nuevo.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = original;
+    }
+  });
+</script>

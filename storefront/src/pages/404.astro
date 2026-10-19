@@ -1,18 +1,20 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Página no encontrada | Dinero Sobre Problemas" description="La página que buscas no existe.">
-  <section class="min-h-[70vh] flex items-center justify-center px-6 bg-noise">
-    <div class="text-center max-w-lg">
+  <section class="min-h-[70vh] flex items-center justify-center px-5 sm:px-6 bg-noise">
+    <div class="text-center max-w-lg w-full">
       <p class="section-label mb-6">Error 404</p>
-      <h1 class="font-titulos text-6xl lg:text-8xl text-blancoRoto mb-6">Perdido</h1>
+      <h1 class="font-titulos text-6xl sm:text-7xl lg:text-8xl text-blancoRoto mb-6">Perdido</h1>
       <div class="gold-line mx-auto mb-8"></div>
-      <p class="text-plata-metalico/70 mb-10 leading-relaxed">
+      <p class="text-base sm:text-lg text-plata-metalico/85 mb-10 leading-relaxed">
         La página que buscas no existe o fue movida.
         Pero el buen estilo nunca se pierde.
       </p>
-      <div class="flex flex-wrap gap-4 justify-center">
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
         <a href="/" class="btn-gold">Ir al inicio</a>
         <a href="/tienda" class="btn-outline">Ver catálogo</a>
       </div>

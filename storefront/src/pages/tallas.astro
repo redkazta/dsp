@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const rows = [
@@ -19,7 +21,7 @@ const rows = [
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
     <p class="section-label mb-4">Ayuda</p>
     <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Guía de tallas</h1>
-    <p class="text-sm text-plata-metalico/60 mb-12">
+    <p class="text-base text-plata-metalico/85 mb-12">
       Medidas de la prenda extendida, en centímetros. El corte es relajado;
       si buscas un ajuste más holgado, sube una talla.
     </p>
@@ -38,8 +40,8 @@ const rows = [
             rows.map((r) => (
               <tr class="border-b border-plata-metalico/10 last:border-0">
                 <td class="px-5 py-4 font-acentos text-plata-claro">{r.size}</td>
-                <td class="px-5 py-4 text-plata-metalico/70">{r.chest}</td>
-                <td class="px-5 py-4 text-plata-metalico/70">{r.length}</td>
+                <td class="px-5 py-4 text-plata-metalico/85">{r.chest}</td>
+                <td class="px-5 py-4 text-plata-metalico/85">{r.length}</td>
               </tr>
             ))
           }
@@ -47,7 +49,7 @@ const rows = [
       </table>
     </div>
 
-    <div class="mt-12 space-y-6 text-sm text-plata-metalico/70 leading-relaxed">
+    <div class="mt-12 space-y-6 text-base text-plata-metalico/85 leading-relaxed">
       <div>
         <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-3">
           Cómo medirte

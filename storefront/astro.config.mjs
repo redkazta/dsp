@@ -3,11 +3,10 @@ import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel';
 
-// https://astro.build/config
+// Todo es SSR: el middleware resuelve la sesión (header, /admin, /cuenta)
+// y las páginas pueden renderizar el estado de autenticación en el primer HTML.
 export default defineConfig({
-  // Con adapter de Vercel, las páginas con `prerender = true` (default)
-  // se sirven estáticas; las que tienen `prerender = false` van a SSR.
-  output: 'static',
+  output: 'server',
   adapter: vercel(),
   integrations: [tailwind()],
   site: 'https://dinerosobreproblemas.com',
