@@ -254,7 +254,7 @@ export async function getDashboardStats(tenantId: string) {
   ]);
 
   const orders = ordersRes.data ?? [];
-  const paid = orders.filter((o) =>
+  const paid = orders.filter((o: { status: string }) =>
     ['confirmed', 'design', 'preparing', 'ready', 'shipped', 'delivered'].includes(o.status)
   );
 
@@ -263,18 +263,18 @@ export async function getDashboardStats(tenantId: string) {
   startOfMonth.setHours(0, 0, 0, 0);
 
   const monthRevenue = paid
-    .filter((o) => new Date(o.created_at) >= startOfMonth)
-    .reduce((sum, o) => sum + Number(o.total_amount), 0);
+    .filter((o: { created_at: string }) => new Date(o.created_at) >= startOfMonth)
+    .reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0);
 
   return {
     totalOrders: orders.length,
-    pendingOrders: orders.filter((o) => o.status === 'pending').length,
-    inProduction: orders.filter((o) => ['confirmed', 'design', 'preparing'].includes(o.status)).length,
-    readyOrders: orders.filter((o) => o.status === 'ready').length,
+    pendingOrders: orders.filter((o: { status: string }) => o.status === 'pending').length,
+    inProduction: orders.filter((o: { status: string }) => ['confirmed', 'design', 'preparing'].includes(o.status)).length,
+    readyOrders: orders.filter((o: { status: string }) => o.status === 'ready').length,
     monthRevenue,
-    totalRevenue: paid.reduce((sum, o) => sum + Number(o.total_amount), 0),
+    totalRevenue: paid.reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0),
     products: productsRes.data?.length ?? 0,
-    activeProducts: productsRes.data?.filter((p) => p.is_active).length ?? 0,
+    activeProducts: productsRes.data?.filter((p: { is_active: boolean }) => p.is_active).length ?? 0,
     customers: customersRes.data?.length ?? 0,
   };
 }

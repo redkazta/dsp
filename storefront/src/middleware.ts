@@ -8,7 +8,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase-server';
 
-export const onRequest = defineMiddleware(async (context, next) => {
+export const onRequest = defineMiddleware(async (context: any, next: any) => {
   const supabase = createSupabaseServerClient(context.request, context.cookies);
 
   const {
@@ -43,10 +43,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const fallbackName = (profile?.full_name as string) ?? (meta.full_name as string) ?? '';
 
     firstName =
-      profile?.first_name ??
-      (meta.given_name as string) ??
-      (meta.first_name as string) ??
-      (fallbackName.split(' ')[0] || (user.email ?? '').split('@')[0]);
+      profile?.first_name ?
+      (meta.given_name as string) ?
+      (meta.first_name as string) ?
+      (fallbackName.split(' ')[0] ?? (user.email ?? '').split('@')[0]);
 
     phone = profile?.phone ?? (meta.phone as string) ?? null;
     role = profile?.role ?? null;

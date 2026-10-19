@@ -18,7 +18,7 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies }: { request: Request; cookies: any }) => {
   const supabase = createSupabaseServerClient(request, cookies);
 
   const {
@@ -40,8 +40,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ error: 'Faltan datos de contacto' }, 400);
   }
 
-  const subtotal = items.reduce(
-    (sum: number, i: any) => sum + Number(i.price) * Number(i.qty),
+  const subtotal = items.reduce((sum: number, i: any) => sum + Number(i.price) * Number(i.qty),
     0
   );
   const shipping = Number(payload?.shippingCost ?? 0);
