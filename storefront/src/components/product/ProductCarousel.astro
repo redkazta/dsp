@@ -25,6 +25,9 @@ const {
 } = Astro.props;
 
 const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+// Un producto por id (la consulta puede repetirlo por joins)
+const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id), p])).values()];
 ---
 
 <section class="py-14 sm:py-20">
@@ -65,7 +68,7 @@ const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     </div>
 
     {
-      products.length === 0 ? (
+      uniqueProducts.length === 0 ? (
         <p class="text-base text-white/80 py-10">Aún no hay piezas en {title.toLowerCase()}.</p>
       ) : (
         <div
@@ -74,7 +77,7 @@ const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
           role="list"
           aria-label={`${title}: piezas`}
         >
-          {[...new Map<string, any>(products.map((p) => [String(p.id), p])).values()].map((product) => (
+          {uniqueProducts.map((product) => (
             <div class="carousel-item" role="listitem">
               <ProductCard product={product} />
             </div>
