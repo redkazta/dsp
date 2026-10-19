@@ -9,7 +9,11 @@ export interface Props {
   products: any[];
 }
 
-const { products } = Astro.props;
+const { products: rawProducts } = Astro.props;
+
+// Red de seguridad: un producto por id aunque la consulta lo repita
+// (p. ej. por un join con imágenes o variantes).
+const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), p])).values()];
 ---
 
 {

@@ -74,7 +74,7 @@ const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
           role="list"
           aria-label={`${title}: piezas`}
         >
-          {products.map((product) => (
+          {[...new Map<string, any>(products.map((p) => [String(p.id), p])).values()].map((product) => (
             <div class="carousel-item" role="listitem">
               <ProductCard product={product} />
             </div>
