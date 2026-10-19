@@ -42,7 +42,7 @@ try {
             class="group relative w-24 h-28 overflow-hidden border-2 border-blancoRoto/20 bg-white hover:border-oro-elegante transition-colors duration-300"
           >
             <img src={p.src} alt={p.label} class="w-full h-full object-contain p-1" loading="lazy" />
-            <span class="absolute inset-x-0 bottom-0 bg-negro-profundo text-center py-1 font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto opacity-0 group-hover:opacity-100 transition-opacity">
+            <span class="absolute inset-x-0 bottom-0 bg-negro-profundo text-center py-1 font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto opacity-0 transition-opacity reels-label">
               {p.label}
             </span>
           </a>
@@ -193,3 +193,13 @@ try {
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .reels-label {
+    transition: opacity 0.25s ease;
+  }
+
+  a:hover > .reels-label {
+    opacity: 1;
+  }
+</style>

@@ -183,25 +183,50 @@ export async function uploadProductImage(file: File, slugHint: string): Promise<
 }
 
 /**
- * Pedidos (todos, para el panel).
+ * Pedidos (todos, para el panel) con items e historial.
  */
 export async function listOrders(tenantId: string) {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, order_items(*, product_variants(name, size, color))')
+    .select('*, order_items(*), order_status_history(status, notes, created_at)')
     .eq('tenant_id', tenantId)
     .eq('is_deleted', false)
     .order('created_at', { ascending: false })
-    .limit(100);
+    .limit(200);
 
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-export async function updateOrderStatus(orderId: string, status: string) {
+/**
+ * Cambia el estado registrando el cambio en el historial.
+ * El trigger de Postgres también deja rastro por si se cambia desde SQL.
+ */
+export async function updateOrderStatus(
+  orderId: string,
+  status: string,
+  extra: { trackingNumber?: string; carrier?: string; notes?: string } = {}
+) {
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+
+  if (extra.trackingNumber !== undefined) patch.tracking_number = extra.trackingNumber || null;
+  if (extra.carrier !== undefined) patch.carrier = extra.carrier || null;
+
+  const { error } = await supabase.from('orders').update(patch).eq('id', orderId);
+  if (error) throw new Error(error.message);
+
+  await supabase.from('order_status_history').insert({
+    order_id: orderId,
+    status,
+    notes: extra.notes ?? null,
+  });
+}
+
+/** Notas internas del pedido (solo staff) */
+export async function saveOrderNotes(orderId: string, adminNotes: string) {
   const { error } = await supabase
     .from('orders')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ admin_notes: adminNotes, updated_at: new Date().toISOString() })
     .eq('id', orderId);
 
   if (error) throw new Error(error.message);
@@ -229,7 +254,9 @@ export async function getDashboardStats(tenantId: string) {
   ]);
 
   const orders = ordersRes.data ?? [];
-  const paid = orders.filter((o) => ['confirmed', 'preparing', 'shipped', 'delivered'].includes(o.status));
+  const paid = orders.filter((o) =>
+    ['confirmed', 'design', 'preparing', 'ready', 'shipped', 'delivered'].includes(o.status)
+  );
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
@@ -242,6 +269,8 @@ export async function getDashboardStats(tenantId: string) {
   return {
     totalOrders: orders.length,
     pendingOrders: orders.filter((o) => o.status === 'pending').length,
+    inProduction: orders.filter((o) => ['confirmed', 'design', 'preparing'].includes(o.status)).length,
+    readyOrders: orders.filter((o) => o.status === 'ready').length,
     monthRevenue,
     totalRevenue: paid.reduce((sum, o) => sum + Number(o.total_amount), 0),
     products: productsRes.data?.length ?? 0,

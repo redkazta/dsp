@@ -27,15 +27,32 @@ const sizes = [
 ] as string[];
 ---
 
-<a href={href} class="group block">
+<div class="product-card-wrap">
+  <button
+    type="button"
+    class="wish-btn absolute top-3 right-3 z-20 w-11 h-11 inline-flex items-center justify-center bg-negro-profundo/90 border-2 border-blancoRoto/30 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-colors"
+    data-wish-id={product.id}
+    data-wish-slug={product.slug ?? ''}
+    data-wish-name={product.name}
+    data-wish-price={price}
+    data-wish-image={image ?? ''}
+    aria-pressed="false"
+    aria-label={`Guardar ${product.name} en favoritos`}
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+    </svg>
+  </button>
+
+  <a href={href} class="block">
   <!-- Imagen -->
-  <div class="relative aspect-[4/5] overflow-hidden bg-white border-2 border-blancoRoto/15 group-hover:border-oro-elegante transition-colors duration-300">
+  <div class="relative aspect-[4/5] overflow-hidden bg-white border-2 product-media transition-colors duration-300">
     {
       image ? (
         <img
           src={image}
           alt={product.name}
-          class="w-full h-full object-contain transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+          class="w-full h-full object-contain transition-transform duration-700 ease-out"
           loading="lazy"
           decoding="async"
         />
@@ -60,7 +77,7 @@ const sizes = [
     }
 
     <!-- Barra inferior (CTA en desktop, siempre visible en touch) -->
-    <div class="absolute bottom-0 left-0 right-0 translate-y-0 lg:translate-y-full lg:group-hover:translate-y-0 transition-transform duration-500">
+    <div class="product-cta absolute bottom-0 left-0 right-0 transition-transform duration-500">
       <div class="bg-oro-elegante text-negro-profundo text-center py-3">
         <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
           Ver producto
@@ -69,16 +86,16 @@ const sizes = [
     </div>
 
     <!-- Línea dorada -->
-    <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-elegante scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left z-10"></div>
+    <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-elegante scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
 
     <!-- Marco sutil -->
-    <div class="absolute inset-0 ring-2 ring-inset ring-transparent group-hover:ring-oro-elegante/40 transition-all duration-500 pointer-events-none"></div>
+    <div class="absolute inset-0 ring-2 ring-inset ring-transparent transition-all duration-500 pointer-events-none"></div>
   </div>
 
   <!-- Info -->
   <div class="pt-4 flex items-start justify-between gap-4">
     <div class="min-w-0">
-      <h3 class="font-acentos text-base sm:text-lg text-blancoRoto group-hover:text-oro-elegante transition-colors duration-300 leading-snug">
+      <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
         {product.name}
       </h3>
       {
@@ -93,4 +110,89 @@ const sizes = [
       ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
     </p>
   </div>
-</a>
+  </a>
+</div>
+
+<style>
+  /* La tarjeta se repite en varias páginas: los efectos viven aquí,
+     no en el layout, para no mezclar scope. */
+  .product-card-wrap {
+    position: relative;
+  }
+
+  .product-card-wrap a .product-media {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .product-card-wrap:hover .product-media {
+    border-color: #f2c94c;
+  }
+
+  .product-card-wrap:hover h3 {
+    color: #f2c94c;
+  }
+
+  .product-card-wrap:hover .product-media img {
+    transform: scale(1.05);
+  }
+
+  .product-card-wrap:hover .product-line {
+    transform: scaleX(1);
+  }
+
+  .product-cta {
+    transform: translateY(0);
+  }
+
+  @media (min-width: 1024px) {
+    .product-cta {
+      transform: translateY(100%);
+    }
+
+    .product-card-wrap:hover .product-cta {
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
+  type WishWindow = Window & { __dspWishBound?: boolean };
+
+  function initWishCards() {
+    const paint = (btn: HTMLButtonElement, active: boolean) => {
+      btn.setAttribute('aria-pressed', String(active));
+      btn.classList.toggle('border-oro-elegante', active);
+      btn.classList.toggle('text-oro-elegante', active);
+      btn.classList.toggle('border-blancoRoto/30', !active);
+      btn.querySelector('svg')?.setAttribute('fill', active ? 'currentColor' : 'none');
+    };
+
+    document.querySelectorAll<HTMLButtonElement>('.wish-btn').forEach((btn) => {
+      isInWishlist(btn.dataset.wishId!).then((active) => paint(btn, active)).catch(() => {});
+    });
+
+    document.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.wish-btn');
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const active = await toggleWishlist({
+        productId: btn.dataset.wishId!,
+        slug: btn.dataset.wishSlug || null,
+        name: btn.dataset.wishName!,
+        price: Number(btn.dataset.wishPrice),
+        image: btn.dataset.wishImage || null,
+      });
+
+      paint(btn, active);
+    });
+  }
+
+  if (!(window as WishWindow).__dspWishBound) {
+    (window as WishWindow).__dspWishBound = true;
+    initWishCards();
+  }
+</script>

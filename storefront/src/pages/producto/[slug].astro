@@ -141,6 +141,23 @@ const productLd = product
                   ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </p>
                 <span class="text-plata-metalico/85 text-base">MXN</span>
+                <button
+                  type="button"
+                  id="wish-toggle"
+                  class="ml-auto inline-flex items-center justify-center gap-2 min-h-[48px] px-4 border-2 border-blancoRoto/30 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-colors font-acentos text-xs uppercase tracking-[0.18em]"
+                  data-wish-id={product.id}
+                  data-wish-slug={product.slug ?? ''}
+                  data-wish-name={product.name}
+                  data-wish-price={price}
+                  data-wish-image={images[0]?.url ?? ''}
+                  aria-pressed="false"
+                  aria-label="Guardar en favoritos"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+                  </svg>
+                  <span id="wish-label">Favorito</span>
+                </button>
               </div>
 
               <div class="gold-line mb-8" style="margin-left: 0"></div>
@@ -209,8 +226,9 @@ const productLd = product
                 </button>
                 <a
                   href="/carrito"
+                  id="open-cart-drawer"
                   class="min-h-[56px] px-6 py-5 border-2 border-blancoRoto/40 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
-                  aria-label="Ir al carrito"
+                  aria-label="Ver carrito"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
@@ -255,6 +273,8 @@ const productLd = product
 
   <script>
     import { addToCart } from '../../lib/cart';
+    import { openStoreDrawer } from '../../lib/store-drawer';
+    import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
 
     const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
     if (btn) {
@@ -331,11 +351,49 @@ const productLd = product
           price: Number(variant.price),
           qty: 1,
           image: btn.dataset.image || undefined,
+          size: variant.size ?? null,
+          color: variant.color ?? null,
         });
 
         feedback.textContent = '✓ Agregado al carrito';
         feedback.classList.remove('hidden');
         setTimeout(() => feedback.classList.add('hidden'), 2500);
+
+        // Abre el carrito flotante para seguir comprando sin salir
+        openStoreDrawer('cart');
+      });
+    }
+
+    // ---------- Favoritos ----------
+    const wishBtn = document.getElementById('wish-toggle') as HTMLButtonElement | null;
+
+    function paintWish(active: boolean) {
+      if (!wishBtn) return;
+      wishBtn.setAttribute('aria-pressed', String(active));
+      wishBtn.classList.toggle('border-oro-elegante', active);
+      wishBtn.classList.toggle('text-oro-elegante', active);
+      wishBtn.classList.toggle('border-blancoRoto/30', !active);
+
+      const icon = wishBtn.querySelector('svg');
+      if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
+
+      const label = document.getElementById('wish-label');
+      if (label) label.textContent = active ? 'Guardado' : 'Favorito';
+    }
+
+    if (wishBtn) {
+      isInWishlist(wishBtn.dataset.wishId!).then(paintWish);
+
+      wishBtn.addEventListener('click', async () => {
+        const active = await toggleWishlist({
+          productId: wishBtn.dataset.wishId!,
+          slug: wishBtn.dataset.wishSlug || null,
+          name: wishBtn.dataset.wishName!,
+          price: Number(wishBtn.dataset.wishPrice),
+          image: wishBtn.dataset.wishImage || null,
+        });
+
+        paintWish(active);
       });
     }
   </script>

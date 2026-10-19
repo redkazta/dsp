@@ -182,18 +182,10 @@ export async function updateProfile(
   return { error };
 }
 
-/** Pedidos del usuario */
+/** Pedidos y wishlist */
 export async function getMyOrders() {
-  const user = await getUser();
-  if (!user) return [];
-
-  const { data } = await supabase
-    .from('orders')
-    .select('*, order_items(*)')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
-
-  return data ?? [];
+  const { getMyOrders: list } = await import('./orders');
+  return list();
 }
 
 /** Direcciones del usuario */

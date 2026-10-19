@@ -44,16 +44,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script>
     import { getDashboardStats, listOrders } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
-
-    const STATUS: Record<string, string> = {
-      pending: 'Pendiente',
-      confirmed: 'Confirmado',
-      preparing: 'Preparando',
-      shipped: 'Enviado',
-      delivered: 'Entregado',
-      cancelled: 'Cancelado',
-      returned: 'Devuelto',
-    };
+    import { STATUS_LABEL, formatOrderMoney, type OrderStatus } from '../../lib/orders';
 
     async function init() {
       const loading = document.getElementById('admin-loading')!;
@@ -68,15 +59,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       dash.classList.remove('hidden');
 
       document.getElementById('stats')!.innerHTML = [
-        { label: 'Ventas del mes', value: `$${stats.monthRevenue.toLocaleString('es-MX')}` },
-        { label: 'Pedidos pendientes', value: String(stats.pendingOrders) },
-        { label: 'Productos activos', value: `${stats.activeProducts}/${stats.products}` },
-        { label: 'Clientes', value: String(stats.customers) },
+        { label: 'Ventas del mes', value: formatOrderMoney(stats.monthRevenue) },
+        { label: 'Pago pendiente', value: String(stats.pendingOrders) },
+        { label: 'En producción', value: String(stats.inProduction) },
+        { label: 'Listos para enviar', value: String(stats.readyOrders) },
       ]
         .map(
           (s) => `
         <div class="card p-5">
-          <p class="text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-2">${s.label}</p>
+          <p class="text-[11px] uppercase tracking-[0.16em] text-plata-metalico/85 mb-2">${s.label}</p>
           <p class="font-acentos text-2xl text-oro-elegante">${s.value}</p>
         </div>`
         )
@@ -84,17 +75,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       document.getElementById('recent-orders')!.innerHTML =
         orders.length === 0
-          ? `<p class="text-xs text-plata-metalico/75">Aún no hay pedidos.</p>`
+          ? `<p class="text-sm text-plata-metalico/85">Aún no hay pedidos.</p>`
           : orders
               .slice(0, 6)
               .map(
                 (o: any) => `
-          <a href="/admin/pedidos" class="flex items-center justify-between border border-plata-metalico/10 p-4 hover:border-oro-elegante/30 transition-colors">
-            <div>
-              <p class="font-acentos text-sm text-plata-claro">${o.order_number ?? o.id.slice(0, 8)}</p>
-              <p class="text-[11px] text-plata-metalico/80">${STATUS[o.status] ?? o.status}</p>
+          <a href="/admin/pedidos" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-elegante transition-colors">
+            <div class="min-w-0">
+              <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? o.id.slice(0, 8)}</p>
+              <p class="text-sm text-plata-metalico/85 truncate">${o.contact_name ?? ''}</p>
+              <p class="text-xs uppercase tracking-wider text-oro-elegante">${STATUS_LABEL[o.status as OrderStatus] ?? o.status}</p>
             </div>
-            <p class="font-acentos text-sm text-oro-elegante">$${Number(o.total_amount).toLocaleString('es-MX')}</p>
+            <p class="font-acentos text-base text-oro-elegante whitespace-nowrap">${formatOrderMoney(Number(o.total_amount))}</p>
           </a>`
               )
               .join('');

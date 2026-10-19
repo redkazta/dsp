@@ -4,6 +4,7 @@
  * Dinero Sobre Problemas · Estética editorial, negro/oro/plata
  */
 import '../styles/global.css';
+import StoreDrawer from '../components/store/StoreDrawer.astro';
 
 export interface Props {
   title?: string;
@@ -149,29 +150,18 @@ const jsonLd = {
           </nav>
 
           <!-- Acciones -->
-          <div class="flex items-center gap-1 sm:gap-3 lg:gap-5">
-            <a href="/tienda" aria-label="Buscar" class="p-2.5 text-blancoRoto hover:text-oro-elegante transition-colors">
+          <div class="flex items-center gap-0.5 sm:gap-2 lg:gap-4">
+            <a href="/tienda" aria-label="Buscar" class="h-11 w-11 inline-flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
               </svg>
             </a>
-            <a href={accountHref} aria-label={accountLabel} class="p-2.5 text-blancoRoto hover:text-oro-elegante transition-colors">
+            <a href={accountHref} aria-label={accountLabel} class="h-11 w-11 inline-flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
               </svg>
             </a>
-            <a href="/carrito" aria-label="Carrito" class="relative p-2.5 -mr-2.5 text-blancoRoto hover:text-oro-elegante transition-colors">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              <span
-                id="cart-count"
-                class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-oro-elegante text-negro-profundo text-[10px] font-bold rounded-full items-center justify-center hidden"
-              >
-                0
-              </span>
-            </a>
+            <StoreDrawer />
           </div>
         </div>
       </div>
@@ -191,9 +181,21 @@ const jsonLd = {
           }
           <a
             href={accountHref}
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-oro-elegante transition-colors"
+            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-oro-elegante transition-colors border-t border-blancoRoto/10"
           >
             {accountLabel}
+          </a>
+          <a
+            href="/favoritos"
+            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-elegante transition-colors"
+          >
+            Favoritos
+          </a>
+          <a
+            href="/carrito"
+            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-elegante transition-colors"
+          >
+            Carrito
           </a>
         </div>
       </nav>
@@ -374,17 +376,6 @@ const jsonLd = {
           slides[current].style.opacity = '1';
         }, 3500);
       }
-
-      // Contador del carrito desde localStorage
-      try {
-        const cart = JSON.parse(localStorage.getItem('dsp_cart') || '[]');
-        const badge = document.getElementById('cart-count');
-        if (badge && cart.length > 0) {
-          badge.textContent = String(cart.reduce((n: number, i: any) => n + (i.qty || 1), 0));
-          badge.classList.remove('hidden');
-          badge.classList.add('flex');
-        }
-      } catch {}
     </script>
   </body>
 </html>

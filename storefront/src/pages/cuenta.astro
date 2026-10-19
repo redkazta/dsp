@@ -46,6 +46,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <h2 class="section-label mb-6">Mis pedidos</h2>
           <div id="orders-list" class="space-y-4"></div>
 
+          <h2 class="section-label mt-10 mb-4">Mis favoritos</h2>
+          <div id="wish-list" class="space-y-3"></div>
+
           <h2 class="section-label mt-10 mb-4">Mis direcciones</h2>
           <div id="addresses-list" class="space-y-3"></div>
         </section>
@@ -104,8 +107,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </style>
 
   <script>
-    import { getProfile, getMyOrders, getMyAddresses, signOut, updateProfile } from '../lib/auth';
-    import { formatMXN } from '../lib/cart';
+    import { getProfile, getMyAddresses, signOut, updateProfile } from '../lib/auth';
+    import {
+      getMyOrders,
+      STATUS_LABEL,
+      STATUS_HINT,
+      formatOrderMoney,
+      formatOrderDate,
+      type OrderStatus,
+    } from '../lib/orders';
+    import { getWishlist, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
 
     const loading = document.getElementById('loading')!;
     const guest = document.getElementById('guest')!;
@@ -193,20 +204,69 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                <a href="/tienda" class="btn-outline inline-flex">Ver catálogo</a>
              </div>`
           : orders
-              .map(
-                (o: any) => `
-            <div class="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="min-w-0">
-                <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? String(o.id).slice(0, 8)}</p>
-                <p class="text-sm text-muted mt-1">
-                  ${new Date(o.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  · ${o.status}
-                </p>
+              .map((o: any) => {
+                const status = o.status as OrderStatus;
+                return `
+            <div class="card p-5">
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? String(o.id).slice(0, 8)}</p>
+                  <p class="text-sm text-muted mt-1">
+                    ${formatOrderDate(o.created_at)} · ${(o.order_items ?? []).length} pieza(s)
+                  </p>
+                </div>
+                <div class="sm:text-right shrink-0">
+                  <p class="font-acentos text-xl text-oro-elegante">${formatOrderMoney(Number(o.total_amount))}</p>
+                  <p class="text-xs uppercase tracking-wider text-oro-elegante mt-1">
+                    ${STATUS_LABEL[status] ?? status}
+                  </p>
+                </div>
               </div>
-              <p class="font-acentos text-lg text-oro-elegante shrink-0">$${formatMXN(Number(o.total_amount))}</p>
+              <p class="mt-3 text-sm text-muted">${STATUS_HINT[status] ?? ''}</p>
+              ${o.tracking_number ? `<p class="mt-2 text-sm text-blancoRoto">Guía: ${o.carrier ?? ''} ${o.tracking_number}</p>` : ''}
+              <div class="mt-4 flex flex-wrap gap-2">
+                <a href="/confirmacion?order=${encodeURIComponent(o.order_number ?? o.id)}" class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs">
+                  Ver seguimiento
+                </a>
+              </div>
+            </div>`;
+              })
+              .join('');
+
+      // Favoritos
+      const wish = await getWishlist();
+      const wishList = document.getElementById('wish-list')!;
+      wishList.innerHTML =
+        wish.length === 0
+          ? `<p class="text-sm text-muted">Sin favoritos guardados.</p>`
+          : wish
+              .map(
+                (i: WishlistItem) => `
+            <div class="card p-4 flex items-center gap-4" data-wish-row="${i.productId}">
+              <div class="w-14 h-16 shrink-0 bg-white border-2 border-blancoRoto/20 overflow-hidden">
+                ${i.image ? `<img src="${i.image}" alt="" class="w-full h-full object-contain">` : ''}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-acentos text-base text-blancoRoto truncate">${i.name}</p>
+                <p class="text-sm text-oro-elegante">${formatOrderMoney(i.price)}</p>
+              </div>
+              <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+                <a href="/producto/${i.slug ?? i.productId}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>
+                <button type="button" data-wish-remove="${i.productId}"
+                  class="min-h-[40px] px-3 text-xs uppercase tracking-wider text-muted hover:text-red-400">
+                  Quitar
+                </button>
+              </div>
             </div>`
               )
               .join('');
+
+      wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          await removeFromWishlist(b.dataset.wishRemove!);
+          b.closest('[data-wish-row]')?.remove();
+        })
+      );
 
       // Direcciones
       const addresses = await getMyAddresses();

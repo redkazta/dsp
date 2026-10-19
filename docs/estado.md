@@ -9,24 +9,29 @@ Verificar: Supabase → Authentication → Providers → Google tiene el toggle 
 
 ## Pendientes elegidos por el usuario
 
-### 1. Checkout completo con Stripe
-- Crear `order` + `order_items` desde el checkout
-- Descontar stock al confirmar pago
-- Webhook `checkout.session.completed` que marca el pedido pagado
-- `/confirmacion` leyendo el `session_id`
-- Conectar `/checkout` → API Render → Stripe
+### 1. Checkout con Stripe real
+- Sustituir el pago simulado (`lib/orders.ts`) por Stripe Checkout
+- Webhook `checkout.session.completed` que confirme el pago
+- Al confirmar, mover el pedido de `pending` a `confirmed`
 
 ### 3. Página de producto pulida (conversión)
 - Zoom de imagen al hover
 - Guía de tallas en modal
 - "Últimas N piezas" cuando stock es bajo
-- Barra de envío gratis progresiva ("te faltan $X")
+- Barra de envío gratis progresiva (ya existe en el carrito flotante)
 - Recomendados por categoría (ya existe el código base)
 
 ---
 
 ## Completado
 
+- **Pedidos de punta a punta** (`scripts/orders_wishlist_payments.sql`):
+  - Checkout con datos de contacto/envío, notas y **pago con tarjeta simulado** (`lib/orders.ts`, rechazo con `4000 0000 0000 0002`).
+  - Folio `DSP-000123`, historial automático por trigger y fotografía de cada pieza (nombre, talla, color, imagen) al momento de comprar.
+  - Flujo sin stock: `pending → confirmed → design → preparing → ready → shipped → delivered`.
+  - `/confirmacion` con línea de tiempo del pedido y `/cuenta` con seguimiento.
+- **Panel admin de pedidos**: resumen por estatus, filtros, búsqueda, tarjetas expandidas con piezas, dirección, historial, guía de paquetería y notas internas; botones para mover el estado.
+- **Carrito flotante y favoritos** (`components/store/StoreDrawer.astro`): panel lateral con pestañas, se abre desde el header y al agregar al producto. La wishlist se guarda por usuario en `wishlist_items` (localStorage sin sesión, se fusiona al entrar).
 - **Registro homologado**: un solo formulario (`components/auth/AuthForm.astro`) para login y registro con nombre, apellidos, email, teléfono, fecha de nacimiento, contraseña + confirmación, marketing y términos.
   - Google y email crean el **mismo perfil** (`customer_profiles`) con campos idénticos y rol `customer`.
   - `ensureProfile()` en `lib/auth.ts` repara perfiles incompletos de Google (lee `given_name`/`family_name`).

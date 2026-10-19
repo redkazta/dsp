@@ -1,0 +1,555 @@
+---
+/**
+ * StoreDrawer - panel flotante con carrito y wishlist.
+ * Se abre desde el header o desde cualquier página que emita
+ * `store:open` con detail { tab: 'cart' | 'wishlist' }.
+ */
+---
+
+<!-- Disparadores -->
+<button type="button" id="drawer-open-cart" class="header-icon" aria-label="Abrir carrito" aria-haspopup="dialog">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+    <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+  </svg>
+  <span id="cart-count" class="header-badge hidden">0</span>
+</button>
+
+<button type="button" id="drawer-open-wishlist" class="header-icon" aria-label="Abrir favoritos" aria-haspopup="dialog">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+  </svg>
+  <span id="wish-count" class="header-badge hidden">0</span>
+</button>
+
+<!-- Overlay + panel -->
+<div id="drawer" class="drawer" hidden>
+  <button type="button" id="drawer-backdrop" class="drawer-backdrop" aria-label="Cerrar"></button>
+
+  <aside
+    id="drawer-panel"
+    class="drawer-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tab-cart"
+    tabindex="-1"
+  >
+    <header class="drawer-head">
+      <div class="drawer-tabs" role="tablist">
+        <button type="button" id="tab-cart" role="tab" class="drawer-tab" aria-selected="true">
+          Carrito <span id="tab-cart-count" class="tab-count">0</span>
+        </button>
+        <button type="button" id="tab-wishlist" role="tab" class="drawer-tab" aria-selected="false">
+          Favoritos <span id="tab-wish-count" class="tab-count">0</span>
+        </button>
+      </div>
+      <button type="button" id="drawer-close" class="drawer-close" aria-label="Cerrar panel">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="drawer-body">
+      <section id="pane-cart" class="drawer-pane">
+        <div id="drawer-cart-list" class="drawer-list"></div>
+      </section>
+
+      <section id="pane-wishlist" class="drawer-pane hidden">
+        <div id="drawer-wish-list" class="drawer-list"></div>
+      </section>
+    </div>
+
+    <footer id="drawer-footer" class="drawer-foot">
+      <div class="flex items-center justify-between mb-3">
+        <span class="font-acentos text-sm uppercase tracking-[0.18em] text-blancoRoto">Total</span>
+        <span id="drawer-total" class="font-acentos text-2xl text-oro-elegante">$0.00</span>
+      </div>
+      <p id="drawer-shipping-hint" class="text-xs text-plata-metalico/85 mb-4"></p>
+      <a href="/checkout" class="btn-gold w-full">Finalizar compra</a>
+      <a href="/carrito" class="btn-outline w-full mt-2">Ver carrito completo</a>
+    </footer>
+  </aside>
+</div>
+
+<style>
+  .header-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: #ffffff;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .header-icon:hover {
+    color: #f2c94c;
+  }
+
+  .header-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #f2c94c;
+    color: #060606;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  .drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+  }
+
+  .drawer[hidden] {
+    display: none;
+  }
+
+  .drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    border: 0;
+    cursor: pointer;
+  }
+
+  .drawer-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(430px, 100%);
+    display: flex;
+    flex-direction: column;
+    background: #0e0e0e;
+    border-left: 2px solid rgba(255, 255, 255, 0.15);
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    outline: none;
+  }
+
+  .drawer.is-open .drawer-panel {
+    transform: translateX(0);
+  }
+
+  .drawer-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .drawer-tabs {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .drawer-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 14px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .drawer-tab[aria-selected='true'] {
+    border-color: #f2c94c;
+    color: #f2c94c;
+  }
+
+  .tab-count {
+    font-size: 11px;
+  }
+
+  .drawer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 0;
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .drawer-close:hover {
+    color: #f2c94c;
+  }
+
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .drawer-list > * + * {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .drawer-foot {
+    padding: 16px;
+    border-top: 2px solid rgba(255, 255, 255, 0.15);
+    background: #0b0b0b;
+  }
+
+  .drawer-empty {
+    padding: 56px 24px;
+    text-align: center;
+  }
+
+  .drawer-item {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .drawer-thumb {
+    width: 72px;
+    height: 88px;
+    flex: 0 0 72px;
+    background: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  }
+
+  .drawer-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .drawer-qty {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .drawer-qty button {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 0;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  .drawer-qty button:hover {
+    color: #f2c94c;
+  }
+
+  .drawer-qty span {
+    width: 32px;
+    text-align: center;
+    color: #ffffff;
+    font-size: 15px;
+  }
+
+  @media (max-width: 480px) {
+    .drawer-panel {
+      width: 100%;
+      border-left: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-panel {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import {
+    getCart,
+    updateQty,
+    removeFromCart,
+    cartCount,
+    cartSubtotal,
+    formatMXN,
+  } from '../../lib/cart';
+  import {
+    getWishlist,
+    getLocalWishlist,
+    removeFromWishlist,
+    syncWishlist,
+    type WishlistItem,
+  } from '../../lib/wishlist';
+  import { FREE_SHIPPING_THRESHOLD } from '../../lib/orders';
+
+  type Tab = 'cart' | 'wishlist';
+
+  const drawer = document.getElementById('drawer') as HTMLElement;
+  const panel = document.getElementById('drawer-panel') as HTMLElement;
+  const openCartBtn = document.getElementById('drawer-open-cart');
+  const openWishBtn = document.getElementById('drawer-open-wishlist');
+  const closeBtn = document.getElementById('drawer-close');
+  const backdrop = document.getElementById('drawer-backdrop');
+  const tabCart = document.getElementById('tab-cart') as HTMLButtonElement;
+  const tabWish = document.getElementById('tab-wishlist') as HTMLButtonElement;
+  const paneCart = document.getElementById('pane-cart')!;
+  const paneWish = document.getElementById('pane-wishlist')!;
+  const footer = document.getElementById('drawer-footer')!;
+  const totalEl = document.getElementById('drawer-total')!;
+  const hintEl = document.getElementById('drawer-shipping-hint')!;
+  const badge = document.getElementById('cart-count')!;
+  const wishBadge = document.getElementById('wish-count')!;
+  const tabCartCount = document.getElementById('tab-cart-count')!;
+  const tabWishCount = document.getElementById('tab-wish-count')!;
+  const cartList = document.getElementById('drawer-cart-list')!;
+  const wishList = document.getElementById('drawer-wish-list')!;
+
+  let currentTab: Tab = 'cart';
+  let lastFocus: HTMLElement | null = null;
+  let currentWish: WishlistItem[] = getLocalWishlist();
+
+  const money = (n: number) => `$${formatMXN(n)}`;
+
+  function setBadge(el: HTMLElement, count: number) {
+    el.textContent = String(count);
+    el.classList.toggle('hidden', count === 0);
+  }
+
+  function updateBadges() {
+    const count = cartCount();
+    setBadge(badge, count);
+    tabCartCount.textContent = String(count);
+    setBadge(wishBadge, currentWish.length);
+    tabWishCount.textContent = String(currentWish.length);
+  }
+
+  // ---------- Carrito ----------
+  function renderCart() {
+    const items = getCart();
+
+    if (items.length === 0) {
+      cartList.innerHTML = `
+        <div class="drawer-empty">
+          <p class="font-titulos text-2xl text-blancoRoto mb-3">Tu carrito está vacío</p>
+          <p class="text-sm text-plata-metalico/85 mb-6">Encuentra tu próxima pieza del drop.</p>
+          <a href="/tienda" class="btn-gold inline-flex">Ver catálogo</a>
+        </div>`;
+    } else {
+      cartList.innerHTML = items
+        .map(
+          (i) => `
+        <article class="drawer-item">
+          <div class="drawer-thumb">
+            ${i.image ? `<img src="${i.image}" alt="${i.name}" loading="lazy">` : ''}
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between gap-2">
+            <div>
+              <p class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</p>
+              <p class="text-sm text-plata-metalico/85">${i.variantName}</p>
+            </div>
+            <div class="flex items-end justify-between gap-2">
+              <div class="drawer-qty">
+                <button type="button" data-dec="${i.variantId}" aria-label="Quitar uno">−</button>
+                <span>${i.qty}</span>
+                <button type="button" data-inc="${i.variantId}" aria-label="Agregar uno">+</button>
+              </div>
+              <div class="text-right">
+                <p class="font-acentos text-base text-oro-elegante">${money(i.price * i.qty)}</p>
+                <button type="button" data-remove="${i.variantId}"
+                  class="text-xs uppercase tracking-wider text-plata-metalico/85 hover:text-red-400 py-1">
+                  Quitar
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>`
+        )
+        .join('');
+
+      cartList.querySelectorAll<HTMLElement>('[data-inc]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const item = getCart().find((i) => i.variantId === b.dataset.inc);
+          if (item) updateQty(item.variantId, item.qty + 1);
+          renderCart();
+        })
+      );
+
+      cartList.querySelectorAll<HTMLElement>('[data-dec]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const item = getCart().find((i) => i.variantId === b.dataset.dec);
+          if (!item) return;
+          if (item.qty <= 1) removeFromCart(item.variantId);
+          else updateQty(item.variantId, item.qty - 1);
+          renderCart();
+        })
+      );
+
+      cartList.querySelectorAll<HTMLElement>('[data-remove]').forEach((b) =>
+        b.addEventListener('click', () => {
+          removeFromCart(b.dataset.remove!);
+          renderCart();
+        })
+      );
+    }
+
+    const subtotal = cartSubtotal();
+    totalEl.textContent = money(subtotal);
+
+    if (subtotal === 0) {
+      hintEl.textContent = '';
+    } else if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+      hintEl.textContent = 'Envío gratis incluido.';
+    } else {
+      hintEl.textContent = `Te faltan ${money(FREE_SHIPPING_THRESHOLD - subtotal)} para envío gratis.`;
+    }
+
+    updateBadges();
+  }
+
+  // ---------- Wishlist ----------
+  function renderWishlist() {
+    if (currentWish.length === 0) {
+      wishList.innerHTML = `
+        <div class="drawer-empty">
+          <p class="font-titulos text-2xl text-blancoRoto mb-3">Sin favoritos todavía</p>
+          <p class="text-sm text-plata-metalico/85 mb-6">Toca el corazón en una pieza para guardarla.</p>
+          <a href="/tienda" class="btn-outline inline-flex">Explorar</a>
+        </div>`;
+      updateBadges();
+      return;
+    }
+
+    wishList.innerHTML = currentWish
+      .map(
+        (i) => `
+      <article class="drawer-item">
+        <div class="drawer-thumb">
+          ${i.image ? `<img src="${i.image}" alt="${i.name}" loading="lazy">` : ''}
+        </div>
+        <div class="flex-1 min-w-0 flex flex-col justify-between gap-2">
+          <div>
+            <p class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</p>
+            <p class="text-sm text-oro-elegante mt-1">${money(i.price)}</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <a href="/producto/${i.slug ?? i.productId}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
+              Ver
+            </a>
+            <button type="button" data-wish-remove="${i.productId}"
+              class="text-xs uppercase tracking-wider text-plata-metalico/85 hover:text-red-400 py-2 px-1">
+              Quitar
+            </button>
+          </div>
+        </div>
+      </article>`
+      )
+      .join('');
+
+    wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        await removeFromWishlist(b.dataset.wishRemove!);
+        currentWish = await getWishlist();
+        renderWishlist();
+      })
+    );
+
+    updateBadges();
+  }
+
+  // ---------- Apertura ----------
+  function switchTab(tab: Tab) {
+    currentTab = tab;
+    tabCart.setAttribute('aria-selected', String(tab === 'cart'));
+    tabWish.setAttribute('aria-selected', String(tab === 'wishlist'));
+    paneCart.classList.toggle('hidden', tab !== 'cart');
+    paneWish.classList.toggle('hidden', tab !== 'wishlist');
+    footer.classList.toggle('hidden', tab !== 'cart');
+  }
+
+  function open(tab: Tab = 'cart') {
+    lastFocus = document.activeElement as HTMLElement;
+    drawer.hidden = false;
+    switchTab(tab);
+
+    if (tab === 'cart') renderCart();
+    else renderWishlist();
+
+    requestAnimationFrame(() => drawer.classList.add('is-open'));
+    document.body.style.overflow = 'hidden';
+    closeBtn?.focus();
+  }
+
+  function close() {
+    drawer.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      drawer.hidden = true;
+      lastFocus?.focus();
+    }, 320);
+  }
+
+  openCartBtn?.addEventListener('click', () => open('cart'));
+  openWishBtn?.addEventListener('click', () => open('wishlist'));
+  closeBtn?.addEventListener('click', close);
+  backdrop?.addEventListener('click', close);
+  tabCart.addEventListener('click', () => {
+    switchTab('cart');
+    renderCart();
+  });
+  tabWish.addEventListener('click', () => {
+    switchTab('wishlist');
+    renderWishlist();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !drawer.hidden) close();
+  });
+
+  // Otras páginas piden abrir el panel
+  window.addEventListener('store:open', (e: Event) => {
+    const tab = (e as CustomEvent<{ tab?: Tab }>).detail?.tab ?? 'cart';
+    open(tab);
+  });
+
+  window.addEventListener('cart:updated', () => {
+    if (!drawer.hidden && currentTab === 'cart') renderCart();
+    else updateBadges();
+  });
+
+  window.addEventListener('wishlist:updated', (e: Event) => {
+    currentWish = (e as CustomEvent<WishlistItem[]>).detail ?? [];
+    if (!drawer.hidden && currentTab === 'wishlist') renderWishlist();
+    else updateBadges();
+  });
+
+  // Sincroniza la wishlist al cargar (si hay sesión, fusiona lo local)
+  syncWishlist()
+    .then((items) => {
+      currentWish = items;
+      updateBadges();
+    })
+    .catch(() => updateBadges());
+
+  updateBadges();
+
+  (window as any).dspStore = { open, close };
+</script>
