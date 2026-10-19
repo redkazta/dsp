@@ -1,14 +1,13 @@
 -- =====================================================
 -- Seguridad del panel + RLS de pedidos + checkout
--- Ejecuta en Supabase → SQL Editor (idempotente)
+-- Ejecuta en Supabase → SQL Editor (idempotente: se puede correr varias veces)
 --
 -- Corrige:
 --   1. Cualquier usuario con role='admin' en su perfil entraba al panel.
 --      Ahora además debe estar en la allowlist por correo.
 --   2. Las políticas tenant_* permitían operar si el JWT traía un
 --      tenant_id, sin comprobar rol.
---   3. Los pedidos de invitado no podían insertarse con RLS y el folio
---      no era visible para quien compró.
+--   3. Pedidos: lectura solo del dueño (o staff).
 --   4. El wishlist perdía el favorito al borrar un producto.
 --   5. payments.provider no aceptaba 'simulated'.
 -- =====================================================
@@ -126,11 +125,27 @@ DROP POLICY IF EXISTS "order_items_select_guest" ON public.order_items;
 ALTER TABLE public.wishlist_items
   ALTER COLUMN product_id DROP NOT NULL;
 
-ALTER TABLE public.wishlist_items
-  DROP CONSTRAINT IF EXISTS wishlist_items_product_id_fkey;
-ALTER TABLE public.wishlist_items
-  ADD CONSTRAINT wishlist_items_product_id_fkey
-  FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+-- La FK original era `ON DELETE CASCADE`, y Postgres la creó con un nombre
+-- autogenerado: se suelta cualquier FK sobre product_id (por definición) y se
+-- vuelve a crear. Así el script se puede correr las veces que haga falta.
+DO $$
+DECLARE
+  v_name TEXT;
+BEGIN
+  FOR v_name IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.wishlist_items'::regclass
+      AND contype = 'f'
+      AND pg_get_constraintdef(oid) ILIKE '%product_id%'
+  LOOP
+    EXECUTE format('ALTER TABLE public.wishlist_items DROP CONSTRAINT %I', v_name);
+  END LOOP;
+
+  ALTER TABLE public.wishlist_items
+    ADD CONSTRAINT wishlist_items_product_id_fkey
+    FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+END $$;
 
 -- Todas las filas necesitan identificador lógico para el UNIQUE
 ALTER TABLE public.wishlist_items
@@ -160,7 +175,14 @@ CREATE TRIGGER on_wishlist_set_key
   BEFORE INSERT OR UPDATE OF product_id, product_slug ON public.wishlist_items
   FOR EACH ROW EXECUTE FUNCTION public.set_wishlist_product_key();
 
+-- La UNIQUE original (user_id, product_id) es un CONSTRAINT, no un índice
+-- suelto: hay que soltar el constraint o Postgres rechaza DROP INDEX.
+ALTER TABLE public.wishlist_items
+  DROP CONSTRAINT IF EXISTS wishlist_items_user_id_product_id_key;
+
+-- Restos de intentos anteriores (por si el índice quedó huérfano)
 DROP INDEX IF EXISTS public.wishlist_items_user_id_product_id_key;
+
 CREATE UNIQUE INDEX IF NOT EXISTS wishlist_items_user_product_key
   ON public.wishlist_items (user_id, product_key);
 
