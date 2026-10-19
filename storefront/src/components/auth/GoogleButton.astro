@@ -1,0 +1,87 @@
+---
+/**
+ * Botón de Google usando el flujo de ID Token (Google Identity Services).
+ * El popup se origina en TU dominio, no en supabase.co.
+ */
+import { supabase } from '../lib/supabase';
+
+const GOOGLE_CLIENT_ID = 'PEGA_AQUI_TU_CLIENT_ID.apps.googleusercontent.com';
+---
+
+<button
+  id="google-gsi-btn"
+  type="button"
+  class="btn-outline w-full flex items-center justify-center gap-3"
+>
+  <svg width="18" height="18" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
+    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1a11 11 0 0 0-9.82 6.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"/>
+  </svg>
+  <span>Continuar con Google</span>
+</button>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const GOOGLE_CLIENT_ID =
+    import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ||
+    'PEGA_AQUI_TU_CLIENT_ID.apps.googleusercontent.com';
+
+  let initialized = false;
+
+  async function handleCredential(response: { credential: string }) {
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: response.credential,
+    });
+
+    if (error) {
+      console.error('[google] signInWithIdToken:', error.message);
+      const el = document.getElementById('google-error');
+      if (el) {
+        el.textContent = 'No pudimos iniciar sesión con Google. Intenta de nuevo.';
+        el.classList.remove('hidden');
+      }
+      return;
+    }
+
+    window.location.href = '/cuenta';
+  }
+
+  function initGoogle() {
+    if (initialized) return;
+    if (!(window as any).google?.accounts?.id) return;
+
+    (window as any).google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredential,
+      use_fedcm_for_prompt: true,
+    });
+
+    initialized = true;
+  }
+
+  const btn = document.getElementById('google-gsi-btn');
+  btn?.addEventListener('click', () => {
+    if (!initialized) {
+      alert('Google aún está cargando. Intenta de nuevo en un segundo.');
+      return;
+    }
+    // Popup nativo de Google, originado en tu dominio
+    (window as any).google.accounts.id.prompt();
+  });
+
+  if (!document.getElementById('gsi-script')) {
+    const s = document.createElement('script');
+    s.id = 'gsi-script';
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.async = true;
+    s.defer = true;
+    s.onload = initGoogle;
+    document.head.appendChild(s);
+  } else {
+    initGoogle();
+  }
+</script>
