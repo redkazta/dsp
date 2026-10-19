@@ -33,8 +33,8 @@ INSERT INTO categories (id, tenant_id, name, slug) VALUES
   ('c0000001-0000-4000-8000-000000000002', '11111111-1111-1111-1111-111111111111', 'Jeans', 'jeans');
 
 -- =====================================================
--- CAMISAS (DSP_1 … DSP_7)
--- El nombre viene del color/estampado de cada foto.
+-- CAMISAS (de la carpeta "Camisas V3 (showroom)")
+-- Solo existen DSP_1, DSP_2, DSP_5, DSP_6 y DSP_7.
 -- =====================================================
 INSERT INTO products (id, tenant_id, category_id, name, description, base_price, sku, slug, is_active) VALUES
 ('a0000001-0000-4000-8000-000000000001', '11111111-1111-1111-1111-111111111111', 'c0000001-0000-4000-8000-000000000001',
@@ -44,18 +44,8 @@ INSERT INTO products (id, tenant_id, category_id, name, description, base_price,
 
 ('a0000001-0000-4000-8000-000000000002', '11111111-1111-1111-1111-111111111111', 'c0000001-0000-4000-8000-000000000001',
  'Camisa ¡D$P! V3 Aurora',
- 'Camisa negra con logo reflextivo multicolor tipo aurora (azul, rosa, amarillo y verde).',
+ 'Camisa negra con logo multicolor tipo aurora (azul, rosa, amarillo y verde) que se enciende con el flash.',
  35.00, 'DSP-02', 'camisa-dsp-v3-aurora', true),
-
-('a0000001-0000-4000-8000-000000000003', '11111111-1111-1111-1111-111111111111', 'c0000001-0000-4000-8000-000000000001',
- 'Camisa ¡D$P! V3 Silver',
- 'Camisa negra con logo reflextivo plateado. El reflejo más limpio de la colección.',
- 35.00, 'DSP-03', 'camisa-dsp-v3-silver', true),
-
-('a0000001-0000-4000-8000-000000000004', '11111111-1111-1111-1111-111111111111', 'c0000001-0000-4000-8000-000000000001',
- 'Camisa ¡D$P! V3 Glow',
- 'Camisa negra con logo reflextivo blanco de alto brillo. Se enciende con el flash.',
- 35.00, 'DSP-04', 'camisa-dsp-v3-glow', true),
 
 ('a0000001-0000-4000-8000-000000000005', '11111111-1111-1111-1111-111111111111', 'c0000001-0000-4000-8000-000000000001',
  'Camisa ¡D$P! V3 Violet',
@@ -84,7 +74,7 @@ SELECT
 FROM products p
 CROSS JOIN (SELECT unnest(ARRAY['S','M','L','XL']) AS size) s
 WHERE p.tenant_id = '11111111-1111-1111-1111-111111111111'
-  AND p.sku LIKE 'DSP-0_';
+  AND p.sku IN ('DSP-01','DSP-02','DSP-05','DSP-06','DSP-07');
 
 -- =====================================================
 -- JEANS (una carpeta por color)
@@ -114,19 +104,20 @@ INSERT INTO product_variants (product_id, name, size, color, price, stock) VALUE
 
 -- =====================================================
 -- IMÁGENES
--- Se replica la estructura de la carpeta original:
---   /img/camisas/dsp_<n>.jpg                      (Camisas V3)
---   /img/jeans/<color>/<color>-<nn>-<vista>.jpg   (Jeans)
--- Vista: 01 frente · 02 espalda · 03 frente con flash · 04 espalda con flash
+-- /img/camisas/camisa-dsp-<n>-01-frente.jpg          (+ -02-frente-flash.jpg)
+-- /img/jeans/<color>/<color>-<nn>-<vista>.jpg
+-- nn: 01 frente · 02 espalda · 03 frente con flash · 04 espalda con flash
 -- =====================================================
 INSERT INTO product_images (product_id, url, alt_text, position) VALUES
-  ('a0000001-0000-4000-8000-000000000001', '/img/camisas/dsp_1.jpg', 'Camisa ¡D$P! V3 Azul acero', 0),
-  ('a0000001-0000-4000-8000-000000000002', '/img/camisas/dsp_2.jpg', 'Camisa ¡D$P! V3 Aurora',     0),
-  ('a0000001-0000-4000-8000-000000000003', '/img/camisas/dsp_3.jpg', 'Camisa ¡D$P! V3 Silver',     0),
-  ('a0000001-0000-4000-8000-000000000004', '/img/camisas/dsp_4.jpg', 'Camisa ¡D$P! V3 Glow',       0),
-  ('a0000001-0000-4000-8000-000000000005', '/img/camisas/dsp_5.jpg', 'Camisa ¡D$P! V3 Violet',     0),
-  ('a0000001-0000-4000-8000-000000000006', '/img/camisas/dsp_6.jpg', 'Camisa ¡D$P! V3 Crimson',    0),
-  ('a0000001-0000-4000-8000-000000000007', '/img/camisas/dsp_7.jpg', 'Camisa ¡D$P! V3 Jade',       0),
+  ('a0000001-0000-4000-8000-000000000001', '/img/camisas/camisa-dsp-1-01-frente.jpg',       'Camisa ¡D$P! V3 Azul acero',            0),
+  ('a0000001-0000-4000-8000-000000000001', '/img/camisas/camisa-dsp-1-02-frente-flash.jpg', 'Camisa ¡D$P! V3 Azul acero, con flash', 1),
+
+  ('a0000001-0000-4000-8000-000000000002', '/img/camisas/camisa-dsp-2-01-frente.jpg',       'Camisa ¡D$P! V3 Aurora',            0),
+  ('a0000001-0000-4000-8000-000000000002', '/img/camisas/camisa-dsp-2-02-frente-flash.jpg', 'Camisa ¡D$P! V3 Aurora, con flash', 1),
+
+  ('a0000001-0000-4000-8000-000000000005', '/img/camisas/camisa-dsp-5-01-frente.jpg', 'Camisa ¡D$P! V3 Violet', 0),
+  ('a0000001-0000-4000-8000-000000000006', '/img/camisas/camisa-dsp-6-01-frente.jpg', 'Camisa ¡D$P! V3 Crimson', 0),
+  ('a0000001-0000-4000-8000-000000000007', '/img/camisas/camisa-dsp-7-01-frente.jpg', 'Camisa ¡D$P! V3 Jade', 0),
 
   ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-01-frente.jpg',       'Jeans gris metálico, frente',            0),
   ('a0000001-0000-4000-8000-0000000000b1', '/img/jeans/gris-metalico/gris-metalico-02-espalda.jpg',      'Jeans gris metálico, espalda',           1),

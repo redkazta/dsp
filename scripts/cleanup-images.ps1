@@ -1,14 +1,17 @@
 $ErrorActionPreference = 'Stop'
 
-$imgDir = 'C:\Users\Angel\Desktop\DSP\storefront\public\img'
+$imgRoot = 'C:\Users\Angel\Desktop\DSP\storefront\public\img'
+$srcRoot = 'C:\Users\Angel\Desktop\DSP\storefront\public\img-src'
 
-# -sq.jpg eran copias temporales para revisar el encuadre
-Get-ChildItem -LiteralPath $imgDir -File -Filter '*-sq.jpg' | ForEach-Object {
-  Remove-Item -LiteralPath $_.FullName -Force
-  Write-Output ('borrada ' + $_.Name)
+foreach ($dir in @($imgRoot, $srcRoot)) {
+  if (Test-Path -LiteralPath $dir) {
+    Get-ChildItem -LiteralPath $dir -Recurse -File | Where-Object { $_.Extension -in '.jpg', '.jpeg', '.png', '.webp' } | ForEach-Object {
+      $rel = $_.FullName.Substring($dir.Length + 1)
+      Write-Output ('  ' + $rel)
+    }
+    Write-Output ''
+  }
 }
 
-Write-Output '--- /img ---'
-Get-ChildItem -LiteralPath $imgDir -File | Sort-Object Name | ForEach-Object {
-  Write-Output ('{0}  {1}KB' -f $_.Name, [math]::Round($_.Length / 1KB, 0))
-}
+if (Test-Path -LiteralPath $srcRoot) { Remove-Item -LiteralPath $srcRoot -Recurse -Force }
+Write-Output 'img-src eliminada'

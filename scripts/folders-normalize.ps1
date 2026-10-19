@@ -88,54 +88,80 @@ function Export-Normalized([string] $inPath, [string] $outPath) {
   $bmp.Dispose()
 }
 
-# Borra TODO lo anterior de img (menos el README)
-Get-ChildItem -LiteralPath $outRoot -File | Where-Object { $_.Name -ne 'README.md' } | Remove-Item -Force
-Get-ChildItem -LiteralPath $outRoot -Directory | Remove-Item -Recurse -Force
+# =====================================================
+# CAMISAS: DSP_<n>.jpg  y  DSP_<n>_Flash.jpg
+# =====================================================
+$camisasSrc = Get-ChildItem -LiteralPath $srcRoot -Directory | Where-Object { $_.Name -like 'Camisas*' } | Select-Object -First 1
+$camisasOut = Join-Path $outRoot 'camisas'
+if (Test-Path -LiteralPath $camisasOut) { Remove-Item -LiteralPath $camisasOut -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $camisasOut | Out-Null
 
-$routes = @()
+$rutasCamisas = @()
 
-# ---------- CAMISAS ----------
-$camisas = Get-ChildItem -LiteralPath $srcRoot -Directory | Where-Object { $_.Name -like 'Camisas*' } | Select-Object -First 1
-foreach ($f in Get-ChildItem -LiteralPath $camisas.FullName -File -Include *.jpg, *.jpeg, *.png, *.webp | Sort-Object Name) {
-  $base = [System.IO.Path]::GetFileNameWithoutExtension($f.Name).ToLower()   # dsp_1
-  $out = Join-Path $outRoot ('camisas\' + $base + '.jpg')
-  Export-Normalized $f.FullName $out
-  $routes += '/img/camisas/' + $base + '.jpg'
-}
-
-# ---------- JEANS ----------
-$jeans = Get-ChildItem -LiteralPath $srcRoot -Directory | Where-Object { $_.Name -like '*JEANS*' } | Select-Object -First 1
-
-foreach ($dir in Get-ChildItem -LiteralPath $jeans.FullName -Directory) {
-  # Slug del color a partir del nombre de carpeta
-  $raw = $dir.Name.ToLower()
-  $slug = $raw
-  if ($raw -like 'gris*')    { $slug = 'gris-metalico' }
-  if ($raw -like 'morado*')  { $slug = 'morado-reflectivo' }
-  if ($raw -like 'naranja*') { $slug = 'naranja-reflextivo' }
-
-  foreach ($f in Get-ChildItem -LiteralPath $dir.FullName -File -Include *.jpg, *.jpeg, *.png, *.webp | Sort-Object Name) {
-    # no_flash_front -> frente ; flash_back -> espalda-flash
-    $n = [System.IO.Path]::GetFileNameWithoutExtension($f.Name).ToLower()
-    $view = 'frente'
-    if ($n -like '*back*') { $view = 'espalda' }
-    $flash = ''
-    if ($n -match '(^|[^o]_?flash)') { $flash = '' }
-    if ($n -like 'flash*') { $flash = '-flash' }
+Get-ChildItem -LiteralPath $camisasSrc.FullName -File -Include *.jpg, *.jpeg, *.png, *.webp | ForEach-Object {
+  # DSP_1.jpg -> camera-dsp-1 ; DSP_1_Flash.jpg -> camera-dsp-1-flash
+  if ($_.BaseName -match '^(?i)DSP_(\d+)(_Flash)?$') {
+    $n = $Matches[1]
+    $flash = [bool]$Matches[2]
 
     $order = '01'
-    if ($view -eq 'espalda') { $order = '02' }
-    if ($flash) {
-      if ($view -eq 'frente') { $order = '03' } else { $order = '04' }
-    }
+    if ($flash) { $order = '02' }
+    $name = 'camisa-dsp-' + $n + '-' + $order + '-frente'
+    if ($flash) { $name += '-flash' }
+    $name += '.jpg'
 
-    $name = $slug + '-' + $order + '-' + $view + $flash + '.jpg'
-    $out = Join-Path $outRoot ('jeans\' + $slug + '\' + $name)
-    Export-Normalized $f.FullName $out
-    $routes += '/img/jeans/' + $slug + '/' + $name
+    $out = Join-Path $camisasOut $name
+    Export-Normalized $_.FullName $out
+    $rutasCamisas += '/img/camisas/' + $name
+    Write-Output ('OK  ' + $name + '  <- ' + $_.Name)
+  } else {
+    Write-Output ('IGNORADA (nombre no reconocido): ' + $_.Name)
   }
 }
 
-Write-Output '--- rutas finales ---'
-$routes | Sort-Object | ForEach-Object { Write-Output $_ }
-Write-Output ('total: ' + $routes.Count)
+# =====================================================
+# JEANS: <color>/[no_flash_|flash_]<front|back>.jpg
+# =====================================================
+$jeansSrc = Get-ChildItem -LiteralPath $srcRoot -Directory | Where-Object { $_.Name -like '*JEANS*' } | Select-Object -First 1
+if (-not $jeansSrc) { throw 'No se encontro la carpeta de jeans en img-src' }
+$rutasJeans = @()
+
+foreach ($dir in Get-ChildItem -LiteralPath $jeansSrc.FullName -Directory) {
+  $slug = $dir.Name.ToLower()
+  if ($slug -like 'gris*')    { $slug = 'gris-metalico' }
+  if ($slug -like 'morado*')  { $slug = 'morado-reflectivo' }
+  if ($slug -like 'naranja*') { $slug = 'naranja-reflextivo' }
+
+  $outDir = Join-Path (Join-Path $outRoot 'jeans') $slug
+  if (Test-Path -LiteralPath $outDir) { Remove-Item -LiteralPath $outDir -Recurse -Force }
+  New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+
+  foreach ($f in Get-ChildItem -LiteralPath $dir.FullName -File -Include *.jpg, *.jpeg, *.png, *.webp) {
+    $base = $f.BaseName.ToLower()
+
+    $isBack = $base -like '*back*'
+    $isFlash = $base -like 'flash*'
+
+    $order = '01'
+    $vista = 'frente'
+    if ($isBack -and -not $isFlash) { $order = '02'; $vista = 'espalda' }
+    if ($isFlash -and -not $isBack) { $order = '03'; $vista = 'frente' }
+    if ($isFlash -and $isBack)      { $order = '04'; $vista = 'espalda' }
+
+    $suffix = ''
+    if ($isFlash) { $suffix = '-flash' }
+
+    $name = $slug + '-' + $order + '-' + $vista + $suffix + '.jpg'
+    $out = Join-Path $outDir $name
+    Export-Normalized $f.FullName $out
+    $rutasJeans += '/img/jeans/' + $slug + '/' + $name
+    Write-Output ('OK  jeans/' + $slug + '/' + $name + '  <- ' + $f.Name)
+  }
+}
+
+Write-Output ''
+Write-Output '--- CAMISAS ---'
+$rutasCamisas | Sort-Object | ForEach-Object { Write-Output $_ }
+Write-Output '--- JEANS ---'
+$rutasJeans | Sort-Object | ForEach-Object { Write-Output $_ }
+Write-Output ('total: ' + ($rutasCamisas.Count + $rutasJeans.Count))

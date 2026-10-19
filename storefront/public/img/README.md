@@ -6,44 +6,43 @@ Así se ve de inmediato a qué producto pertenece cada archivo.
 ```
 img/
 ├── camisas/
-│   ├── dsp_1.jpg … dsp_7.jpg            ← Camisas V3 (showroom)
+│   ├── camisa-dsp-1-01-frente.jpg
+│   ├── camisa-dsp-1-02-frente-flash.jpg
+│   ├── camisa-dsp-2-01-frente.jpg
+│   ├── camisa-dsp-2-02-frente-flash.jpg
+│   ├── camisa-dsp-5-01-frente.jpg
+│   ├── camisa-dsp-6-01-frente.jpg
+│   └── camisa-dsp-7-01-frente.jpg
 └── jeans/
-    ├── gris-metalico/
-    │   ├── gris-metalico-01-frente.jpg
-    │   ├── gris-metalico-02-espalda.jpg
-    │   ├── gris-metalico-03-frente-flash.jpg
-    │   └── gris-metalico-04-espalda-flash.jpg
-    ├── morado-reflectivo/   (mismos 4)
-    └── naranja-reflextivo/  (2: frente y frente con flash)
+    ├── gris-metalico/  (4: frente, espalda, frente-flash, espalda-flash)
+    ├── morado-reflectivo/  (4)
+    └── naranja-reflextivo/  (2: frente y frente-flash)
 ```
 
 ## Regla de nombres
 
 ```
-/img/camisas/dsp_<n>.jpg
-/img/jeans/<color>/<color>-<nn>-<vista>.jpg
+/img/camisas/camisa-dsp-<n>-<nn>-frente[-flash].jpg
+/img/jeans/<color>/<color>-<nn>-<vista>[-flash].jpg
 ```
 
-`<nn>` y `<vista>`:
-
-| Orden | Vista | Cuándo |
-|---|---|---|
-| 01 | `frente` | siempre |
-| 02 | `espalda` | si existe `no_flash_back` |
-| 03 | `frente-flash` | si existe `flash_front` |
-| 04 | `espalda-flash` | si existe `flash_back` |
+| `nn` | Vista |
+|---|---|
+| 01 | frente |
+| 02 | espalda o frente con flash (según el producto) |
+| 03 | frente con flash |
+| 04 | espalda con flash |
 
 Traducción desde el nombre original:
 
-| Original | Destino |
-|---|---|
-| `no_flash_front.jpg` | `…-01-frente.jpg` |
-| `no_flash_back.jpg` | `…-02-espalda.jpg` |
-| `flash_front.jpg` | `…-03-frente-flash.jpg` |
-| `flash_back.jpg` | `…-04-espalda-flash.jpg` |
-
-El orden `01 → 04` es el de la galería: portada, espalda, y luego las mismas
-vistas con flash.
+| Original | Camisas | Jeans |
+|---|---|---|
+| `DSP_1.jpg` | `camisa-dsp-1-01-frente.jpg` | — |
+| `DSP_1_Flash.jpg` | `camisa-dsp-1-02-frente-flash.jpg` | — |
+| `no_flash_front.jpg` | — | `…-01-frente.jpg` |
+| `no_flash_back.jpg` | — | `…-02-espalda.jpg` |
+| `flash_front.jpg` | — | `…-03-frente-flash.jpg` |
+| `flash_back.jpg` | — | `…-04-espalda-flash.jpg` |
 
 ## Especificación técnica
 
@@ -61,5 +60,5 @@ powershell -File scripts/folders-mirror.ps1     # copia el origen a public/img-s
 powershell -File scripts/folders-normalize.ps1  # recorta y exporta a public/img
 ```
 
-`folders-normalize.ps1` borra todo lo anterior en `img/` (excepto este README)
-y vuelve a generar las 17 fotos con la estructura de arriba.
+`folders-normalize.ps1` regenera camisas y jeans desde `img-src` y reemplaza
+los archivos previos de cada categoría.
