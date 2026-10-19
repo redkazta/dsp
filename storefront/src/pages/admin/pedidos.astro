@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Pedidos">
-  <div id="admin-loading" class="py-20 text-center text-sm text-plata-metalico/85">Cargando pedidos…</div>
+  <div id="admin-loading" class="py-20 text-center text-sm text-white/80">Cargando pedidos…</div>
 
   <div id="orders-view" class="hidden">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
@@ -51,8 +51,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     .status-chip[aria-pressed='true'] {
-      border-color: #f2c94c;
-      color: #f2c94c;
+      border-color: #ffe28a;
+      color: #ffe28a;
       background: rgba(242, 201, 76, 0.1);
     }
 
@@ -73,7 +73,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     .event-input:focus {
-      border-color: #f2c94c;
+      border-color: #ffe28a;
     }
 
     .track-step {
@@ -93,8 +93,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     .track-dot.is-done {
-      background: #f2c94c;
-      border-color: #f2c94c;
+      background: #ffe28a;
+      border-color: #ffe28a;
     }
 
     .track-dot.is-current {
@@ -109,7 +109,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     .track-bar.is-done {
-      background: #f2c94c;
+      background: #ffe28a;
     }
 
     @media (max-width: 640px) {
@@ -165,7 +165,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             return `
               <div class="track-step">
                 <span class="track-dot ${done ? 'is-done' : ''} ${i === index && !closed ? 'is-current' : ''}"></span>
-                <span class="track-label text-[10px] uppercase tracking-wider ${done ? 'text-blancoRoto' : 'text-plata-metalico/70'} hidden xl:inline">
+                <span class="track-label text-xs uppercase tracking-wider ${done ? 'text-blancoRoto' : 'text-white/80'} hidden xl:inline">
                   ${STATUS_LABEL[step]}
                 </span>
                 ${i < STATUS_FLOW.length - 1 ? `<span class="track-bar ${done && i < index ? 'is-done' : ''}"></span>` : ''}
@@ -179,19 +179,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       return (o.order_items ?? [])
         .map(
           (i: any) => `
-        <div class="flex items-start justify-between gap-3 py-2 border-b border-blancoRoto/10 last:border-0">
+        <div class="flex items-start justify-between gap-3 py-2 border-b border-white/15 last:border-0">
           <div class="flex gap-3 min-w-0">
-            <div class="w-12 h-14 shrink-0 bg-white border border-blancoRoto/20 overflow-hidden">
+            <div class="w-12 h-14 shrink-0 bg-white border border-white/30 overflow-hidden">
               ${i.image_url ? `<img src="${i.image_url}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="min-w-0">
               <p class="text-sm text-blancoRoto">${esc(i.product_name ?? i.variant_name ?? 'Pieza')}</p>
-              <p class="text-xs text-plata-metalico/85">
+              <p class="text-xs text-white/80">
                 ${esc([i.size, i.color].filter(Boolean).join(' · '))} · x${i.quantity}
               </p>
             </div>
           </div>
-          <p class="text-sm font-acentos text-oro-elegante whitespace-nowrap">
+          <p class="text-sm font-acentos text-oro-brillo whitespace-nowrap">
             ${formatOrderMoney(Number(i.unit_price) * Number(i.quantity))}
           </p>
         </div>`
@@ -209,19 +209,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       return `
       <article class="order-card" data-order-card="${o.id}">
-        <header class="flex flex-wrap items-start justify-between gap-4 p-5 border-b-2 border-blancoRoto/15">
+        <header class="flex flex-wrap items-start justify-between gap-4 p-5 border-b-2 border-white/25">
           <div class="min-w-0">
             <p class="font-acentos text-lg text-blancoRoto">${esc(o.order_number ?? o.id.slice(0, 8))}</p>
-            <p class="text-sm text-plata-metalico/85">
+            <p class="text-sm text-white/80">
               ${esc(o.contact_name ?? 'Sin nombre')} · ${formatOrderDateTime(o.created_at)}
             </p>
-            <p class="text-sm text-plata-metalico/85">
+            <p class="text-sm text-white/80">
               ${esc(o.contact_email ?? '')}${o.contact_phone ? ` · ${esc(o.contact_phone)}` : ''}
             </p>
           </div>
           <div class="text-right">
-            <p class="font-acentos text-xl text-oro-elegante">${formatOrderMoney(Number(o.total_amount))}</p>
-            <p class="text-xs uppercase tracking-wider text-plata-metalico/85 mt-1">
+            <p class="font-acentos text-xl text-oro-brillo">${formatOrderMoney(Number(o.total_amount))}</p>
+            <p class="text-xs uppercase tracking-wider text-white/80 mt-1">
               ${esc(PAYMENT_METHOD_LABEL[o.payment_method] ?? o.payment_method ?? '')} ·
               ${esc(PAYMENT_STATUS_LABEL[o.payment_status] ?? o.payment_status ?? '')}
             </p>
@@ -229,21 +229,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </header>
 
         <div class="grid lg:grid-cols-2 gap-0 lg:gap-6">
-          <div class="p-5 border-b-2 lg:border-b-0 border-blancoRoto/15">
-            <p class="text-xs uppercase tracking-[0.18em] text-plata-metalico/85 mb-2">Piezas</p>
+          <div class="p-5 border-b-2 lg:border-b-0 border-white/25">
+            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mb-2">Piezas</p>
             ${itemsHtml(o)}
 
-            <p class="text-xs uppercase tracking-[0.18em] text-plata-metalico/85 mt-4 mb-1">Envío</p>
-            <p class="text-sm text-plata-metalico/85 leading-relaxed">
+            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mt-4 mb-1">Envío</p>
+            <p class="text-sm text-white/80 leading-relaxed">
               ${esc(o.shipping_street ?? '—')}${o.shipping_colonia ? ', ' + esc(o.shipping_colonia) : ''}<br>
               ${esc(o.shipping_city ?? '')} ${esc(o.shipping_state ?? '')} ${esc(o.shipping_postal_code ?? '')}
-              ${o.shipping_references ? `<br><span class="text-plata-metalico/75">Ref: ${esc(o.shipping_references)}</span>` : ''}
+              ${o.shipping_references ? `<br><span class="text-white/80">Ref: ${esc(o.shipping_references)}</span>` : ''}
             </p>
-            ${o.notes ? `<p class="mt-3 text-sm text-blancoRoto"><span class="text-plata-metalico/85">Nota del cliente:</span> ${esc(o.notes)}</p>` : ''}
+            ${o.notes ? `<p class="mt-3 text-sm text-blancoRoto"><span class="text-white/80">Nota del cliente:</span> ${esc(o.notes)}</p>` : ''}
           </div>
 
           <div class="p-5">
-            <p class="text-xs uppercase tracking-[0.18em] text-plata-metalico/85 mb-2">Seguimiento</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mb-2">Seguimiento</p>
             ${trackBar(status)}
 
             <ol class="mt-3 space-y-2">
@@ -251,11 +251,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 .map(
                   (h: any) => `
                 <li class="flex items-start gap-2 text-sm">
-                  <span class="w-1.5 h-1.5 rounded-full bg-oro-elegante mt-2 shrink-0"></span>
-                  <span class="text-plata-metalico/85">
+                  <span class="w-1.5 h-1.5 rounded-full bg-oro-brillo mt-2 shrink-0"></span>
+                  <span class="text-white/80">
                     <span class="text-blancoRoto">${esc(STATUS_LABEL[h.status as OrderStatus] ?? h.status)}</span>
                     · ${formatOrderDateTime(h.created_at)}
-                    ${h.notes ? `<br><span class="text-xs text-plata-metalico/75">${esc(h.notes)}</span>` : ''}
+                    ${h.notes ? `<br><span class="text-xs text-white/80">${esc(h.notes)}</span>` : ''}
                   </span>
                 </li>`
                 )
@@ -268,7 +268,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 : ''
             }
 
-            <p class="text-xs uppercase tracking-[0.18em] text-plata-metalico/85 mt-4 mb-2">Notas internas</p>
+            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mt-4 mb-2">Notas internas</p>
             <textarea
               data-admin-notes="${o.id}"
               rows="2"
@@ -276,7 +276,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               placeholder="Diseño pendiente, cliente pidió cambio…"
             >${esc(o.admin_notes ?? '')}</textarea>
             <button type="button" data-save-notes="${o.id}"
-              class="mt-2 text-xs uppercase tracking-wider text-oro-elegante hover:text-oro-suave py-2">
+              class="mt-2 text-xs uppercase tracking-wider text-oro-brillo hover:text-white py-2">
               Guardar nota
             </button>
           </div>
@@ -284,7 +284,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
         ${
           next.length > 0 || canShip
-            ? `<footer class="p-5 border-t-2 border-blancoRoto/15">
+            ? `<footer class="p-5 border-t-2 border-white/25">
                  ${
                    canShip
                      ? `<div class="grid sm:grid-cols-3 gap-2 mb-3">
@@ -301,7 +301,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                          class="min-h-[44px] px-4 font-acentos text-xs uppercase tracking-[0.12em] border-2 transition-colors ${
                            danger
                              ? 'border-red-400/60 text-red-400 hover:bg-red-400/10'
-                             : 'border-oro-elegante text-oro-elegante hover:bg-oro-elegante hover:text-negro-profundo'
+                             : 'border-oro-brillo text-oro-brillo hover:bg-oro-brillo hover:text-negro-profundo'
                          }">
                          Mover a ${STATUS_LABEL[s]}
                        </button>`;
@@ -330,8 +330,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         .map(
           (h) => `
         <div class="card p-4">
-          <p class="text-[11px] uppercase tracking-[0.16em] text-plata-metalico/85 mb-1">${h.label}</p>
-          <p class="font-acentos text-2xl text-oro-elegante">${counts.get(h.status) ?? 0}</p>
+          <p class="text-xs uppercase tracking-[0.16em] text-white/80 mb-1">${h.label}</p>
+          <p class="font-acentos text-2xl text-oro-brillo">${counts.get(h.status) ?? 0}</p>
         </div>`
         )
         .join('');
@@ -378,7 +378,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (list.length === 0) {
         container.innerHTML = `
           <div class="card p-10 text-center">
-            <p class="text-base text-plata-metalico/85">Sin pedidos para este filtro.</p>
+            <p class="text-base text-white/80">Sin pedidos para este filtro.</p>
           </div>`;
         return;
       }

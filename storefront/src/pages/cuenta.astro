@@ -23,11 +23,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   <div id="account" class="hidden">
     <!-- Encabezado -->
-    <section class="border-b-2 border-blancoRoto/15 bg-noise">
+    <section class="border-b-2 border-white/25 bg-noise">
       <div class="page-container py-10 sm:py-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div class="flex items-center gap-5 min-w-0">
-          <div id="avatar" class="w-16 h-16 shrink-0 border-2 border-oro-elegante/60 flex items-center justify-center overflow-hidden bg-negro-carbono">
-            <span id="avatar-initial" class="font-titulos text-2xl text-oro-elegante">D</span>
+          <div id="avatar" class="w-16 h-16 shrink-0 border-2 border-oro-brillo/60 flex items-center justify-center overflow-hidden bg-negro-carbono">
+            <span id="avatar-initial" class="font-titulos text-2xl text-oro-brillo">D</span>
           </div>
           <div class="min-w-0">
             <p class="section-label mb-1">Mi cuenta</p>
@@ -78,14 +78,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             </label>
 
             <label class="flex items-start gap-3 cursor-pointer pt-1">
-              <input name="marketing_opt_in" type="checkbox" class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0" />
+              <input name="marketing_opt_in" type="checkbox" class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0" />
               <span class="text-sm text-muted leading-relaxed">
                 Recibir novedades y drops exclusivos por correo.
               </span>
             </label>
 
             <button type="submit" class="btn-gold w-full">Guardar cambios</button>
-            <p id="save-ok" role="status" class="hidden text-sm text-oro-elegante text-center">Guardado ✓</p>
+            <p id="save-ok" role="status" class="hidden text-sm text-oro-brillo text-center">Guardado ✓</p>
             <p id="save-error" role="alert" class="hidden text-sm text-red-400 text-center"></p>
           </form>
         </aside>
@@ -102,7 +102,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       font-weight: 600;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #f2c94c;
+      color: #ffe28a;
     }
   </style>
 
@@ -216,8 +216,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                   </p>
                 </div>
                 <div class="sm:text-right shrink-0">
-                  <p class="font-acentos text-xl text-oro-elegante">${formatOrderMoney(Number(o.total_amount))}</p>
-                  <p class="text-xs uppercase tracking-wider text-oro-elegante mt-1">
+                  <p class="font-acentos text-xl text-oro-brillo">${formatOrderMoney(Number(o.total_amount))}</p>
+                  <p class="text-xs uppercase tracking-wider text-oro-brillo mt-1">
                     ${STATUS_LABEL[status] ?? status}
                   </p>
                 </div>
@@ -243,12 +243,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               .map(
                 (i: WishlistItem) => `
             <div class="card p-4 flex items-center gap-4" data-wish-row="${i.productId}">
-              <div class="w-14 h-16 shrink-0 bg-white border-2 border-blancoRoto/20 overflow-hidden">
+              <div class="w-14 h-16 shrink-0 bg-white border-2 border-white/30 overflow-hidden">
                 ${i.image ? `<img src="${i.image}" alt="" class="w-full h-full object-contain">` : ''}
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-acentos text-base text-blancoRoto truncate">${i.name}</p>
-                <p class="text-sm text-oro-elegante">${formatOrderMoney(i.price)}</p>
+                <p class="text-sm text-oro-brillo">${formatOrderMoney(i.price)}</p>
               </div>
               <div class="flex flex-col sm:flex-row gap-2 shrink-0">
                 <a href="/producto/${i.slug ?? i.productId}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>

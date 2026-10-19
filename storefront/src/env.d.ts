@@ -15,5 +15,8 @@ declare namespace App {
   interface Locals {
     user: import('@supabase/supabase-js').User | null;
     isAuthenticated: boolean;
+    firstName: string | null;
+    phone: string | null;
+    role: string | null;
   }
 }

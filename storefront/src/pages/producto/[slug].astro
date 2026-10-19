@@ -82,13 +82,13 @@ const productLd = product
     ) : (
       <>
         {/* Breadcrumb */}
-        <div class="page-container py-5 border-b-2 border-blancoRoto/15">
-          <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-plata-metalico/85">
-            <li><a href="/" class="hover:text-oro-elegante transition-colors">Inicio</a></li>
+        <div class="page-container py-5 border-b-2 border-white/25">
+          <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
+            <li><a href="/" class="hover:text-oro-brillo transition-colors">Inicio</a></li>
             <li>/</li>
-            <li><a href="/tienda" class="hover:text-oro-elegante transition-colors">Tienda</a></li>
+            <li><a href="/tienda" class="hover:text-oro-brillo transition-colors">Tienda</a></li>
             <li>/</li>
-            <li class="text-oro-elegante truncate max-w-[200px]">{product.name}</li>
+            <li class="text-oro-brillo truncate max-w-[200px]">{product.name}</li>
           </ol>
         </div>
 
@@ -96,7 +96,7 @@ const productLd = product
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
             {/* Galería */}
             <div>
-              <div class="aspect-[4/5] bg-negro-elevado border-2 border-blancoRoto/15 overflow-hidden">
+              <div class="aspect-[4/5] bg-negro-elevado border-2 border-white/25 overflow-hidden">
                 {images.length > 0 ? (
                   <img
                     src={images[0].url}
@@ -116,7 +116,7 @@ const productLd = product
               {images.length > 1 && (
                 <div class="grid grid-cols-4 gap-3 mt-3">
                   {images.slice(0, 4).map((img: any) => (
-                    <div class="aspect-square bg-negro-elevado border-2 border-blancoRoto/15 overflow-hidden hover:border-oro-elegante transition-colors">
+                    <div class="aspect-square bg-negro-elevado border-2 border-white/25 overflow-hidden hover:border-oro-brillo transition-colors">
                       <img src={img.url} alt={img.alt_text ?? product.name} class="w-full h-full object-cover" loading="lazy" />
                     </div>
                   ))}
@@ -127,7 +127,7 @@ const productLd = product
             {/* Info */}
             <div class="lg:py-4">
               {product.categories?.name && (
-                <a href={`/tienda?category=${product.categories.id}`} class="section-label mb-4 inline-block hover:text-oro-suave transition-colors">
+                <a href={`/tienda?category=${product.categories.id}`} class="section-label mb-4 inline-block hover:text-white transition-colors">
                   {product.categories.name}
                 </a>
               )}
@@ -137,14 +137,14 @@ const productLd = product
               </h1>
 
               <div class="flex items-center gap-4 mb-8">
-                <p class="font-acentos text-3xl text-oro-elegante font-medium">
+                <p class="font-acentos text-3xl text-oro-brillo font-medium">
                   ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                 </p>
-                <span class="text-plata-metalico/85 text-base">MXN</span>
+                <span class="text-white/80 text-base">MXN</span>
                 <button
                   type="button"
                   id="wish-toggle"
-                  class="ml-auto inline-flex items-center justify-center gap-2 min-h-[48px] px-4 border-2 border-blancoRoto/30 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-colors font-acentos text-xs uppercase tracking-[0.18em]"
+                  class="ml-auto inline-flex items-center justify-center gap-2 min-h-[48px] px-4 border-2 border-white/40 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors font-acentos text-xs uppercase tracking-[0.18em]"
                   data-wish-id={product.id}
                   data-wish-slug={product.slug ?? ''}
                   data-wish-name={product.name}
@@ -162,7 +162,7 @@ const productLd = product
 
               <div class="gold-line mb-8" style="margin-left: 0"></div>
 
-              <p class="text-plata-metalico/85 leading-relaxed mb-8 whitespace-pre-line">
+              <p class="text-white/80 leading-relaxed mb-8 whitespace-pre-line">
                 {product.description ?? 'Playera oversize de algodón premium. Logo ¡D$P! estampado al frente.'}
               </p>
 
@@ -177,7 +177,7 @@ const productLd = product
                       <button
                         type="button"
                         data-size={size}
-                        class="size-btn min-w-[3.25rem] min-h-[52px] px-4 py-3 border-2 border-blancoRoto/30 text-base text-blancoRoto hover:border-oro-elegante transition-all duration-300 font-acentos"
+                        class="size-btn min-w-[3.25rem] min-h-[52px] px-4 py-3 border-2 border-white/40 text-base text-blancoRoto hover:border-oro-brillo transition-all duration-300 font-acentos"
                       >
                         {size}
                       </button>
@@ -197,7 +197,7 @@ const productLd = product
                       <button
                         type="button"
                         data-color={color}
-                        class="color-btn min-h-[52px] px-5 py-3 border-2 border-blancoRoto/30 text-base text-blancoRoto hover:border-oro-elegante transition-all duration-300 font-acentos"
+                        class="color-btn min-h-[52px] px-5 py-3 border-2 border-white/40 text-base text-blancoRoto hover:border-oro-brillo transition-all duration-300 font-acentos"
                       >
                         {color}
                       </button>
@@ -217,8 +217,8 @@ const productLd = product
                   class:list={[
                     'flex-1 py-5 min-h-[56px] font-acentos text-sm uppercase tracking-[0.25em] transition-all duration-400',
                     isSoldOut
-                      ? 'bg-negro-elevado text-blancoRoto cursor-not-allowed border-2 border-blancoRoto/25'
-                      : 'bg-oro-elegante text-negro-profundo hover:bg-oro-suave hover:tracking-[0.3em]',
+                      ? 'bg-negro-elevado text-blancoRoto cursor-not-allowed border-2 border-white/30'
+                      : 'bg-oro-brillo text-negro-profundo hover:bg-oro-brillo hover:tracking-[0.3em]',
                   ]}
                   disabled={isSoldOut}
                 >
@@ -227,7 +227,7 @@ const productLd = product
                 <a
                   href="/carrito"
                   id="open-cart-drawer"
-                  class="min-h-[56px] px-6 py-5 border-2 border-blancoRoto/40 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
+                  class="min-h-[56px] px-6 py-5 border-2 border-white/50 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
                   aria-label="Ver carrito"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -237,28 +237,28 @@ const productLd = product
                 </a>
               </div>
 
-              <p id="add-feedback" class="hidden text-sm text-oro-elegante mb-6 font-acentos"></p>
+              <p id="add-feedback" class="hidden text-sm text-oro-brillo mb-6 font-acentos"></p>
 
               {/* Detalles */}
-              <div class="border-t-2 border-blancoRoto/15 pt-6 space-y-2">
+              <div class="border-t-2 border-white/25 pt-6 space-y-2">
                 <details class="group">
-                  <summary class="flex justify-between items-center cursor-pointer py-3 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-elegante transition-colors">
+                  <summary class="flex justify-between items-center cursor-pointer py-3 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-brillo transition-colors">
                     Detalles del producto
-                    <span class="text-oro-elegante transition-transform group-open:rotate-45">+</span>
+                    <span class="text-oro-brillo transition-transform group-open:rotate-45">+</span>
                   </summary>
-                  <ul class="pt-3 pb-2 space-y-2 text-base text-plata-metalico/85">
+                  <ul class="pt-3 pb-2 space-y-2 text-base text-white/80">
                     <li>SKU: {product.sku ?? '—'}</li>
                     <li>Stock disponible: {totalStock} piezas</li>
                     {product.categories?.name && <li>Categoría: {product.categories.name}</li>}
                   </ul>
                 </details>
 
-                <details class="group border-t border-blancoRoto/10">
-                  <summary class="flex justify-between items-center cursor-pointer py-4 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-elegante transition-colors">
+                <details class="group border-t border-white/15">
+                  <summary class="flex justify-between items-center cursor-pointer py-4 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-brillo transition-colors">
                     Envío y devoluciones
-                    <span class="text-oro-elegante transition-transform group-open:rotate-45">+</span>
+                    <span class="text-oro-brillo transition-transform group-open:rotate-45">+</span>
                   </summary>
-                  <p class="pb-4 text-base text-plata-metalico/85 leading-relaxed">
+                  <p class="pb-4 text-base text-white/80 leading-relaxed">
                     Envío gratis en pedidos superiores a $1,500 MXN. Devoluciones
                     aceptadas dentro de 30 días con etiqueta original.
                   </p>
@@ -302,9 +302,9 @@ const productLd = product
       function paint(selector: string, attr: string, value: string | null) {
         document.querySelectorAll(selector).forEach((el) => {
           const match = (el as HTMLElement).dataset[attr] === value;
-          el.classList.toggle('border-oro-elegante', match);
-          el.classList.toggle('text-oro-elegante', match);
-          el.classList.toggle('border-plata-metalico/20', !match);
+          el.classList.toggle('border-oro-brillo', match);
+          el.classList.toggle('text-oro-brillo', match);
+          el.classList.toggle('border-white/30', !match);
         });
       }
 
@@ -370,9 +370,9 @@ const productLd = product
     function paintWish(active: boolean) {
       if (!wishBtn) return;
       wishBtn.setAttribute('aria-pressed', String(active));
-      wishBtn.classList.toggle('border-oro-elegante', active);
-      wishBtn.classList.toggle('text-oro-elegante', active);
-      wishBtn.classList.toggle('border-blancoRoto/30', !active);
+      wishBtn.classList.toggle('border-oro-brillo', active);
+      wishBtn.classList.toggle('text-oro-brillo', active);
+      wishBtn.classList.toggle('border-white/40', !active);
 
       const icon = wishBtn.querySelector('svg');
       if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
@@ -400,7 +400,7 @@ const productLd = product
 
   {
     product && related.length > 0 && (
-      <section class="border-t border-plata-metalico/10 bg-negro-carbono">
+      <section class="border-t border-white/30 bg-negro-carbono">
         <div class="page-container py-20">
           <div class="text-center mb-14">
             <p class="section-label mb-4">También te puede gustar</p>

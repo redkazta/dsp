@@ -5,18 +5,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Mis favoritos | Dinero Sobre Problemas" description="Las piezas que guardaste para después.">
-  <section class="border-b-2 border-blancoRoto/15 bg-noise">
+  <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-12 sm:py-16">
       <p class="section-label mb-3">Lista</p>
       <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Favoritos</h1>
-      <p id="wish-summary" class="mt-3 text-lg text-plata-metalico/85">Cargando…</p>
+      <p id="wish-summary" class="mt-3 text-lg text-white/80">Cargando…</p>
     </div>
   </section>
 
   <div class="page-container py-10 sm:py-14">
     <div id="wish-empty" class="hidden text-center py-16">
       <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">Todavía nada guardado</p>
-      <p class="text-base text-plata-metalico/85 mb-8">
+      <p class="text-base text-white/80 mb-8">
         Toca el corazón en cualquier pieza del catálogo para guardarla aquí.
       </p>
       <a href="/tienda" class="btn-gold inline-flex">Ver catálogo</a>
@@ -51,12 +51,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           (i: WishlistItem) => `
         <article data-wish-row="${i.productId}">
           <a href="/producto/${i.slug ?? i.productId}" class="block">
-            <div class="aspect-[4/5] bg-white border-2 border-blancoRoto/15 overflow-hidden">
+            <div class="aspect-[4/5] bg-white border-2 border-white/25 overflow-hidden">
               ${i.image ? `<img src="${i.image}" alt="${i.name}" class="w-full h-full object-contain" loading="lazy">` : ''}
             </div>
             <div class="pt-4 flex items-start justify-between gap-3">
               <h3 class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</h3>
-              <p class="font-acentos text-base text-oro-elegante whitespace-nowrap">$${formatMXN(i.price)}</p>
+              <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">$${formatMXN(i.price)}</p>
             </div>
           </a>
           <div class="mt-3 flex gap-2">
@@ -64,7 +64,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               Elegir talla
             </a>
             <button type="button" data-wish-remove="${i.productId}"
-              class="min-h-[44px] px-3 border-2 border-blancoRoto/30 text-xs uppercase tracking-wider text-plata-metalico/85 hover:border-red-400 hover:text-red-400">
+              class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
               Quitar
             </button>
           </div>

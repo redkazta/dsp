@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Productos">
-  <div id="admin-loading" class="py-20 text-center text-plata-metalico/75 text-sm">Cargando...</div>
+  <div id="admin-loading" class="py-20 text-center text-white/80 text-sm">Cargando...</div>
 
   <div id="products-view" class="hidden">
     <div class="flex items-center justify-between mb-8">
@@ -18,7 +18,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     <!-- Formulario -->
     <div id="form-panel" class="hidden card p-6 mb-8">
-      <h2 id="form-title" class="font-acentos text-sm uppercase tracking-[0.2em] text-oro-elegante mb-6">
+      <h2 id="form-title" class="font-acentos text-sm uppercase tracking-[0.2em] text-oro-brillo mb-6">
         Nuevo producto
       </h2>
 
@@ -33,15 +33,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </select>
 
         <div class="sm:col-span-2">
-          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-3">
+          <label class="block text-xs uppercase tracking-[0.2em] text-white/80 mb-3">
             Tallas
           </label>
           <div class="flex flex-wrap gap-2">
             {
               ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Unitalla'].map((s) => (
-                <label class="flex items-center gap-2 border border-plata-metalico/20 px-3 py-2 cursor-pointer hover:border-oro-elegante/50 transition-colors">
-                  <input type="checkbox" name="sizes" value={s} class="accent-oro-elegante" />
-                  <span class="text-xs text-plata-claro font-acentos">{s}</span>
+                <label class="flex items-center gap-2 border-2 border-white/30 px-3 py-2 cursor-pointer hover:border-oro-brillo/70 transition-colors">
+                  <input type="checkbox" name="sizes" value={s} class="accent-oro-brillo" />
+                  <span class="text-xs text-white font-acentos">{s}</span>
                 </label>
               ))
             }
@@ -52,10 +52,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <input name="color" placeholder="Color" value="Negro" class="input-dark" />
 
         <div class="sm:col-span-2">
-          <label class="block text-[10px] uppercase tracking-[0.2em] text-plata-metalico/80 mb-2">
+          <label class="block text-xs uppercase tracking-[0.2em] text-white/80 mb-2">
             Imagen
           </label>
-          <input id="image-input" type="file" accept="image/*" class="block text-xs text-plata-metalico/85 file:mr-4 file:py-2 file:px-4 file:border file:border-plata-metalico/20 file:bg-transparent file:text-xs file:text-plata-claro hover:file:border-oro-elegante file:cursor-pointer" />
+          <input id="image-input" type="file" accept="image/*" class="block text-xs text-white/80 file:mr-4 file:py-2 file:px-4 file:border file:border-white/30 file:bg-transparent file:text-xs file:text-white hover:file:border-oro-brillo file:cursor-pointer" />
           <div id="image-preview" class="hidden mt-3 w-24 h-30 bg-white overflow-hidden">
             <img class="w-full h-full object-contain" />
           </div>
@@ -91,7 +91,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     function render(list: any[]) {
       const container = document.getElementById('products-list')!;
       if (list.length === 0) {
-        container.innerHTML = `<p class="text-sm text-plata-metalico/75 py-10 text-center">Sin productos. Crea el primero.</p>`;
+        container.innerHTML = `<p class="text-sm text-white/80 py-10 text-center">Sin productos. Crea el primero.</p>`;
         return;
       }
 
@@ -100,25 +100,25 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           const stock = (p.product_variants ?? []).reduce((s: number, v: any) => s + (v.stock ?? 0), 0);
           const img = p.product_images?.[0]?.url;
           return `
-          <div class="border border-plata-metalico/10 p-4 flex items-center gap-4" data-id="${p.id}">
+          <div class="border-2 border-white/30 p-4 flex items-center gap-4" data-id="${p.id}">
             <div class="w-14 h-16 bg-white shrink-0 overflow-hidden">
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-acentos text-sm text-plata-claro truncate">${p.name}</p>
-              <p class="text-[11px] text-plata-metalico/80">
+              <p class="font-acentos text-sm text-white truncate">${p.name}</p>
+              <p class="text-xs text-white/80">
                 ${p.categories?.name ?? 'Sin categoría'} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
               </p>
             </div>
-            <p class="font-acentos text-sm text-oro-elegante shrink-0">$${Number(p.base_price).toLocaleString('es-MX')}</p>
+            <p class="font-acentos text-sm text-oro-brillo shrink-0">$${Number(p.base_price).toLocaleString('es-MX')}</p>
             <div class="flex gap-2 shrink-0">
-              <button data-toggle="${p.id}" class="px-3 py-2 text-[10px] uppercase tracking-wider border border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante hover:text-oro-elegante transition-colors">
+              <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 ${p.is_active ? 'Ocultar' : 'Activar'}
               </button>
-              <button data-stock="${p.id}" class="px-3 py-2 text-[10px] uppercase tracking-wider border border-plata-metalico/20 text-plata-metalico hover:border-oro-elegante hover:text-oro-elegante transition-colors">
+              <button data-stock="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 Stock
               </button>
-              <button data-delete="${p.id}" class="px-3 py-2 text-[10px] uppercase tracking-wider border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">
+              <button data-delete="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">
                 Borrar
               </button>
             </div>

@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Dashboard">
-  <div id="admin-loading" class="py-20 text-center text-plata-metalico/75 text-sm">Cargando...</div>
+  <div id="admin-loading" class="py-20 text-center text-white/80 text-sm">Cargando...</div>
 
   <div id="admin-dashboard" class="hidden">
     <div class="mb-10">
@@ -17,24 +17,24 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     <div class="grid lg:grid-cols-2 gap-8">
       <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-5">
+        <h2 class="font-acentos text-xs uppercase tracking-[0.25em] text-oro-brillo mb-5">
           Pedidos recientes
         </h2>
         <div id="recent-orders" class="space-y-3"></div>
       </section>
 
       <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-5">
+        <h2 class="font-acentos text-xs uppercase tracking-[0.25em] text-oro-brillo mb-5">
           Accesos rápidos
         </h2>
         <div class="grid grid-cols-2 gap-3">
-          <a href="/admin/productos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
-            <p class="font-acentos text-sm text-plata-claro mb-1">Productos</p>
-            <p class="text-xs text-plata-metalico/80">Crear y editar</p>
+          <a href="/admin/productos" class="card p-6 hover:border-oro-brillo/60 transition-colors">
+            <p class="font-acentos text-sm text-white mb-1">Productos</p>
+            <p class="text-xs text-white/80">Crear y editar</p>
           </a>
-          <a href="/admin/pedidos" class="card p-6 hover:border-oro-elegante/40 transition-colors">
-            <p class="font-acentos text-sm text-plata-claro mb-1">Pedidos</p>
-            <p class="text-xs text-plata-metalico/80">Estatus y envíos</p>
+          <a href="/admin/pedidos" class="card p-6 hover:border-oro-brillo/60 transition-colors">
+            <p class="font-acentos text-sm text-white mb-1">Pedidos</p>
+            <p class="text-xs text-white/80">Estatus y envíos</p>
           </a>
         </div>
       </section>
@@ -67,26 +67,26 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         .map(
           (s) => `
         <div class="card p-5">
-          <p class="text-[11px] uppercase tracking-[0.16em] text-plata-metalico/85 mb-2">${s.label}</p>
-          <p class="font-acentos text-2xl text-oro-elegante">${s.value}</p>
+          <p class="text-xs uppercase tracking-[0.16em] text-white/80 mb-2">${s.label}</p>
+          <p class="font-acentos text-2xl text-oro-brillo">${s.value}</p>
         </div>`
         )
         .join('');
 
       document.getElementById('recent-orders')!.innerHTML =
         orders.length === 0
-          ? `<p class="text-sm text-plata-metalico/85">Aún no hay pedidos.</p>`
+          ? `<p class="text-sm text-white/80">Aún no hay pedidos.</p>`
           : orders
               .slice(0, 6)
               .map(
                 (o: any) => `
-          <a href="/admin/pedidos" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-elegante transition-colors">
+          <a href="/admin/pedidos" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-brillo transition-colors">
             <div class="min-w-0">
               <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? o.id.slice(0, 8)}</p>
-              <p class="text-sm text-plata-metalico/85 truncate">${o.contact_name ?? ''}</p>
-              <p class="text-xs uppercase tracking-wider text-oro-elegante">${STATUS_LABEL[o.status as OrderStatus] ?? o.status}</p>
+              <p class="text-sm text-white/80 truncate">${o.contact_name ?? ''}</p>
+              <p class="text-xs uppercase tracking-wider text-oro-brillo">${STATUS_LABEL[o.status as OrderStatus] ?? o.status}</p>
             </div>
-            <p class="font-acentos text-base text-oro-elegante whitespace-nowrap">${formatOrderMoney(Number(o.total_amount))}</p>
+            <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">${formatOrderMoney(Number(o.total_amount))}</p>
           </a>`
               )
               .join('');

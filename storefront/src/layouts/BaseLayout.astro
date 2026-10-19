@@ -26,8 +26,9 @@ const navLinks = [
 ];
 
 const isAuth = Astro.locals.isAuthenticated;
+const firstName = Astro.locals.firstName;
 const accountHref = isAuth ? '/cuenta' : '/entrar';
-const accountLabel = isAuth ? 'Mi cuenta' : 'Iniciar sesión';
+const greetingSub = isAuth ? 'Ver mi cuenta' : 'Entrar o crear cuenta';
 
 const announcements = [
   'Envío gratis en pedidos superiores a $1,500 MXN',
@@ -90,7 +91,7 @@ const jsonLd = {
 
   <body class="min-h-screen flex flex-col bg-negro-profundo">
     <!-- Barra de anuncios rotativa -->
-    <div class="bg-oro-elegante text-negro-profundo overflow-hidden" id="announcement-bar">
+    <div class="bg-oro-brillo text-negro-profundo overflow-hidden" id="announcement-bar">
       <div class="relative h-9 flex items-center justify-center">
         {
           announcements.map((text, i) => (
@@ -106,15 +107,13 @@ const jsonLd = {
     </div>
 
     <!-- Header -->
-    <header
-      class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-blancoRoto/15"
-    >
+    <header class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
       <div class="page-container">
-        <div class="flex items-center justify-between gap-3 h-16 sm:h-20">
+        <div class="flex items-center gap-3 h-16 sm:h-20">
           <!-- Mobile menu -->
           <button
             id="menu-toggle"
-            class="lg:hidden -ml-3 p-2.5 text-blancoRoto hover:text-oro-elegante transition-colors"
+            class="lg:hidden -ml-3 p-2.5 min-w-[44px] min-h-[44px] text-blancoRoto hover:text-oro-brillo transition-colors"
             aria-label="Abrir menú"
             aria-expanded="false"
             aria-controls="mobile-menu"
@@ -124,76 +123,112 @@ const jsonLd = {
             </svg>
           </button>
 
-          <!-- Logo -->
-          <a href="/" class="group flex flex-col items-center lg:items-start shrink-0">
-            <span class="font-titulos text-base sm:text-lg lg:text-xl tracking-[0.15em] text-blancoRoto leading-none group-hover:text-oro-elegante transition-colors">
+          <!-- Perfil (izquierda) -->
+          <a
+            href={accountHref}
+            class="profile-pill hidden sm:inline-flex"
+            aria-label={isAuth ? `Cuenta de ${firstName ?? 'cliente'}` : 'Iniciar sesión'}
+          >
+            <span class="profile-avatar" aria-hidden="true">
+              {
+                isAuth ? (
+                  <span>{firstName?.charAt(0).toUpperCase() ?? 'D'}</span>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+                  </svg>
+                )
+              }
+            </span>
+            <span class="profile-text">
+              <span class="profile-hello">{isAuth ? `Bienvenido, ${firstName ?? 'cliente'}` : 'Bienvenido'}</span>
+              <span class="profile-action">{greetingSub}</span>
+            </span>
+          </a>
+
+          <!-- Logo (centro) -->
+          <a href="/" class="mx-auto flex flex-col items-center shrink-0 lg:ml-8">
+            <span class="font-titulos text-lg sm:text-xl lg:text-2xl tracking-[0.15em] text-blancoRoto leading-none hover:text-oro-brillo transition-colors">
               DINERO
             </span>
-            <span class="font-acentos text-[7px] sm:text-[8px] lg:text-[9px] uppercase tracking-[0.35em] sm:tracking-[0.45em] text-oro-elegante">
+            <span class="font-acentos text-[8px] sm:text-[9px] uppercase tracking-[0.4em] text-oro-brillo">
               Sobre Problemas
             </span>
           </a>
 
           <!-- Nav desktop -->
-          <nav class="hidden lg:flex items-center gap-10">
+          <nav class="hidden lg:flex items-center gap-10 ml-10">
             {
               navLinks.map((link) => (
                 <a
                   href={link.href}
-                  class="relative font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto hover:text-oro-elegante transition-colors duration-300 group"
+                  class="relative font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto hover:text-oro-brillo transition-colors duration-300 group"
                 >
                   {link.label}
-                  <span class="absolute -bottom-1.5 left-0 h-0.5 w-0 bg-oro-elegante transition-[width] duration-300 group-hover:w-full" />
+                  <span class="absolute -bottom-1.5 left-0 h-0.5 w-0 bg-oro-brillo transition-[width] duration-300 group-hover:w-full" />
                 </a>
               ))
             }
           </nav>
 
-          <!-- Acciones -->
-          <div class="flex items-center gap-0.5 sm:gap-2 lg:gap-4">
-            <a href="/tienda" aria-label="Buscar" class="h-11 w-11 inline-flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors">
+          <!-- Acciones (derecha, flotantes) -->
+          <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
+            <a
+              href="/tienda"
+              aria-label="Buscar"
+              class="header-icon hidden md:inline-flex"
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
               </svg>
             </a>
-            <a href={accountHref} aria-label={accountLabel} class="h-11 w-11 inline-flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors">
+
+            <StoreDrawer />
+
+            <a
+              href={accountHref}
+              aria-label={isAuth ? 'Mi cuenta' : 'Iniciar sesión'}
+              class="header-icon sm:hidden"
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
               </svg>
             </a>
-            <StoreDrawer />
           </div>
         </div>
       </div>
 
       <!-- Nav mobile -->
-      <nav id="mobile-menu" class="hidden lg:hidden border-t-2 border-blancoRoto/15 bg-negro-profundo">
+      <nav id="mobile-menu" class="hidden lg:hidden border-t-2 border-white/25 bg-negro-profundo">
         <div class="page-container py-2 flex flex-col">
+          <a
+            href={accountHref}
+            class="py-4 min-h-[56px] flex items-center gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-oro-brillo border-b border-white/15"
+          >
+            <span class="profile-avatar sm:hidden" aria-hidden="true">
+              {isAuth ? firstName?.charAt(0).toUpperCase() : 'D'}
+            </span>
+            {isAuth ? `Bienvenido, ${firstName ?? 'cliente'}` : 'Iniciar sesión'}
+          </a>
           {
             navLinks.map((link) => (
               <a
                 href={link.href}
-                class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-elegante transition-colors border-b border-blancoRoto/10 last:border-0"
+                class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
               >
                 {link.label}
               </a>
             ))
           }
           <a
-            href={accountHref}
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-oro-elegante transition-colors border-t border-blancoRoto/10"
-          >
-            {accountLabel}
-          </a>
-          <a
             href="/favoritos"
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-elegante transition-colors"
+            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
           >
             Favoritos
           </a>
           <a
             href="/carrito"
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-elegante transition-colors"
+            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors"
           >
             Carrito
           </a>
@@ -207,7 +242,7 @@ const jsonLd = {
     </main>
 
     <!-- Trust badges -->
-    <section class="border-t-2 border-blancoRoto/15 bg-negro-carbono">
+    <section class="border-t-2 border-white/25 bg-negro-carbono">
       <div class="page-container py-10 sm:py-12 grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {
           [
@@ -217,8 +252,8 @@ const jsonLd = {
             { t: 'Atención 1:1', d: 'WhatsApp y DM abiertos', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
           ].map((item) => (
             <div class="flex items-start gap-4">
-              <div class="shrink-0 w-11 h-11 border-2 border-oro-elegante/50 flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F2C94C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <div class="shrink-0 w-11 h-11 border-2 border-oro-brillo/70 flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d={item.icon} />
                 </svg>
               </div>
@@ -233,7 +268,7 @@ const jsonLd = {
     </section>
 
     <!-- Footer -->
-    <footer class="border-t-2 border-blancoRoto/15 bg-negro-profundo">
+    <footer class="border-t-2 border-white/25 bg-negro-profundo">
       <div class="page-container py-12 sm:py-16 lg:py-20">
         <div class="grid gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Marca -->
@@ -257,7 +292,7 @@ const jsonLd = {
                     aria-label={s.name}
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="w-11 h-11 border-2 border-blancoRoto/25 flex items-center justify-center text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-colors duration-300"
+                    class="w-11 h-11 border-2 border-white/30 flex items-center justify-center text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors duration-300"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                       <path d={s.d} />
@@ -280,7 +315,7 @@ const jsonLd = {
                   { href: '/tallas', label: 'Guía de tallas' },
                 ].map((l) => (
                   <li>
-                    <a href={l.href} class="text-base text-muted hover:text-oro-elegante transition-colors duration-300">
+                    <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
                       {l.label}
                     </a>
                   </li>
@@ -301,7 +336,7 @@ const jsonLd = {
                   { href: '/terminos', label: 'Términos' },
                 ].map((l) => (
                   <li>
-                    <a href={l.href} class="text-base text-muted hover:text-oro-elegante transition-colors duration-300">
+                    <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
                       {l.label}
                     </a>
                   </li>
@@ -313,22 +348,22 @@ const jsonLd = {
       </div>
 
       <!-- Barra inferior -->
-      <div class="border-t-2 border-blancoRoto/15">
+      <div class="border-t-2 border-white/25">
         <div class="page-container py-5 sm:py-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
-          <p class="text-[11px] sm:text-xs text-blancoRoto/80 font-acentos tracking-wider">
+          <p class="text-[11px] sm:text-xs text-white/80 font-acentos tracking-wider">
             © {new Date().getFullYear()} DINERO SOBRE PROBLEMAS
           </p>
-          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-blancoRoto/80 font-acentos tracking-wider">
-            <a href="/privacidad" class="py-1 hover:text-oro-elegante transition-colors">Privacidad</a>
-            <a href="/terminos" class="py-1 hover:text-oro-elegante transition-colors">Términos</a>
-            <a href="/envios" class="py-1 hover:text-oro-elegante transition-colors">Envíos</a>
-            <a href="/contacto" class="py-1 hover:text-oro-elegante transition-colors">Contacto</a>
+          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/80 font-acentos tracking-wider">
+            <a href="/privacidad" class="py-1 hover:text-oro-brillo transition-colors">Privacidad</a>
+            <a href="/terminos" class="py-1 hover:text-oro-brillo transition-colors">Términos</a>
+            <a href="/envios" class="py-1 hover:text-oro-brillo transition-colors">Envíos</a>
+            <a href="/contacto" class="py-1 hover:text-oro-brillo transition-colors">Contacto</a>
           </div>
           <!-- Métodos de pago -->
           <div class="flex items-center gap-2">
             {
               ['VISA', 'MC', 'AMEX', 'OXXO'].map((m) => (
-                <span class="px-2.5 py-1 border-2 border-blancoRoto/20 text-[10px] font-acentos tracking-wider text-blancoRoto/80">
+                <span class="px-2.5 py-1 border-2 border-white/30 text-[10px] font-acentos tracking-wider text-white/80">
                   {m}
                 </span>
               ))
@@ -379,3 +414,110 @@ const jsonLd = {
     </script>
   </body>
 </html>
+
+<style>
+  /* Píldora de perfil a la izquierda del header */
+  .profile-pill {
+    align-items: center;
+    gap: 0.65rem;
+    min-height: 46px;
+    padding: 0.35rem 1rem 0.35rem 0.35rem;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.04);
+    transition:
+      border-color 0.25s ease,
+      background-color 0.25s ease;
+  }
+
+  .profile-pill:hover {
+    border-color: #ffe28a;
+    background: rgba(255, 226, 138, 0.08);
+  }
+
+  .profile-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border-radius: 999px;
+    background: #ffe28a;
+    color: #060606;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .profile-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.15;
+  }
+
+  .profile-hello {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-action {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffe28a;
+  }
+
+  /* Botón flotante del header (carrito, favoritos, buscar) */
+  .header-icon {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: #121212;
+    color: #ffffff;
+    box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.9);
+    transition:
+      border-color 0.25s ease,
+      color 0.25s ease,
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .header-icon:hover {
+    border-color: #ffe28a;
+    color: #ffe28a;
+    transform: translateY(-2px);
+    box-shadow: 0 0 26px -6px rgba(255, 226, 138, 0.65);
+  }
+
+  .header-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #ffe28a;
+    color: #060606;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    border: 2px solid #060606;
+  }
+</style>

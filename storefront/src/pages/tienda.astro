@@ -55,16 +55,16 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   description="Catálogo completo de playeras ¡D$P!. Siete acabados, tallas S a XL, envío a todo México."
 >
   <!-- Encabezado -->
-  <section class="relative border-b border-plata-metalico/10 overflow-hidden">
+  <section class="relative border-b border-white/30 overflow-hidden">
     <div class="absolute inset-0 bg-noise"></div>
-    <div class="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-oro-elegante/5 blur-[110px] pointer-events-none"></div>
+    <div class="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-oro-brillo/5 blur-[110px] pointer-events-none"></div>
 
     <div class="relative page-container pt-8 sm:pt-10 pb-10 lg:pt-14 lg:pb-16">
       <nav class="mb-6 sm:mb-8">
-        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-plata-metalico/85">
-          <li><a href="/" class="hover:text-oro-elegante transition-colors">Inicio</a></li>
+        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
+          <li><a href="/" class="hover:text-oro-brillo transition-colors">Inicio</a></li>
           <li>/</li>
-          <li class="text-oro-elegante">Tienda</li>
+          <li class="text-oro-brillo">Tienda</li>
         </ol>
       </nav>
 
@@ -74,7 +74,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
           <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto leading-none mb-4">
             {categoryId ? categories.find((c: any) => c.id === categoryId)?.name ?? 'Tienda' : 'Todas las piezas'}
           </h1>
-          <p class="text-base text-plata-metalico/85">
+          <p class="text-base text-white/80">
             {products.length} {products.length === 1 ? 'producto' : 'productos'}
             {search ? ` para “${search}”` : ''}
           </p>
@@ -88,7 +88,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   </section>
 
   <!-- Barra de filtros -->
-  <section class="sticky top-16 sm:top-20 z-40 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-blancoRoto/15">
+  <section class="sticky top-16 sm:top-20 z-40 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
     <div class="page-container">
       <div class="flex flex-col lg:flex-row lg:items-center gap-5 py-4">
         <!-- Chips de categoría -->
@@ -98,8 +98,8 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
             class:list={[
               'shrink-0 px-4 py-2.5 min-h-[44px] inline-flex items-center font-acentos text-xs uppercase tracking-[0.2em] border-2 transition-colors duration-300',
               !categoryId
-                ? 'border-oro-elegante text-oro-elegante bg-oro-elegante/10'
-                : 'border-blancoRoto/30 text-plata-metalico/85 hover:border-oro-elegante hover:text-oro-elegante',
+                ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
+                : 'border-white/40 text-white/80 hover:border-oro-brillo hover:text-oro-brillo',
             ]}
           >
             Todas
@@ -111,8 +111,8 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
                 class:list={[
                   'shrink-0 px-4 py-2.5 min-h-[44px] inline-flex items-center font-acentos text-xs uppercase tracking-[0.2em] border-2 transition-colors duration-300',
                   categoryId === cat.id
-                    ? 'border-oro-elegante text-oro-elegante bg-oro-elegante/10'
-                    : 'border-blancoRoto/30 text-plata-metalico/85 hover:border-oro-elegante hover:text-oro-elegante',
+                    ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
+                    : 'border-white/40 text-white/80 hover:border-oro-brillo hover:text-oro-brillo',
                 ]}
               >
                 {cat.name}
@@ -170,7 +170,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
             </svg>
           </div>
           <h2 class="font-titulos text-2xl text-blancoRoto mb-3">No pudimos cargar el catálogo</h2>
-          <p class="text-base text-plata-metalico/85 mb-6">
+          <p class="text-base text-white/80 mb-6">
             Revisa la conexión con Supabase o las variables de entorno.
           </p>
           <pre class="text-left text-xs text-red-300 bg-negro-carbono border-2 border-red-400/40 p-4 overflow-x-auto">
@@ -180,7 +180,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
       ) : products.length === 0 ? (
         <div class="max-w-md mx-auto text-center py-16 sm:py-24">
           <p class="font-titulos text-3xl text-blancoRoto mb-3">Sin resultados</p>
-          <p class="text-base text-plata-metalico/85 mb-8">
+          <p class="text-base text-white/80 mb-8">
             {search
               ? `No encontramos piezas para “${search}”.`
               : 'Todavía no hay productos publicados en esta colección.'}

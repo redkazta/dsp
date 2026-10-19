@@ -15,8 +15,9 @@ export default {
           elevado: '#161616',
         },
         oro: {
-          elegante: '#F2C94C', // oro más brillante
-          suave: '#FFDA6B',
+          elegante: '#F2C94C',
+          brillo: '#FFE28A', // amarillo más claro para títulos y acentos
+          crema: '#FFF4C9', // hover: casi blanco dorado
           oscuro: '#C9A227',
         },
         // Alias heredados: usan currentColor para que NUNCA se vean grises.

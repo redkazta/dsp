@@ -111,6 +111,13 @@ export async function toggleWishlist(item: WishlistItem): Promise<boolean> {
       ? local.filter((i) => i.productId !== item.productId)
       : [item, ...local];
     writeLocal(next);
+
+    window.dispatchEvent(
+      new CustomEvent(exists ? 'wishlist:removed' : 'wishlist:added', {
+        detail: { productId: item.productId, name: item.name },
+      })
+    );
+
     return !exists;
   }
 
@@ -135,6 +142,12 @@ export async function toggleWishlist(item: WishlistItem): Promise<boolean> {
 
   const items = await getWishlist();
   window.dispatchEvent(new CustomEvent('wishlist:updated', { detail: items }));
+  window.dispatchEvent(
+    new CustomEvent(exists ? 'wishlist:removed' : 'wishlist:added', {
+      detail: { productId: item.productId, name: item.name },
+    })
+  );
+
   return !exists;
 }
 
@@ -150,6 +163,7 @@ export async function removeFromWishlist(productId: string) {
 
   const items = await getWishlist();
   window.dispatchEvent(new CustomEvent('wishlist:updated', { detail: items }));
+  window.dispatchEvent(new CustomEvent('wishlist:removed', { detail: { productId } }));
 }
 
 /** Lee la wishlist local sin tocar la red (para pintar al instante) */

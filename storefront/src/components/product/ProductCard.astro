@@ -30,7 +30,7 @@ const sizes = [
 <div class="product-card-wrap">
   <button
     type="button"
-    class="wish-btn absolute top-3 right-3 z-20 w-11 h-11 inline-flex items-center justify-center bg-negro-profundo/90 border-2 border-blancoRoto/30 text-blancoRoto hover:border-oro-elegante hover:text-oro-elegante transition-colors"
+    class="wish-btn absolute top-3 right-3 z-20 w-11 h-11 inline-flex items-center justify-center bg-negro-profundo/90 border-2 border-white/40 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors"
     data-wish-id={product.id}
     data-wish-slug={product.slug ?? ''}
     data-wish-name={product.name}
@@ -68,7 +68,7 @@ const sizes = [
     <!-- Badge agotado -->
     {
       isSoldOut && (
-        <span class="absolute top-3 left-3 bg-negro-profundo px-3 py-1 border-2 border-blancoRoto/40">
+        <span class="absolute top-3 left-3 bg-negro-profundo px-3 py-1 border-2 border-white/50">
           <span class="font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto">
             Agotado
           </span>
@@ -78,7 +78,7 @@ const sizes = [
 
     <!-- Barra inferior (CTA en desktop, siempre visible en touch) -->
     <div class="product-cta absolute bottom-0 left-0 right-0 transition-transform duration-500">
-      <div class="bg-oro-elegante text-negro-profundo text-center py-3">
+      <div class="bg-oro-brillo text-negro-profundo text-center py-3">
         <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
           Ver producto
         </span>
@@ -86,7 +86,7 @@ const sizes = [
     </div>
 
     <!-- Línea dorada -->
-    <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-elegante scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
+    <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-brillo scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
 
     <!-- Marco sutil -->
     <div class="absolute inset-0 ring-2 ring-inset ring-transparent transition-all duration-500 pointer-events-none"></div>
@@ -106,7 +106,7 @@ const sizes = [
         )
       }
     </div>
-    <p class="font-acentos text-base sm:text-lg text-oro-elegante whitespace-nowrap">
+    <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap">
       ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
     </p>
   </div>
@@ -121,15 +121,15 @@ const sizes = [
   }
 
   .product-card-wrap a .product-media {
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 
   .product-card-wrap:hover .product-media {
-    border-color: #f2c94c;
+    border-color: #ffe28a;
   }
 
   .product-card-wrap:hover h3 {
-    color: #f2c94c;
+    color: #ffe28a;
   }
 
   .product-card-wrap:hover .product-media img {
@@ -162,9 +162,9 @@ const sizes = [
   function initWishCards() {
     const paint = (btn: HTMLButtonElement, active: boolean) => {
       btn.setAttribute('aria-pressed', String(active));
-      btn.classList.toggle('border-oro-elegante', active);
-      btn.classList.toggle('text-oro-elegante', active);
-      btn.classList.toggle('border-blancoRoto/30', !active);
+      btn.classList.toggle('border-oro-brillo', active);
+      btn.classList.toggle('text-oro-brillo', active);
+      btn.classList.toggle('border-white/40', !active);
       btn.querySelector('svg')?.setAttribute('fill', active ? 'currentColor' : 'none');
     };
 

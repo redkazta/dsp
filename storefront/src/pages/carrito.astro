@@ -5,56 +5,56 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Carrito | Dinero Sobre Problemas" description="Revisa tu selección antes de pagar.">
-  <section class="border-b-2 border-blancoRoto/15 bg-noise">
+  <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-10 sm:py-16">
       <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Carrito</h1>
-      <p id="cart-summary-text" class="text-plata-metalico/85 mt-3 sm:mt-4 text-lg">Cargando...</p>
+      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">Cargando...</p>
     </div>
   </section>
 
   <div class="page-container py-10 sm:py-12 lg:py-16">
     <div id="cart-empty" class="hidden text-center py-16 sm:py-24">
       <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">Tu carrito está vacío</p>
-      <p class="text-plata-metalico/80 mb-10">Descubre el drop reflectivo.</p>
+      <p class="text-white/80 mb-10">Descubre el drop reflectivo.</p>
       <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
     </div>
 
     <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Items -->
       <div class="lg:col-span-2">
-        <div id="cart-items" class="divide-y-2 divide-blancoRoto/10"></div>
+        <div id="cart-items" class="divide-y-2 divide-white/15"></div>
       </div>
 
       <!-- Resumen: primero en móvil, al lado en desktop -->
       <aside class="lg:col-span-1 order-first lg:order-last">
-        <div class="lg:sticky lg:top-28 border-2 border-blancoRoto/15 p-6 sm:p-8 bg-negro-carbono">
+        <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
           <h2 class="font-titulos text-2xl text-blancoRoto mb-5 sm:mb-6">Resumen</h2>
 
-          <div class="space-y-4 pb-6 border-b-2 border-blancoRoto/15">
+          <div class="space-y-4 pb-6 border-b-2 border-white/25">
             <div class="flex justify-between text-base">
-              <span class="text-plata-metalico/85">Subtotal</span>
+              <span class="text-white/80">Subtotal</span>
               <span id="sum-subtotal" class="text-blancoRoto">$0.00</span>
             </div>
             <div class="flex justify-between gap-3 text-base">
-              <span class="text-plata-metalico/85">Envío</span>
+              <span class="text-white/80">Envío</span>
               <span id="sum-shipping" class="text-blancoRoto text-right">Calculado al pagar</span>
             </div>
           </div>
 
           <div class="flex justify-between items-center py-6">
             <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Total</span>
-            <span id="sum-total" class="font-acentos text-3xl text-oro-elegante font-medium">$0.00</span>
+            <span id="sum-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
           <a href="/checkout" class="btn-gold w-full mb-3">Ir a pagar</a>
           <button id="continue-shopping" class="btn-outline w-full mb-3">Seguir comprando</button>
-          <a href="/favoritos" class="block text-center text-sm uppercase tracking-[0.16em] text-plata-metalico/85 hover:text-oro-elegante py-2">
+          <a href="/favoritos" class="block text-center text-sm uppercase tracking-[0.16em] text-white/80 hover:text-oro-brillo py-2">
             Ver favoritos
           </a>
 
-          <div class="mt-8 pt-6 border-t-2 border-blancoRoto/15 space-y-2">
-            <p class="flex items-center gap-2 text-sm text-plata-metalico/85">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2C94C" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <div class="mt-8 pt-6 border-t-2 border-white/25 space-y-2">
+            <p class="flex items-center gap-2 text-sm text-white/80">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               Envío gratis +$1,500 MXN
             </p>
           </div>
@@ -91,23 +91,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         .map(
           (i) => `
         <div class="flex gap-4 sm:gap-5 py-5 sm:py-6">
-          <div class="w-20 h-24 sm:w-24 sm:h-32 bg-white border-2 border-blancoRoto/20 overflow-hidden shrink-0">
+          <div class="w-20 h-24 sm:w-24 sm:h-32 bg-white border-2 border-white/30 overflow-hidden shrink-0">
             ${i.image ? `<img src="${i.image}" alt="${i.name}" class="w-full h-full object-contain">` : ''}
           </div>
           <div class="flex-1 min-w-0 flex flex-col justify-between gap-3">
             <div>
               <h3 class="font-acentos text-base text-blancoRoto mb-1 line-clamp-2">${i.name}</h3>
-              <p class="text-sm text-plata-metalico/85">${i.variantName}</p>
+              <p class="text-sm text-white/80">${i.variantName}</p>
             </div>
             <div class="flex flex-wrap items-end justify-between gap-3">
-              <div class="flex items-center border-2 border-blancoRoto/25">
-                <button data-dec="${i.variantId}" aria-label="Quitar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-elegante transition-colors text-lg">−</button>
+              <div class="flex items-center border-2 border-white/30">
+                <button data-dec="${i.variantId}" aria-label="Quitar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
                 <span class="w-9 text-center text-base text-blancoRoto">${i.qty}</span>
-                <button data-inc="${i.variantId}" aria-label="Agregar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-elegante transition-colors text-lg">+</button>
+                <button data-inc="${i.variantId}" aria-label="Agregar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
               </div>
               <div class="text-right">
-                <p class="font-acentos text-lg text-oro-elegante">$${formatMXN(i.price * i.qty)}</p>
-                <button data-remove="${i.variantId}" class="text-xs text-plata-metalico/85 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">Eliminar</button>
+                <p class="font-acentos text-lg text-oro-brillo">$${formatMXN(i.price * i.qty)}</p>
+                <button data-remove="${i.variantId}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">Eliminar</button>
               </div>
             </div>
           </div>

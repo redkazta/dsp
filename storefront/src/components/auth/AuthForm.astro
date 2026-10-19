@@ -36,11 +36,11 @@ const isRegister = mode === 'register';
     <GoogleButton />
 
     <div class="flex items-center gap-4 my-7">
-      <div class="flex-1 h-px bg-blancoRoto/30"></div>
+      <div class="flex-1 h-px bg-white/35"></div>
       <span class="font-acentos text-xs uppercase tracking-[0.2em] text-blancoRoto">
         o
       </span>
-      <div class="flex-1 h-px bg-blancoRoto/30"></div>
+      <div class="flex-1 h-px bg-white/35"></div>
     </div>
 
     <!-- Formulario -->
@@ -135,7 +135,7 @@ const isRegister = mode === 'register';
             id="toggle-password"
             role="button"
             tabindex="0"
-            class="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-blancoRoto hover:text-oro-elegante transition-colors"
+            class="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-blancoRoto hover:text-oro-brillo transition-colors"
             aria-label="Mostrar u ocultar contraseña"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,7 +172,7 @@ const isRegister = mode === 'register';
               <input
                 type="checkbox"
                 name="marketing"
-                class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0"
+                class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
               />
               <span class="text-sm text-muted leading-relaxed">
                 Quiero recibir novedades y drops exclusivos por correo.
@@ -184,15 +184,15 @@ const isRegister = mode === 'register';
                 type="checkbox"
                 name="terms"
                 required
-                class="mt-1 w-5 h-5 accent-[#F2C94C] shrink-0"
+                class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
               />
               <span class="text-sm text-muted leading-relaxed">
                 Acepto los
-                <a href="/terminos" class="text-oro-elegante hover:text-oro-suave underline underline-offset-2">
+                <a href="/terminos" class="text-oro-brillo hover:text-white underline underline-offset-2">
                   términos y condiciones
                 </a>
                 y la
-                <a href="/privacidad" class="text-oro-elegante hover:text-oro-suave underline underline-offset-2">
+                <a href="/privacidad" class="text-oro-brillo hover:text-white underline underline-offset-2">
                   política de privacidad
                 </a>.
               </span>
@@ -206,7 +206,7 @@ const isRegister = mode === 'register';
       </button>
 
       <p id="auth-error" role="alert" class="hidden text-sm text-red-400 text-center leading-relaxed"></p>
-      <p id="auth-info" role="status" class="hidden text-sm text-oro-elegante text-center leading-relaxed"></p>
+      <p id="auth-info" role="status" class="hidden text-sm text-oro-brillo text-center leading-relaxed"></p>
     </form>
 
     <!-- Cambio de modo -->
@@ -215,14 +215,14 @@ const isRegister = mode === 'register';
         isRegister ? (
           <>
             ¿Ya tienes cuenta?{' '}
-            <a href="/entrar" class="text-oro-elegante font-semibold hover:text-oro-suave transition-colors">
+            <a href="/entrar" class="text-oro-brillo font-semibold hover:text-white transition-colors">
               Iniciar sesión
             </a>
           </>
         ) : (
           <>
             ¿No tienes cuenta?{' '}
-            <a href="/registro" class="text-oro-elegante font-semibold hover:text-oro-suave transition-colors">
+            <a href="/registro" class="text-oro-brillo font-semibold hover:text-white transition-colors">
               Crear cuenta
             </a>
           </>
@@ -241,7 +241,7 @@ const isRegister = mode === 'register';
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #f2c94c;
+    color: #ffe28a;
   }
 
   .field-hint {

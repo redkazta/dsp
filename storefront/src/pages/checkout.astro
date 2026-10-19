@@ -8,17 +8,17 @@ void apiUrl;
 ---
 
 <BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
-  <section class="border-b-2 border-blancoRoto/15 bg-noise">
+  <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-10 sm:py-12">
       <nav class="mb-6">
-        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-plata-metalico/85">
-          <li><a href="/carrito" class="hover:text-oro-elegante transition-colors">Carrito</a></li>
+        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
+          <li><a href="/carrito" class="hover:text-oro-brillo transition-colors">Carrito</a></li>
           <li>/</li>
-          <li class="text-oro-elegante">Checkout</li>
+          <li class="text-oro-brillo">Checkout</li>
         </ol>
       </nav>
       <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
-      <p class="mt-3 text-base text-plata-metalico/85">Producción bajo pedido · Pago seguro simulado</p>
+      <p class="mt-3 text-base text-white/80">Producción bajo pedido · Pago seguro simulado</p>
     </div>
   </section>
 
@@ -35,7 +35,7 @@ void apiUrl;
         <!-- Contacto -->
         <fieldset>
           <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-sm shrink-0">1</span>
+            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">1</span>
             <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Contacto</span>
           </legend>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -61,7 +61,7 @@ void apiUrl;
         <!-- Envío -->
         <fieldset>
           <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-sm shrink-0">2</span>
+            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">2</span>
             <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Dirección de envío</span>
           </legend>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -104,18 +104,18 @@ void apiUrl;
         <!-- Pago -->
         <fieldset>
           <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-elegante text-oro-elegante flex items-center justify-center font-acentos text-sm shrink-0">3</span>
+            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">3</span>
             <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Pago</span>
           </legend>
 
-          <div class="border-2 border-oro-elegante/40 bg-negro-carbono p-5 sm:p-6">
+          <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
             <div class="flex items-start gap-3 mb-6">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F2C94C" stroke-width="2" class="mt-0.5 shrink-0">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" class="mt-0.5 shrink-0">
                 <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
               </svg>
               <div>
                 <p class="text-base text-blancoRoto font-semibold">Tarjeta de crédito o débito</p>
-                <p class="text-sm text-plata-metalico/85 leading-relaxed mt-1">
+                <p class="text-sm text-white/80 leading-relaxed mt-1">
                   Modo de prueba: no se cobra nada. Usa cualquier tarjeta válida de 16 dígitos.
                 </p>
               </div>
@@ -165,8 +165,8 @@ void apiUrl;
               </label>
             </div>
 
-            <p class="mt-4 text-xs text-plata-metalico/85">
-              Prueba de rechazo: <span class="text-oro-elegante">4000 0000 0000 0002</span>
+            <p class="mt-4 text-xs text-white/80">
+              Prueba de rechazo: <span class="text-oro-brillo">4000 0000 0000 0002</span>
             </p>
           </div>
         </fieldset>
@@ -174,24 +174,24 @@ void apiUrl;
 
       <!-- Resumen -->
       <aside class="lg:col-span-1 order-1 lg:order-2">
-        <div class="lg:sticky lg:top-28 border-2 border-blancoRoto/15 p-6 sm:p-8 bg-negro-carbono">
+        <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
           <h2 class="font-titulos text-2xl text-blancoRoto mb-6">Tu pedido</h2>
-          <div id="checkout-items" class="divide-y-2 divide-blancoRoto/10 mb-6"></div>
+          <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6"></div>
 
-          <div class="space-y-3 pb-4 border-b-2 border-blancoRoto/15 text-base">
+          <div class="space-y-3 pb-4 border-b-2 border-white/25 text-base">
             <div class="flex justify-between">
-              <span class="text-plata-metalico/85">Subtotal</span>
+              <span class="text-white/80">Subtotal</span>
               <span id="co-subtotal" class="text-blancoRoto">$0.00</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-plata-metalico/85">Envío</span>
+              <span class="text-white/80">Envío</span>
               <span id="co-shipping" class="text-blancoRoto">—</span>
             </div>
           </div>
 
           <div class="flex justify-between items-center py-5">
             <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Total</span>
-            <span id="co-total" class="font-acentos text-3xl text-oro-elegante font-medium">$0.00</span>
+            <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
           <button type="submit" id="pay-btn" class="btn-gold w-full">
@@ -200,7 +200,7 @@ void apiUrl;
 
           <p id="pay-error" role="alert" class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"></p>
 
-          <p class="mt-6 text-xs text-plata-metalico/85 text-center leading-relaxed">
+          <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
             Al confirmar aceptas nuestros términos y política de privacidad.
           </p>
         </div>
@@ -217,7 +217,7 @@ void apiUrl;
       font-weight: 600;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #f2c94c;
+      color: #ffe28a;
     }
   </style>
 
@@ -256,9 +256,9 @@ void apiUrl;
         <div class="flex justify-between items-center gap-3 py-3">
           <div class="min-w-0">
             <p class="text-base text-blancoRoto">${i.name}</p>
-            <p class="text-sm text-plata-metalico/85">${i.variantName} × ${i.qty}</p>
+            <p class="text-sm text-white/80">${i.variantName} × ${i.qty}</p>
           </div>
-          <span class="text-base font-acentos text-oro-elegante whitespace-nowrap">$${formatMXN(i.price * i.qty)}</span>
+          <span class="text-base font-acentos text-oro-brillo whitespace-nowrap">$${formatMXN(i.price * i.qty)}</span>
         </div>`
         )
         .join('');
