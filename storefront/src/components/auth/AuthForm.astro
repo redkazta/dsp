@@ -151,6 +151,15 @@ const isRegister = mode === 'register';
             </span>
           )
         }
+        {
+          !isRegister && (
+            <p class="mt-2 text-right">
+              <a href="/recuperar" class="text-sm text-oro-brillo hover:text-white transition-colors">
+                ¿Olvidaste tu contraseña?
+              </a>
+            </p>
+          )
+        }
       </label>
 
       {
@@ -362,7 +371,8 @@ const isRegister = mode === 'register';
         }
 
         const next = new URLSearchParams(window.location.search).get('next');
-        window.location.href = next && next.startsWith('/') ? next : '/cuenta';
+        const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta';
+        window.location.href = safeNext;
       }
     } catch (err: any) {
       show(errorEl, err?.message ?? 'Algo salió mal. Intenta de nuevo.');

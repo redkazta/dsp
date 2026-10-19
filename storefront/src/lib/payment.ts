@@ -1,17 +1,18 @@
-// Configuración de clientes de pago
+// Configuración de clientes de pago (pendiente de conectar).
+// Las variables se declaran en `src/env.d.ts`; hoy no hay pasarela activa.
 export const paymentConfig = {
   stripe: {
-    publishableKey: import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_...',
-    apiUrl: 'https://api.stripe.com/v1'
+    publishableKey: '',
+    apiUrl: 'https://api.stripe.com/v1',
   },
   mercadopago: {
-    publicKey: import.meta.env.PUBLIC_MERCADOPAGO_PUBLIC_KEY || 'TEST-...',
-    apiUrl: 'https://api.mercadopago.com/v1'
+    publicKey: '',
+    apiUrl: 'https://api.mercadopago.com/v1',
   },
   conekta: {
-    publicKey: import.meta.env.PUBLIC_CONEKTA_PUBLIC_KEY || 'TEST-...',
-    apiUrl: 'https://api.conekta.io/v2'
-  }
+    publicKey: '',
+    apiUrl: 'https://api.conekta.io/v2',
+  },
 };
 
 // Utilidades para pagos
@@ -21,7 +22,7 @@ export const paymentUtils = {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     }).format(amount);
   },
 
@@ -30,11 +31,9 @@ export const paymentUtils = {
       case 'MX':
         return 'mercadopago';
       case 'US':
-        return 'stripe';
       case 'CA':
-        return 'stripe';
       default:
         return 'stripe';
     }
-  }
+  },
 };

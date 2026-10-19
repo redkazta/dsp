@@ -95,6 +95,21 @@ const nav = [
     </div>
 
     <script>
+      // Red de seguridad de navegador: si después de 8s el script de la página
+      // no arrancó (bundle viejo en caché), se ofrece recargar.
+      window.addEventListener('load', () => {
+        const view = document.getElementById('admin-loading');
+        if (!view) return;
+
+        setTimeout(() => {
+          if (view.isConnected && !view.classList.contains('hidden')) {
+            view.textContent = 'No pudimos cargar el panel. Recarga la página.';
+          }
+        }, 8000);
+      });
+    </script>
+
+    <script>
       import { signOut } from '../lib/auth';
 
       document.getElementById('admin-logout')?.addEventListener('click', async () => {

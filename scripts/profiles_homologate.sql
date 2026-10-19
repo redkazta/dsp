@@ -66,6 +66,7 @@ BEGIN
     NULLIF(TRIM(COALESCE(v_meta->>'birthdate', '')), '')::DATE,
     COALESCE((v_meta->>'marketing_opt_in')::BOOLEAN, FALSE),
     COALESCE(v_meta->>'avatar_url', v_meta->>'picture'),
+    -- Rol fijo: el rol de staff solo se asigna desde el SQL Editor
     'customer'
   )
   ON CONFLICT (id) DO NOTHING;

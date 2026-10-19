@@ -39,9 +39,9 @@ try {
         ].map((p) => (
           <a
             href="/tienda"
-            class="group relative w-24 h-28 overflow-hidden border-2 border-white/30 bg-white hover:border-oro-brillo transition-colors duration-300"
+            class="group relative block w-24 h-24 product-frame border-2 border-white/30 hover:border-oro-brillo transition-colors duration-300"
           >
-            <img src={p.src} alt={p.label} class="w-full h-full object-contain p-1" loading="lazy" />
+            <img src={p.src} alt={p.label} loading="lazy" />
             <span class="absolute inset-x-0 bottom-0 bg-negro-profundo text-center py-1 font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto opacity-0 transition-opacity reels-label">
               {p.label}
             </span>

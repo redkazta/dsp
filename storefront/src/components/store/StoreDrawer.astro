@@ -6,9 +6,17 @@
  */
 export interface Props {
   class?: string;
+  /** Favoritos que ya pintó el servidor (sin parpadeo) */
+  wishlist?: Array<{
+    productId: string;
+    slug: string | null;
+    name: string;
+    price: number;
+    image: string | null;
+  }>;
 }
 
-const { class: className = '' } = Astro.props;
+const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
 ---
 
 <!-- Disparadores -->
@@ -42,7 +50,7 @@ const { class: className = '' } = Astro.props;
 </div>
 
 <!-- Overlay + panel -->
-<div id="drawer" class="drawer" hidden>
+<div id="drawer" class="drawer" data-wishlist={JSON.stringify(initialWishlist)} hidden>
   <button type="button" id="drawer-backdrop" class="drawer-backdrop" aria-label="Cerrar"></button>
 
   <p id="wish-toast" class="wish-toast" role="status" aria-live="polite"></p>
@@ -82,41 +90,28 @@ const { class: className = '' } = Astro.props;
     </div>
 
     <footer id="drawer-footer" class="drawer-foot">
-      <div class="flex items-center justify-between mb-3">
-        <span class="font-acentos text-sm uppercase tracking-[0.18em] text-blancoRoto">Total</span>
-        <span id="drawer-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
+      <div id="drawer-cart-totals">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-acentos text-sm uppercase tracking-[0.18em] text-blancoRoto">Total</span>
+          <span id="drawer-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
+        </div>
+        <p id="drawer-shipping-hint" class="text-xs text-white/80 mb-4"></p>
       </div>
-      <p id="drawer-shipping-hint" class="text-xs text-white/80 mb-4"></p>
-      <a href="/checkout" class="btn-gold w-full">Finalizar compra</a>
+      <a id="drawer-checkout" href="/checkout" class="btn-gold w-full">Finalizar compra</a>
       <a href="/carrito" class="btn-outline w-full mt-2">Ver carrito completo</a>
     </footer>
   </aside>
 </div>
 
 <style>
-  /* Los dos botones flotan juntos arriba a la derecha */
+  /* Los dos botones flotan juntos arriba a la derecha.
+     Siempre visibles: en móvil, tablet y desktop. */
   .store-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     position: relative;
     z-index: 60;
-  }
-
-  /* Ocultar por defecto en desktop, mostrar al hover del contenedor */
-  @media (min-width: 641px) {
-    .store-actions {
-      opacity: 0;
-      visibility: hidden;
-      transform: translateX(8px);
-      transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
-    }
-  }
-
-  .group:hover .store-actions {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
   }
 
   .drawer {
@@ -353,9 +348,11 @@ const { class: className = '' } = Astro.props;
       box-shadow 0.25s ease;
   }
 
-  .header-icon:hover {
+  .header-icon:hover,
+  .header-icon:focus-visible {
     border-color: #ffe28a;
     color: #ffe28a;
+    outline: none;
     transform: translateY(-2px);
     box-shadow: 0 0 26px -6px rgba(255, 226, 138, 0.65);
   }
@@ -405,13 +402,12 @@ const { class: className = '' } = Astro.props;
     formatMXN,
   } from '../../lib/cart';
   import {
-    getWishlist,
-    getLocalWishlist,
+    initWishlistView,
     removeFromWishlist,
-    syncWishlist,
     type WishlistItem,
   } from '../../lib/wishlist';
-  import { FREE_SHIPPING_THRESHOLD } from '../../lib/orders';
+  import { FREE_SHIPPING_THRESHOLD } from '../../lib/pricing';
+  import { escapeHtml, safeUrl } from '../../lib/html';
 
   type Tab = 'cart' | 'wishlist';
 
@@ -425,9 +421,13 @@ const { class: className = '' } = Astro.props;
   const tabWish = document.getElementById('tab-wishlist') as HTMLButtonElement;
   const paneCart = document.getElementById('pane-cart')!;
   const paneWish = document.getElementById('pane-wishlist')!;
-  const footer = document.getElementById('drawer-footer')!;
+  const cartTotals = document.getElementById('drawer-cart-totals') as HTMLElement;
   const totalEl = document.getElementById('drawer-total')!;
   const hintEl = document.getElementById('drawer-shipping-hint')!;
+  const checkoutLink = document.getElementById('drawer-checkout') as HTMLAnchorElement;
+  const serverWishlist: WishlistItem[] = JSON.parse(
+    document.getElementById('drawer')?.dataset.wishlist ?? '[]'
+  );
   const badge = document.getElementById('cart-count')!;
   const wishBadge = document.getElementById('wish-count')!;
   const tabCartCount = document.getElementById('tab-cart-count')!;
@@ -437,7 +437,7 @@ const { class: className = '' } = Astro.props;
 
   let currentTab: Tab = 'cart';
   let lastFocus: HTMLElement | null = null;
-  let currentWish: WishlistItem[] = getLocalWishlist();
+  let currentWish: WishlistItem[] = serverWishlist;
 
   const money = (n: number) => `$${formatMXN(n)}`;
 
@@ -471,22 +471,22 @@ const { class: className = '' } = Astro.props;
           (i) => `
         <article class="drawer-item">
           <div class="drawer-thumb">
-            ${i.image ? `<img src="${i.image}" alt="${i.name}" loading="lazy">` : ''}
+            ${safeUrl(i.image) ? `<img src="${safeUrl(i.image)}" alt="" loading="lazy">`.replace(' alt=""', ` alt="${escapeHtml(i.name)}"`) : ''}
           </div>
           <div class="flex-1 min-w-0 flex flex-col justify-between gap-2">
             <div>
-              <p class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</p>
-              <p class="text-sm text-white/80">${i.variantName}</p>
+              <p class="font-acentos text-base text-blancoRoto leading-snug">${escapeHtml(i.name)}</p>
+              <p class="text-sm text-white/80">${escapeHtml(i.variantName)}</p>
             </div>
             <div class="flex items-end justify-between gap-2">
               <div class="drawer-qty">
-                <button type="button" data-dec="${i.variantId}" aria-label="Quitar uno">−</button>
+                <button type="button" data-dec="${escapeHtml(i.variantId)}" aria-label="Quitar uno">−</button>
                 <span>${i.qty}</span>
-                <button type="button" data-inc="${i.variantId}" aria-label="Agregar uno">+</button>
+                <button type="button" data-inc="${escapeHtml(i.variantId)}" aria-label="Agregar uno">+</button>
               </div>
               <div class="text-right">
                 <p class="font-acentos text-base text-oro-brillo">${money(i.price * i.qty)}</p>
-                <button type="button" data-remove="${i.variantId}"
+                <button type="button" data-remove="${escapeHtml(i.variantId)}"
                   class="text-xs uppercase tracking-wider text-white/80 hover:text-red-400 py-1">
                   Quitar
                 </button>
@@ -555,18 +555,18 @@ const { class: className = '' } = Astro.props;
         (i) => `
       <article class="drawer-item">
         <div class="drawer-thumb">
-          ${i.image ? `<img src="${i.image}" alt="${i.name}" loading="lazy">` : ''}
+          ${safeUrl(i.image) ? `<img src="${safeUrl(i.image)}" alt="" loading="lazy">` : ''}
         </div>
         <div class="flex-1 min-w-0 flex flex-col justify-between gap-2">
           <div>
-            <p class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</p>
+            <p class="font-acentos text-base text-blancoRoto leading-snug">${escapeHtml(i.name)}</p>
             <p class="text-sm text-oro-brillo mt-1">${money(i.price)}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <a href="/producto/${i.slug ?? i.productId}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
+            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
               Ver
             </a>
-            <button type="button" data-wish-remove="${i.productId}"
+            <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
               class="text-xs uppercase tracking-wider text-white/80 hover:text-red-400 py-2 px-1">
               Quitar
             </button>
@@ -579,7 +579,6 @@ const { class: className = '' } = Astro.props;
     wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
       b.addEventListener('click', async () => {
         await removeFromWishlist(b.dataset.wishRemove!);
-        currentWish = await getWishlist();
         renderWishlist();
       })
     );
@@ -594,11 +593,17 @@ const { class: className = '' } = Astro.props;
     tabWish.setAttribute('aria-selected', String(tab === 'wishlist'));
     paneCart.classList.toggle('hidden', tab !== 'cart');
     paneWish.classList.toggle('hidden', tab !== 'wishlist');
-    footer.classList.toggle('hidden', tab !== 'cart');
+
+    // El CTA de compra se mantiene visible en ambas pestañas:
+    // el total solo aplica al carrito.
+    cartTotals.classList.toggle('hidden', tab !== 'cart');
+    checkoutLink.classList.toggle('hidden', tab !== 'cart');
   }
 
   function open(tab: Tab = 'cart') {
     lastFocus = document.activeElement as HTMLElement;
+    // Cierra el menú móvil: el panel se abre encima del header
+    document.getElementById('mobile-menu')?.classList.add('hidden');
     drawer.hidden = false;
     switchTab(tab);
 
@@ -615,7 +620,11 @@ const { class: className = '' } = Astro.props;
     document.body.style.overflow = '';
     setTimeout(() => {
       drawer.hidden = true;
-      lastFocus?.focus();
+      // En móvil el panel cubre el botón; devolver el foco ahí reabriría
+      // visualmente el menú. Solo se enfoca si el disparador sigue visible.
+      if (lastFocus && lastFocus.isConnected && lastFocus.getClientRects().length > 0) {
+        lastFocus.focus();
+      }
     }, 320);
   }
 
@@ -672,8 +681,10 @@ const { class: className = '' } = Astro.props;
     toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2000);
   });
 
-  // Sincroniza la wishlist al cargar (si hay sesión, fusiona lo local)
-  syncWishlist()
+  // Favoritos iniciales (SSR + fusión de lo guardado sin sesión)
+  initWishlistView(serverWishlist, {
+    isAuth: document.documentElement.dataset.auth === '1',
+  })
     .then((items) => {
       currentWish = items;
       updateBadges();

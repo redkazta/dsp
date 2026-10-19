@@ -46,8 +46,14 @@ WHERE p.tenant_id = '11111111-1111-1111-1111-111111111111';
 
 -- =====================================================
 -- IMÁGENES
+-- Archivos reales en /public/img: DSP_1.jpg ... DSP_7.jpg
+-- (cuadradas 1200x1200, prenda centrada, margen uniforme)
 -- =====================================================
 INSERT INTO product_images (product_id, url, alt_text, position)
-SELECT id, '/img/' || REPLACE(sku, 'DSP-0', 'DSP_') || '.jpg', name, 0
+SELECT
+  id,
+  '/img/DSP_' || (ROW_NUMBER() OVER (ORDER BY sku) - 1)::TEXT || '.jpg',
+  name,
+  0
 FROM products
 WHERE tenant_id = '11111111-1111-1111-1111-111111111111';

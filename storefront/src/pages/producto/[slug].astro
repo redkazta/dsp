@@ -96,16 +96,15 @@ const productLd = product
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
             {/* Galería */}
             <div>
-              <div class="aspect-[4/5] bg-negro-elevado border-2 border-white/25 overflow-hidden">
+              <div class="product-frame border-2 border-white/25">
                 {images.length > 0 ? (
                   <img
                     src={images[0].url}
                     alt={product.name}
-                    class="w-full h-full object-cover"
                     loading="eager"
                   />
                 ) : (
-                  <div class="w-full h-full flex items-center justify-center">
+                  <div class="absolute inset-0 flex items-center justify-center">
                     <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
                       Sin imagen
                     </span>
@@ -116,8 +115,8 @@ const productLd = product
               {images.length > 1 && (
                 <div class="grid grid-cols-4 gap-3 mt-3">
                   {images.slice(0, 4).map((img: any) => (
-                    <div class="aspect-square bg-negro-elevado border-2 border-white/25 overflow-hidden hover:border-oro-brillo transition-colors">
-                      <img src={img.url} alt={img.alt_text ?? product.name} class="w-full h-full object-cover" loading="lazy" />
+                    <div class="product-frame border-2 border-white/25 hover:border-oro-brillo transition-colors">
+                      <img src={img.url} alt={img.alt_text ?? product.name} loading="lazy" />
                     </div>
                   ))}
                 </div>
@@ -275,11 +274,13 @@ const productLd = product
     import { addToCart } from '../../lib/cart';
     import { openStoreDrawer } from '../../lib/store-drawer';
     import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
+    import { sanitizeVariants } from '../../lib/product-variants';
 
     const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
     if (btn) {
-      const variants: any[] = JSON.parse(btn.dataset.variants || '[]');
-      const feedback = document.getElementById('add-feedback')!;
+      // data-variants lo genera el servidor: aquí solo se tipa.
+      const variants = sanitizeVariants(JSON.parse(btn.dataset.variants || '[]'));
+      const feedback = document.getElementById('add-feedback') as HTMLElement;
 
       let selectedSize: string | null = null;
       let selectedColor: string | null = null;

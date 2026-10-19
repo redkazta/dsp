@@ -85,6 +85,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       uploadProductImage,
     } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
+    import { escapeHtml, safeUrl } from '../../lib/html';
 
     let products: any[] = [];
 
@@ -98,16 +99,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       container.innerHTML = list
         .map((p) => {
           const stock = (p.product_variants ?? []).reduce((s: number, v: any) => s + (v.stock ?? 0), 0);
-          const img = p.product_images?.[0]?.url;
+          const img = safeUrl(p.product_images?.[0]?.url);
           return `
-          <div class="border-2 border-white/30 p-4 flex items-center gap-4" data-id="${p.id}">
+          <div class="border-2 border-white/30 p-4 flex items-center gap-4" data-id="${escapeHtml(p.id)}">
             <div class="w-14 h-16 bg-white shrink-0 overflow-hidden">
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-acentos text-sm text-white truncate">${p.name}</p>
+              <p class="font-acentos text-sm text-white truncate">${escapeHtml(p.name)}</p>
               <p class="text-xs text-white/80">
-                ${p.categories?.name ?? 'Sin categoría'} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
+                ${escapeHtml(p.categories?.name ?? 'Sin categoría')} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
               </p>
             </div>
             <p class="font-acentos text-sm text-oro-brillo shrink-0">$${Number(p.base_price).toLocaleString('es-MX')}</p>
@@ -181,7 +182,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       document.querySelectorAll('select[name="categoryId"]').forEach((sel) => {
         (sel as HTMLSelectElement).innerHTML =
           `<option value="">Sin categoría</option>` +
-          cats.map((c: any) => `<option value="${c.id}">${c.name}</option>`).join('');
+          cats
+            .map((c: any) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`)
+            .join('');
       });
 
       await refresh();

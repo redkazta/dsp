@@ -5,9 +5,13 @@
  * Perfil homologado: mismo conjunto de campos para cualquier método de alta.
  * La fuente de verdad es la tabla `customer_profiles` en Postgres, así que
  * `ensureProfile()` repara perfiles de Google que llegaron incompletos.
+ *
+ * El rol NUNCA se escribe desde el cliente: lo fija el trigger
+ * `handle_new_user()` y solo un admin lo cambia.
  */
 
 import { supabase } from './supabase';
+import { TENANT_ID } from './constants';
 
 export interface SignUpProfile {
   firstName: string;
@@ -29,8 +33,6 @@ export interface Profile {
   avatar_url: string | null;
   role: string | null;
 }
-
-const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 
 /** Junta nombre + apellidos en un solo campo legible */
 export function composeFullName(firstName?: string | null, lastName?: string | null) {
@@ -72,6 +74,18 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+/** Envía el correo de recuperación */
+export async function sendPasswordReset(email: string) {
+  return supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/nueva-password`,
+  });
+}
+
+/** Cambia la contraseña (con sesión válida, incluida la del enlace de correo) */
+export async function updatePassword(password: string) {
+  return supabase.auth.updateUser({ password });
+}
+
 /** Usuario actual */
 export async function getUser() {
   const { data } = await supabase.auth.getUser();
@@ -86,7 +100,7 @@ export async function getSession() {
 
 /**
  * Garantiza que exista el perfil del usuario con los datos disponibles.
- * Cubre a quién entró por Google: rellena nombre, apellidos, foto y rol.
+ * Cubre a quién entró por Google: rellena nombre, apellidos y foto.
  */
 export async function ensureProfile(): Promise<Profile | null> {
   const user = await getUser();
@@ -105,10 +119,14 @@ export async function ensureProfile(): Promise<Profile | null> {
   const fallbackName = (meta.full_name as string) ?? (meta.name as string) ?? null;
 
   const firstName =
-    (meta.first_name as string) ?? existing?.first_name ?? googleFirst ?? fallbackName?.split(' ')[0] ?? null;
+    existing?.first_name ??
+    (meta.first_name as string) ??
+    googleFirst ??
+    fallbackName?.split(' ')[0] ??
+    null;
   const lastName =
-    (meta.last_name as string) ??
     existing?.last_name ??
+    (meta.last_name as string) ??
     googleLast ??
     fallbackName?.split(' ').slice(1).join(' ') ??
     null;
@@ -124,6 +142,7 @@ export async function ensureProfile(): Promise<Profile | null> {
     birthdate: (meta.birthdate as string) ?? existing?.birthdate ?? null,
     marketing_opt_in: existing?.marketing_opt_in ?? Boolean(meta.marketing_opt_in),
     avatar_url: (meta.avatar_url as string) ?? existing?.avatar_url ?? null,
+    // Sin rol desde el metadata: el default del esquema es 'customer'.
     role: existing?.role ?? 'customer',
     updated_at: new Date().toISOString(),
   };
@@ -165,10 +184,10 @@ export async function updateProfile(
   const user = await getUser();
   if (!user) throw new Error('No autenticado');
 
-  const next = { ...patch };
+  const next: Record<string, unknown> = { ...patch };
   if ('first_name' in patch || 'last_name' in patch) {
     const current = await ensureProfile();
-    (next as any).full_name = composeFullName(
+    next.full_name = composeFullName(
       patch.first_name ?? current?.first_name,
       patch.last_name ?? current?.last_name
     );
@@ -180,12 +199,6 @@ export async function updateProfile(
     .eq('id', user.id);
 
   return { error };
-}
-
-/** Pedidos y wishlist */
-export async function getMyOrders() {
-  const { getMyOrders: list } = await import('./orders');
-  return list();
 }
 
 /** Direcciones del usuario */

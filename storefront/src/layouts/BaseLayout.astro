@@ -1,4 +1,4 @@
----
+﻿---
 /**
  * BaseLayout.astro - Layout principal
  * Dinero Sobre Problemas · Estética editorial, negro/oro/plata
@@ -27,8 +27,43 @@ const navLinks = [
 
 const isAuth = Astro.locals.isAuthenticated;
 const firstName = Astro.locals.firstName;
+const isStaff = Astro.locals.isStaff;
 const accountHref = isAuth ? '/cuenta' : '/entrar';
-const greetingSub = isAuth ? 'Ver mi cuenta' : 'Entrar o crear cuenta';
+
+// Favoritos para el primer HTML (sin "Cargando…" y sin parpadeo).
+// Solo lectura con la sesión del visitante: RLS decide qué puede ver.
+type DrawerWish = {
+  productId: string;
+  slug: string | null;
+  name: string;
+  price: number;
+  image: string | null;
+};
+
+let drawerWishlist: DrawerWish[] = [];
+
+if (isAuth && Astro.locals.user) {
+  try {
+    const { createSupabaseServerClient } = await import('../lib/supabase-server');
+    const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+    const { data } = await supabase
+      .from('wishlist_items')
+      .select('product_id, product_slug, product_name, price, image_url')
+      .eq('user_id', Astro.locals.user.id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    drawerWishlist = (data ?? []).map((row: any) => ({
+      productId: row.product_id,
+      slug: row.product_slug,
+      name: row.product_name ?? '',
+      price: Number(row.price ?? 0),
+      image: row.image_url,
+    }));
+  } catch {
+    drawerWishlist = [];
+  }
+}
 
 const announcements = [
   'Envío gratis en pedidos superiores a $1,500 MXN',
@@ -47,16 +82,13 @@ const jsonLd = {
 ---
 
 <!doctype html>
-<html lang="es-MX" class="dark">
+<html lang="es-MX" class="dark" data-auth={isAuth ? '1' : '0'}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0A0A0A" />
     <meta name="generator" content={Astro.generator} />
     <meta name="google-site-verification" content="9vg0e3aFgw6r_ZeKvXzVRruULlWTkwhMjmQQHIguAM4" />
-    <meta name="theme-color" content="#0A0A0A" />
-
-    <meta name="theme-color" content="#0A0A0A" />
 
     <!-- SEO -->
     <title>{title}</title>
@@ -148,19 +180,23 @@ const jsonLd = {
             }
           </nav>
 
-          <!-- Acciones (derecha, flotantes) -->
-          <div class="group flex items-center gap-1.5 sm:gap-2.5 ml-auto">
-            <a
-              href="/tienda"
-              aria-label="Buscar"
-              class="header-icon hidden lg:inline-flex"
+          <!-- Acciones (derecha) -->
+          <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
+            <button
+              type="button"
+              id="search-open"
+              aria-label="Buscar piezas"
+              aria-haspopup="dialog"
+              aria-controls="search-dialog"
+              aria-expanded="false"
+              class="header-icon"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
               </svg>
-            </a>
+            </button>
 
-            <StoreDrawer class="opacity-100 visible sm:opacity-0 sm:invisible sm:group-hover:opacity-100 sm:group-hover:visible sm:translate-x-2 sm:group-hover:translate-x-0 transition-all duration-300" />
+            <StoreDrawer wishlist={drawerWishlist} />
 
             {
               isAuth ? (
@@ -202,6 +238,9 @@ const jsonLd = {
                     <a href="/favoritos" class="profile-menu-item" role="menuitem">Favoritos</a>
                     <a href="/carrito" class="profile-menu-item" role="menuitem">Carrito</a>
                     <a href="/checkout" class="profile-menu-item" role="menuitem">Finalizar compra</a>
+                    {isStaff && (
+                      <a href="/admin" class="profile-menu-item" role="menuitem">Panel de administración</a>
+                    )}
                     <span class="profile-menu-divider" aria-hidden="true"></span>
                     <button type="button" id="btn-signout" class="profile-menu-item" role="menuitem">
                       Cerrar sesión
@@ -209,18 +248,13 @@ const jsonLd = {
                   </div>
                 </div>
               ) : (
-                <a
-                  href={accountHref}
-                  aria-label="Iniciar sesión"
-                  class="header-icon sm:hidden"
-                >
+                <a href={accountHref} aria-label="Iniciar sesión" class="header-icon sm:hidden">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
                   </svg>
                 </a>
               )
             }
-
           </div>
         </div>
       </div>
@@ -247,18 +281,29 @@ const jsonLd = {
               </a>
             ))
           }
-          <a
-            href="/favoritos"
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
+          <button
+            type="button"
+            data-open-drawer="wishlist"
+            class="py-4 min-h-[52px] flex items-center justify-between gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
           >
-            Favoritos
-          </a>
-          <a
-            href="/carrito"
+            <span>Favoritos</span>
+            <span id="mobile-wish-count" class="header-badge !static !border-0 hidden"></span>
+          </button>
+          <button
+            type="button"
+            data-open-drawer="cart"
+            class="py-4 min-h-[52px] flex items-center justify-between gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
+          >
+            <span>Carrito</span>
+            <span id="mobile-cart-count" class="header-badge !static !border-0 hidden"></span>
+          </button>
+          <button
+            type="button"
+            id="mobile-search-open"
             class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors"
           >
-            Carrito
-          </a>
+            Buscar
+          </button>
         </div>
       </nav>
     </header>
@@ -267,6 +312,29 @@ const jsonLd = {
     <main class="flex-1">
       <slot />
     </main>
+
+    <!-- Buscador global (⌘K / Ctrl+K) -->
+    <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label="Buscar piezas">
+      <button type="button" id="search-backdrop" class="search-backdrop" aria-label="Cerrar buscador"></button>
+      <div class="search-panel">
+        <div class="search-field">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Buscar piezas…"
+            autocomplete="off"
+            aria-controls="search-results"
+            aria-label="Buscar piezas"
+          />
+          <kbd class="search-kbd">esc</kbd>
+        </div>
+        <div id="search-results" class="search-results" role="listbox" aria-live="polite"></div>
+        <p id="search-hint" class="search-hint">Escribe al menos 2 letras.</p>
+      </div>
+    </div>
 
     <!-- Trust badges -->
     <section class="border-t-2 border-white/25 bg-negro-carbono">
@@ -401,7 +469,9 @@ const jsonLd = {
     </footer>
 
     <script>
-      // Menú mobile con estado accesible
+      import { escapeHtml, safeUrl } from '../lib/html';
+
+      // ---------- Menú móvil ----------
       const toggle = document.getElementById('menu-toggle');
       const menu = document.getElementById('mobile-menu');
 
@@ -412,24 +482,21 @@ const jsonLd = {
           document.body.style.overflow = open ? 'hidden' : '';
         };
 
-        toggle.addEventListener('click', () =>
-          setOpen(menu.classList.contains('hidden'))
-        );
+        toggle.addEventListener('click', () => setOpen(menu.classList.contains('hidden')));
 
-        // Cierra al navegar
         menu.querySelectorAll('a').forEach((a) =>
           a.addEventListener('click', () => setOpen(false))
         );
 
-        // Cierra al pasar a desktop
         window
           .matchMedia('(min-width: 1024px)')
           .addEventListener('change', (e) => e.matches && setOpen(false));
       }
 
-      // Anuncios rotativos
+      // ---------- Anuncios rotativos ----------
       const slides = document.querySelectorAll<HTMLElement>('.announcement-slide');
-      if (slides.length > 1) {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (slides.length > 1 && !reduceMotion) {
         let current = 0;
         slides.forEach((s, i) => (s.style.opacity = i === 0 ? '1' : '0'));
         setInterval(() => {
@@ -438,6 +505,171 @@ const jsonLd = {
           slides[current].style.opacity = '1';
         }, 3500);
       }
+
+      // ---------- Perfil ----------
+      const profileTrigger = document.getElementById('profile-trigger');
+      const profileMenu = document.getElementById('profile-menu');
+
+      if (profileTrigger && profileMenu) {
+        const toggleProfileMenu = () => {
+          const isOpen = profileTrigger.getAttribute('aria-expanded') === 'true';
+          profileTrigger.setAttribute('aria-expanded', String(!isOpen));
+          profileMenu.classList.toggle('hidden', isOpen);
+        };
+
+        profileTrigger.addEventListener('click', (e) => {
+          e.preventDefault();
+          toggleProfileMenu();
+        });
+
+        document.addEventListener('click', (e) => {
+          if (!profileTrigger.contains(e.target as Node) && !profileMenu.contains(e.target as Node)) {
+            profileTrigger.setAttribute('aria-expanded', 'false');
+            profileMenu.classList.add('hidden');
+          }
+        });
+      }
+
+      const signoutBtn = document.getElementById('btn-signout');
+      if (signoutBtn) {
+        signoutBtn.addEventListener('click', async () => {
+          try {
+            const { supabase } = await import('../lib/supabase');
+            await supabase.auth.signOut();
+            window.location.href = '/entrar';
+          } catch (error) {
+            console.error('Error signing out:', error);
+          }
+        });
+      }
+
+      // ---------- Carrito y favoritos desde el menú móvil ----------
+      // Abren el mismo panel lateral que los iconos del header.
+      document.querySelectorAll<HTMLElement>('[data-open-drawer]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tab = (btn.dataset.openDrawer as 'cart' | 'wishlist') ?? 'cart';
+          window.dispatchEvent(new CustomEvent('store:open', { detail: { tab } }));
+        });
+      });
+
+      // Contadores del menú móvil
+      const mobileCartCount = document.getElementById('mobile-cart-count');
+      const mobileWishCount = document.getElementById('mobile-wish-count');
+
+      const paintMobileCounts = async () => {
+        const { cartCount } = await import('../lib/cart');
+        const n = cartCount();
+        if (mobileCartCount) {
+          mobileCartCount.textContent = String(n);
+          mobileCartCount.classList.toggle('hidden', n === 0);
+        }
+      };
+
+      window.addEventListener('cart:updated', paintMobileCounts);
+      window.addEventListener('wishlist:updated', (e) => {
+        const n = ((e as CustomEvent<any[]>).detail ?? []).length;
+        if (mobileWishCount) {
+          mobileWishCount.textContent = String(n);
+          mobileWishCount.classList.toggle('hidden', n === 0);
+        }
+      });
+      void paintMobileCounts();
+
+      // ---------- Buscador global ----------
+      const openSearch = document.getElementById('search-open');
+      const mobileSearchOpen = document.getElementById('mobile-search-open');
+      const searchDialog = document.getElementById('search-dialog');
+      const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+      const searchResults = document.getElementById('search-results');
+      const searchHint = document.getElementById('search-hint');
+      const searchBackdrop = document.getElementById('search-backdrop');
+      let searchTimer: number | undefined;
+
+      function setSearchOpen(open: boolean) {
+        if (!searchDialog) return;
+        searchDialog.classList.toggle('hidden', !open);
+        document.body.style.overflow = open ? 'hidden' : '';
+        openSearch?.setAttribute('aria-expanded', String(open));
+
+        if (open) requestAnimationFrame(() => searchInput?.focus());
+        else openSearch?.focus();
+      }
+
+      function renderSearchResults(payload: { results?: any[] }) {
+        if (!searchResults || !searchHint) return;
+        const items = payload.results ?? [];
+
+        if (items.length === 0) {
+          searchResults.innerHTML = '';
+          searchHint.textContent = 'Sin resultados.';
+          return;
+        }
+
+        searchHint.textContent = '';
+        searchResults.innerHTML = items
+          .map((p) => {
+            const img = safeUrl(p.image);
+            return `
+          <a href="/producto/${encodeURIComponent(p.slug)}" role="option" class="search-item">
+            <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : ''}</span>
+            <span class="min-w-0 flex-1">
+              <span class="search-item-name">${escapeHtml(p.name)}</span>
+              <span class="search-item-cat">${escapeHtml(p.category ?? 'Pieza')}</span>
+            </span>
+            <span class="search-item-price">$${Number(p.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+          </a>`;
+          })
+          .join('');
+      }
+
+      async function runSearch(q: string) {
+        if (!searchHint || !searchResults) return;
+        if (q.trim().length < 2) {
+          searchResults.innerHTML = '';
+          searchHint.textContent = 'Escribe al menos 2 letras.';
+          return;
+        }
+
+        searchHint.textContent = 'Buscando…';
+
+        try {
+          const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+          renderSearchResults(await res.json());
+        } catch {
+          searchHint.textContent = 'No pudimos buscar. Intenta de nuevo.';
+        }
+      }
+
+      openSearch?.addEventListener('click', () => setSearchOpen(true));
+      mobileSearchOpen?.addEventListener('click', () => {
+        toggle?.click();
+        setSearchOpen(true);
+      });
+      searchBackdrop?.addEventListener('click', () => setSearchOpen(false));
+
+      searchInput?.addEventListener('input', () => {
+        window.clearTimeout(searchTimer);
+        const q = searchInput.value;
+        searchTimer = window.setTimeout(() => runSearch(q), 220);
+      });
+
+      searchInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const q = searchInput.value.trim();
+          if (q) window.location.href = `/tienda?q=${encodeURIComponent(q)}`;
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          setSearchOpen(searchDialog?.classList.contains('hidden') ?? false);
+        }
+        if (e.key === 'Escape' && searchDialog && !searchDialog.classList.contains('hidden')) {
+          setSearchOpen(false);
+        }
+      });
     </script>
   </body>
 </html>
@@ -454,11 +686,21 @@ const jsonLd = {
     transition:
       border-color 0.25s ease,
       background-color 0.25s ease;
+    position: relative;
   }
 
   .profile-pill:hover {
     border-color: #ffe28a;
     background: rgba(255, 226, 138, 0.08);
+  }
+
+  .profile-pill .profile-chevron {
+    margin-left: 0.25rem;
+    transition: transform 0.25s ease;
+  }
+
+  .profile-pill[aria-expanded='true'] .profile-chevron {
+    transform: rotate(180deg);
   }
 
   .profile-avatar {
@@ -548,6 +790,11 @@ const jsonLd = {
     border: 2px solid #060606;
   }
 
+  .header-badge.\!static {
+    position: static;
+    display: inline-block;
+  }
+
   /* Favoritos: mismo botón pero con un punto dorado sutil para distinguirlo */
   .header-icon--wish {
     background: #1a1710;
@@ -557,7 +804,6 @@ const jsonLd = {
     background: rgba(255, 226, 138, 0.14);
   }
 
-  /* En móvil los dos botones quedan más compactos */
   @media (max-width: 640px) {
     .header-icon {
       width: 42px;
@@ -610,135 +856,135 @@ const jsonLd = {
     display: none;
   }
 
-  .profile-pill {
-    align-items: center;
-    gap: 0.65rem;
-    min-height: 46px;
-    padding: 0.35rem 1rem 0.35rem 0.35rem;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.04);
-    transition:
-      border-color 0.25s ease,
-      background-color 0.25s ease;
+  /* ---------- Buscador global ---------- */
+  .search-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+  }
+
+  .search-dialog.hidden {
+    display: none;
+  }
+
+  .search-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.78);
+    border: 0;
+    cursor: pointer;
+  }
+
+  .search-panel {
     position: relative;
+    margin: 10vh auto 0;
+    width: min(640px, calc(100% - 2rem));
+    background: #0e0e0e;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 1);
   }
 
-  .profile-pill:hover {
-    border-color: #ffe28a;
-    background: rgba(255, 226, 138, 0.08);
+  .search-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    color: #ffe28a;
   }
 
-  .profile-pill .profile-chevron {
-    margin-left: 0.25rem;
-    transition: transform 0.25s ease;
+  .search-field input {
+    flex: 1;
+    min-height: 44px;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: #ffffff;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 1.0625rem;
   }
 
-  .profile-pill[aria-expanded="true"] .profile-chevron {
-    transform: rotate(180deg);
+  .search-field input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .search-kbd {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.15rem 0.4rem;
+  }
+
+  .search-results {
+    max-height: min(60vh, 420px);
+    overflow-y: auto;
+  }
+
+  .search-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease;
+  }
+
+  .search-item:hover,
+  .search-item:focus-visible {
+    background: rgba(255, 226, 138, 0.1);
+    outline: none;
+  }
+
+  .search-thumb {
+    width: 48px;
+    height: 58px;
+    flex: 0 0 48px;
+    background: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    overflow: hidden;
+  }
+
+  .search-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .search-item-name {
+    display: block;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.9375rem;
+    color: #ffffff;
+  }
+
+  .search-item-cat {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .search-item-price {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    color: #ffe28a;
+    white-space: nowrap;
+  }
+
+  .search-hint {
+    padding: 1.25rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profile-menu,
+    .header-icon,
+    .announcement-slide,
+    .profile-chevron {
+      transition: none;
+    }
   }
 </style>
-
-<script>
-  // Menú mobile con estado accesible
-  const toggle = document.getElementById('menu-toggle');
-  const menu = document.getElementById('mobile-menu');
-
-  if (toggle && menu) {
-    const setOpen = (open: boolean) => {
-      menu.classList.toggle('hidden', !open);
-      toggle.setAttribute('aria-expanded', String(open));
-      document.body.style.overflow = open ? 'hidden' : '';
-    };
-
-    toggle.addEventListener('click', () =>
-      setOpen(menu.classList.contains('hidden'))
-    );
-
-    // Cierra al navegar
-    menu.querySelectorAll('a').forEach((a) =>
-      a.addEventListener('click', () => setOpen(false))
-    );
-
-    // Cierra al pasar a desktop
-    window
-      .matchMedia('(min-width: 1024px)')
-      .addEventListener('change', (e) => e.matches && setOpen(false));
-  }
-
-  // Perfil dropdown
-  const profileTrigger = document.getElementById('profile-trigger');
-  const profileMenu = document.getElementById('profile-menu');
-
-  if (profileTrigger && profileMenu) {
-    const toggleProfileMenu = () => {
-      const isOpen = profileTrigger.getAttribute('aria-expanded') === 'true';
-      profileTrigger.setAttribute('aria-expanded', String(!isOpen));
-      profileMenu.classList.toggle('hidden', isOpen);
-    };
-
-    profileTrigger.addEventListener('click', (e) => {
-      e.preventDefault();
-      toggleProfileMenu();
-    });
-
-    // Cierra al hacer click fuera
-    document.addEventListener('click', (e) => {
-      if (!profileTrigger.contains(e.target as Node) && !profileMenu.contains(e.target as Node)) {
-        profileTrigger.setAttribute('aria-expanded', 'false');
-        profileMenu.classList.add('hidden');
-      }
-    });
-
-    // Cierra al presionar Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && profileTrigger.getAttribute('aria-expanded') === 'true') {
-        profileTrigger.setAttribute('aria-expanded', 'false');
-        profileMenu.classList.add('hidden');
-      }
-    });
-  }
-
-  // Header wishlist y carrito - conectar con StoreDrawer
-  const headerWishlist = document.getElementById('header-wishlist');
-  const headerCart = document.getElementById('header-cart');
-
-  if (headerWishlist) {
-    headerWishlist.addEventListener('click', () => {
-      const event = new CustomEvent('store:open', { detail: { tab: 'wishlist' } });
-      document.dispatchEvent(event);
-    });
-  }
-
-  if (headerCart) {
-    headerCart.addEventListener('click', () => {
-      const event = new CustomEvent('store:open', { detail: { tab: 'cart' } });
-      document.dispatchEvent(event);
-    });
-  }
-
-  // Sign out button
-  const signoutBtn = document.getElementById('btn-signout');
-  if (signoutBtn) {
-    signoutBtn.addEventListener('click', async () => {
-      try {
-        const { supabase } = await import('../lib/supabase');
-        await supabase.auth.signOut();
-        window.location.href = '/entrar';
-      } catch (error) {
-        console.error('Error signing out:', error);
-      }
-    });
-  }
-
-  // Anuncios rotativos
-  const slides = document.querySelectorAll<HTMLElement>('.announcement-slide');
-  if (slides.length > 1) {
-    let current = 0;
-    slides.forEach((s, i) => (s.style.opacity = i === 0 ? '1' : '0'));
-    setInterval(() => {
-      slides[current].style.opacity = '0';
-      current = (current + 1) % slides.length;
-      slides[current].style.opacity = '1';
-    }, 3500);
-  }
-</script>

@@ -3,28 +3,25 @@
  *
  * La anon key es PÚBLICA por diseño: viaja al navegador en cualquier app Supabase.
  * La seguridad real la da Row Level Security (RLS) en Postgres, no el secreto de la key.
- * Por eso aquí van constantes: evita fallos por env vars mal configuradas en Vercel.
  *
- * Si quieres apuntar a otro proyecto, define PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY.
+ * Si quieres apuntar a otro proyecto, define PUBLIC_SUPABASE_URL / PUBLIC_SUPABASE_ANON_KEY
+ * en Vercel (o en .env para desarrollo local).
  */
 
 import { createBrowserClient } from '@supabase/ssr';
 
-const SUPABASE_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
-const SUPABASE_ANON_KEY =
+const FALLBACK_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
+const FALLBACK_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6cnh3bXl4eGhqb25oYmZnZnZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3NTI5MTQsImV4cCI6MjEwNzMyODkxNH0.U4Nuekvw7JcM4xx39OHKxIjReyM7_4xrs0iDURu--lY';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || FALLBACK_URL;
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || FALLBACK_ANON_KEY;
 
 // createBrowserClient escribe la sesión en cookies → el middleware la ve
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
-/** Slug del tenant actual (multi-tenant: cambiar por subdominio en el futuro) */
-export const TENANT_SLUG = 'dinerosobreproblemas';
-
-/** UUID del tenant de producción (única fuente de verdad para el MVP single-tenant) */
-const TENANT_ID = '11111111-1111-1111-1111-111111111111';
+export { TENANT_ID, TENANT_SLUG } from './constants';
+import { TENANT_ID } from './constants';
 
 // Cache en memoria del UUID del tenant
 let cachedTenantId: string | null = null;
@@ -33,7 +30,7 @@ let cachedTenantId: string | null = null;
  * Resuelve el UUID del tenant a partir de su slug.
  * Los productos usan tenant_id (UUID), no el slug.
  */
-export async function getTenantId(slug: string = TENANT_SLUG): Promise<string> {
+export async function getTenantId(slug: string): Promise<string> {
   if (cachedTenantId) return cachedTenantId;
 
   // UUID directo

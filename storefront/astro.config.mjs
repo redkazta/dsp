@@ -1,15 +1,14 @@
-// @ts-check
-import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel';
+import { defineConfig } from 'astro/config';
 
-// Todo es SSR: el middleware resuelve la sesión (header, /admin, /cuenta)
-// y las páginas pueden renderizar el estado de autenticación en el primer HTML.
+// SSR en todo el sitio: el middleware resuelve la sesión (header, /admin,
+// /cuenta) y cada página puede renderizar su estado inicial sin parpadeos.
 export default defineConfig({
   output: 'server',
   adapter: vercel(),
   integrations: [tailwind()],
-  site: 'https://dinerosobreproblemas.com',
+  site: 'https://dspstorefront.vercel.app',
   image: {
     domains: ['dzrxwmyxxhjonhbfgfvo.supabase.co'],
   },

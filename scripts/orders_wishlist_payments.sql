@@ -78,18 +78,16 @@ CREATE POLICY "wishlist_all_own" ON public.wishlist_items
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- 4. RLS de pedidos
-DROP POLICY IF EXISTS "orders_insert_own" ON public.orders;
-CREATE POLICY "orders_insert_own" ON public.orders
-  FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+-- La escritura de favoritos pasa por /api/wishlist (valida el producto),
+-- así que aquí solo se necesita lectura.
+DROP POLICY IF EXISTS "wishlist_select_own" ON public.wishlist_items;
+CREATE POLICY "wishlist_select_own" ON public.wishlist_items
+  FOR SELECT TO authenticated
+  USING (user_id = auth.uid());
 
+-- 4. RLS de pedidos: solo el dueño (o staff). Ver `security_checkout_fixes.sql`
+DROP POLICY IF EXISTS "orders_insert_own" ON public.orders;
 DROP POLICY IF EXISTS "order_items_insert_own" ON public.order_items;
-CREATE POLICY "order_items_insert_own" ON public.order_items
-  FOR INSERT TO authenticated
-  WITH CHECK (
-    order_id IN (SELECT id FROM public.orders WHERE user_id = auth.uid())
-  );
 
 DROP POLICY IF EXISTS "order_items_select_own" ON public.order_items;
 CREATE POLICY "order_items_select_own" ON public.order_items

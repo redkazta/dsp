@@ -122,6 +122,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script>
     import { listOrders, updateOrderStatus, saveOrderNotes } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
+    import { safeUrl } from '../../lib/html';
     import {
       STATUS_FLOW,
       STATUS_LABEL,
@@ -182,7 +183,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <div class="flex items-start justify-between gap-3 py-2 border-b border-white/15 last:border-0">
           <div class="flex gap-3 min-w-0">
             <div class="w-12 h-14 shrink-0 bg-white border border-white/30 overflow-hidden">
-              ${i.image_url ? `<img src="${i.image_url}" alt="" class="w-full h-full object-contain">` : ''}
+              ${safeUrl(i.image_url) ? `<img src="${safeUrl(i.image_url)}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="min-w-0">
               <p class="text-sm text-blancoRoto">${esc(i.product_name ?? i.variant_name ?? 'Pieza')}</p>

@@ -169,8 +169,24 @@ export async function softDeleteProduct(id: string) {
  * Sube una imagen al bucket público y devuelve la URL.
  */
 export async function uploadProductImage(file: File, slugHint: string): Promise<string> {
-  const ext = file.name.split('.').pop() ?? 'jpg';
-  const path = `${slugHint}-${Date.now()}.${ext}`;
+  const allowed = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+  const rawExt = (file.name.split('.').pop() ?? 'jpg').toLowerCase();
+  const ext = allowed.includes(rawExt) ? rawExt : 'jpg';
+
+  if (!file.type.startsWith('image/')) throw new Error('El archivo debe ser una imagen.');
+  if (file.size > 8 * 1024 * 1024) throw new Error('La imagen no puede pasar de 8 MB.');
+
+  // slugHint puede venir del nombre del producto: se limpia antes de tocar
+  // la ruta del bucket (nada de '/', '..' ni caracteres de control).
+  const safeSlug = (slugHint || 'pieza')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '') || 'pieza';
+
+  const path = `${safeSlug.slice(0, 60)}-${Date.now()}.${ext}`;
 
   const { error } = await supabase.storage
     .from('product-images')

@@ -2,26 +2,91 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase-server';
+import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+const featured = await supabase
+  .from('products')
+  .select('id, name, slug, base_price, categories(name), product_variants(price), product_images(url, position)')
+  .eq('is_active', true)
+  .eq('is_deleted', false)
+  .order('created_at', { ascending: false })
+  .limit(2);
+
+const suggestions = (featured.data ?? []).map((p: any) => {
+  const images = [...(p.product_images ?? [])].sort(
+    (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+  );
+  return {
+    id: p.id,
+    name: p.name,
+    slug: p.slug ?? p.id,
+    category: p.categories?.name ?? null,
+    price: Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0),
+    image: images[0]?.url ?? null,
+  };
+});
 ---
 
 <BaseLayout title="Carrito | Dinero Sobre Problemas" description="Revisa tu selección antes de pagar.">
   <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-10 sm:py-16">
       <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Carrito</h1>
-      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">Cargando...</p>
+      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">Cargando…</p>
     </div>
   </section>
 
   <div class="page-container py-10 sm:py-12 lg:py-16">
-    <div id="cart-empty" class="hidden text-center py-16 sm:py-24">
-      <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">Tu carrito está vacío</p>
-      <p class="text-white/80 mb-10">Descubre el drop reflectivo.</p>
-      <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
+    <div id="cart-empty" class="hidden">
+      <div class="text-center py-10 sm:py-16">
+        <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">Tu carrito está vacío</p>
+        <p class="text-white/80 mb-10">Descubre el drop reflectivo.</p>
+        <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
+      </div>
+
+      {
+        suggestions.length > 0 && (
+          <div class="max-w-3xl mx-auto mt-6">
+            <h2 class="section-label mb-5 text-center">Por si te sirve</h2>
+            <div class="grid grid-cols-2 gap-4 sm:gap-6">
+              {suggestions.map((p) => (
+                <a
+                  href={`/producto/${p.slug}`}
+                  class="group block border-2 border-white/25 hover:border-oro-brillo transition-colors"
+                >
+                  <div class="product-frame">
+                    {p.image && (
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+                  <div class="p-4 flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="font-acentos text-sm text-blancoRoto truncate">{p.name}</p>
+                      <p class="text-xs text-white/70 mt-0.5">{p.category ?? 'Pieza'}</p>
+                    </div>
+                    <p class="font-acentos text-sm text-oro-brillo whitespace-nowrap">
+                      ${p.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )
+      }
     </div>
 
     <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Items -->
       <div class="lg:col-span-2">
+        <ul id="cart-notices" class="hidden mb-4 space-y-2"></ul>
         <div id="cart-items" class="divide-y-2 divide-white/15"></div>
       </div>
 
@@ -39,6 +104,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <span class="text-white/80">Envío</span>
               <span id="sum-shipping" class="text-blancoRoto text-right">Calculado al pagar</span>
             </div>
+            <div id="free-shipping-progress" class="hidden">
+              <div class="h-1.5 bg-white/20 mb-2">
+                <div id="free-shipping-bar" class="h-full bg-oro-brillo" style="width:0%"></div>
+              </div>
+              <p id="free-shipping-text" class="text-xs text-white/80"></p>
+            </div>
           </div>
 
           <div class="flex justify-between items-center py-6">
@@ -47,16 +118,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </div>
 
           <a href="/checkout" class="btn-gold w-full mb-3">Ir a pagar</a>
-          <button id="continue-shopping" class="btn-outline w-full mb-3">Seguir comprando</button>
-          <a href="/favoritos" class="block text-center text-sm uppercase tracking-[0.16em] text-white/80 hover:text-oro-brillo py-2">
+          <a href="/tienda" class="btn-outline w-full mb-3 text-center">Seguir comprando</a>
+          <a
+            href="/favoritos"
+            class="block text-center text-sm uppercase tracking-[0.16em] text-white/80 hover:text-oro-brillo py-2"
+          >
             Ver favoritos
           </a>
 
           <div class="mt-8 pt-6 border-t-2 border-white/25 space-y-2">
             <p class="flex items-center gap-2 text-sm text-white/80">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              Envío gratis +$1,500 MXN
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+              Envío gratis desde {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('es-MX')} MXN`}
             </p>
+            <p class="text-xs text-white/60">Piezas producidas bajo pedido · 2 a 3 semanas</p>
           </div>
         </div>
       </aside>
@@ -64,16 +141,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 
   <script>
-    import { getCart, updateQty, removeFromCart, cartSubtotal, formatMXN } from '../lib/cart';
+    import {
+      getCart,
+      updateQty,
+      removeFromCart,
+      cartSubtotal,
+      refreshCartPrices,
+      formatMXN,
+    } from '../lib/cart';
+    import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from '../lib/pricing';
+    import { escapeHtml, safeUrl } from '../lib/html';
 
-    const FREE_SHIPPING_THRESHOLD = 1500;
+    const empty = document.getElementById('cart-empty')!;
+    const content = document.getElementById('cart-content')!;
+    const list = document.getElementById('cart-items')!;
+    const notices = document.getElementById('cart-notices')!;
+    const summaryText = document.getElementById('cart-summary-text')!;
 
     function render() {
       const items = getCart();
-      const empty = document.getElementById('cart-empty')!;
-      const content = document.getElementById('cart-content')!;
-      const list = document.getElementById('cart-items')!;
-      const summaryText = document.getElementById('cart-summary-text')!;
 
       if (items.length === 0) {
         empty.classList.remove('hidden');
@@ -88,68 +174,106 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       summaryText.textContent = `${count} ${count === 1 ? 'producto' : 'productos'}`;
 
       list.innerHTML = items
-        .map(
-          (i) => `
+        .map((i) => {
+          const img = safeUrl(i.image);
+          return `
         <div class="flex gap-4 sm:gap-5 py-5 sm:py-6">
           <div class="w-20 h-24 sm:w-24 sm:h-32 bg-white border-2 border-white/30 overflow-hidden shrink-0">
-            ${i.image ? `<img src="${i.image}" alt="${i.name}" class="w-full h-full object-contain">` : ''}
+            ${img ? `<img src="${img}" alt="${escapeHtml(i.name)}" class="w-full h-full object-contain">` : ''}
           </div>
           <div class="flex-1 min-w-0 flex flex-col justify-between gap-3">
             <div>
-              <h3 class="font-acentos text-base text-blancoRoto mb-1 line-clamp-2">${i.name}</h3>
-              <p class="text-sm text-white/80">${i.variantName}</p>
+              <h3 class="font-acentos text-base text-blancoRoto mb-1 line-clamp-2">${escapeHtml(i.name)}</h3>
+              <p class="text-sm text-white/80">${escapeHtml(i.variantName)}</p>
             </div>
             <div class="flex flex-wrap items-end justify-between gap-3">
               <div class="flex items-center border-2 border-white/30">
-                <button data-dec="${i.variantId}" aria-label="Quitar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
+                <button data-dec="${escapeHtml(i.variantId)}" aria-label="Quitar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
                 <span class="w-9 text-center text-base text-blancoRoto">${i.qty}</span>
-                <button data-inc="${i.variantId}" aria-label="Agregar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
+                <button data-inc="${escapeHtml(i.variantId)}" aria-label="Agregar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
               </div>
               <div class="text-right">
                 <p class="font-acentos text-lg text-oro-brillo">$${formatMXN(i.price * i.qty)}</p>
-                <button data-remove="${i.variantId}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">Eliminar</button>
+                <button data-remove="${escapeHtml(i.variantId)}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">Eliminar</button>
               </div>
             </div>
           </div>
-        </div>
-      `
-        )
+        </div>`;
+        })
         .join('');
 
       const subtotal = cartSubtotal();
-      document.getElementById('sum-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
-      document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal)}`;
-      document.getElementById('sum-shipping')!.textContent =
-        subtotal >= FREE_SHIPPING_THRESHOLD ? 'Gratis' : 'Calculado al pagar';
+      const shipping = shippingCostFor(subtotal);
 
-      list.querySelectorAll('[data-inc]').forEach((b) =>
-        b.addEventListener('click', (e) => {
-          const id = (e.currentTarget as HTMLElement).dataset.inc!;
+      document.getElementById('sum-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
+      document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
+      document.getElementById('sum-shipping')!.textContent =
+        subtotal === 0 ? '—' : shipping === 0 ? 'Gratis' : `$${formatMXN(STANDARD_SHIPPING)}`;
+
+      const progress = document.getElementById('free-shipping-progress')!;
+      const bar = document.getElementById('free-shipping-bar')!;
+      const text = document.getElementById('free-shipping-text')!;
+
+      progress.classList.remove('hidden');
+      if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+        bar.style.width = '100%';
+        text.textContent = 'Ya tienes envío gratis ✓';
+      } else {
+        bar.style.width = `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%`;
+        text.textContent = `Te faltan $${formatMXN(FREE_SHIPPING_THRESHOLD - subtotal)} para envío gratis`;
+      }
+
+      list.querySelectorAll<HTMLElement>('[data-inc]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const id = b.dataset.inc!;
           const item = getCart().find((i) => i.variantId === id);
           updateQty(id, (item?.qty ?? 0) + 1);
           render();
         })
       );
-      list.querySelectorAll('[data-dec]').forEach((b) =>
-        b.addEventListener('click', (e) => {
-          const id = (e.currentTarget as HTMLElement).dataset.dec!;
+      list.querySelectorAll<HTMLElement>('[data-dec]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const id = b.dataset.dec!;
           const item = getCart().find((i) => i.variantId === id);
           if ((item?.qty ?? 0) <= 1) removeFromCart(id);
           else updateQty(id, item!.qty - 1);
           render();
         })
       );
-      list.querySelectorAll('[data-remove]').forEach((b) =>
-        b.addEventListener('click', (e) => {
-          removeFromCart((e.currentTarget as HTMLElement).dataset.remove!);
+      list.querySelectorAll<HTMLElement>('[data-remove]').forEach((b) =>
+        b.addEventListener('click', () => {
+          removeFromCart(b.dataset.remove!);
           render();
         })
       );
     }
 
-    document.getElementById('continue-shopping')?.addEventListener('click', () => {
-      window.location.href = '/tienda';
-    });
+    function showNotices(messages: string[]) {
+      if (messages.length === 0) {
+        notices.classList.add('hidden');
+        notices.innerHTML = '';
+        return;
+      }
+      notices.classList.remove('hidden');
+      notices.innerHTML = messages
+        .map(
+          (m) =>
+            `<li class="border-2 border-oro-brillo/50 bg-oro-brillo/5 px-4 py-3 text-sm text-blancoRoto">${escapeHtml(m)}</li>`
+        )
+        .join('');
+    }
+
+    // Precios y disponibilidad en el servidor: si algo cambió, se avisa.
+    refreshCartPrices()
+      .then(({ removed }) => {
+        if (removed.length > 0) {
+          showNotices([
+            `Quitamos ${removed.length} ${removed.length === 1 ? 'pieza' : 'piezas'} que ya no están disponibles.`,
+          ]);
+        }
+        render();
+      })
+      .catch(() => render());
 
     render();
   </script>

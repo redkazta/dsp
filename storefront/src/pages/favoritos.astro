@@ -2,6 +2,80 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase-server';
+import { TENANT_ID } from '../lib/constants';
+import type { WishlistItem } from '../lib/wishlist-local';
+
+const user = Astro.locals.user;
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+let rows: Array<{
+  product_id: string;
+  product_slug: string | null;
+  product_name: string | null;
+  price: number | null;
+  image_url: string | null;
+}> = [];
+
+if (user) {
+  const { data } = await supabase
+    .from('wishlist_items')
+    .select('product_id, product_slug, product_name, price, image_url')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  rows = data ?? [];
+}
+
+const items: WishlistItem[] = rows.map((r) => ({
+  productId: r.product_id,
+  slug: r.product_slug,
+  name: r.product_name ?? '',
+  price: Number(r.price ?? 0),
+  image: r.image_url,
+}));
+
+// Refresca precio/nombre con el catálogo y detecta piezas fuera de venta.
+const stale: string[] = [];
+
+if (items.length > 0) {
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, name, slug, base_price, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
+    .in('id', items.map((i) => i.productId));
+
+  const byId = new Map((products ?? []).map((p: any) => [p.id, p]));
+
+  for (const item of items) {
+    const p: any = byId.get(item.productId);
+
+    if (!p || p.is_deleted || !p.is_active || p.tenant_id !== TENANT_ID) {
+      stale.push(item.productId);
+      continue;
+    }
+
+    const images = [...(p.product_images ?? [])].sort(
+      (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+    );
+
+    item.name = p.name;
+    item.slug = p.slug ?? item.slug;
+    item.price = Number(p.product_variants?.[0]?.price ?? p.base_price ?? item.price);
+    item.image = images[0]?.url ?? item.image;
+  }
+}
+
+// Limpia huérfanos (best-effort: si falla, lo hace el endpoint en el siguiente toque)
+if (stale.length > 0 && user) {
+  const { error } = await supabase
+    .from('wishlist_items')
+    .delete()
+    .eq('user_id', user.id)
+    .in('product_id', stale);
+  void error;
+}
+
+const available = items.filter((i) => !stale.includes(i.productId));
 ---
 
 <BaseLayout title="Mis favoritos | Dinero Sobre Problemas" description="Las piezas que guardaste para después.">
@@ -9,38 +83,77 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <div class="page-container py-12 sm:py-16">
       <p class="section-label mb-3">Lista</p>
       <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Favoritos</h1>
-      <p id="wish-summary" class="mt-3 text-lg text-white/80">Cargando…</p>
+      <p id="wish-summary" class="mt-3 text-lg text-white/80">
+        {available.length}
+        {available.length === 1 ? 'pieza' : 'piezas'}
+      </p>
     </div>
   </section>
 
   <div class="page-container py-10 sm:py-14">
-    <div id="wish-empty" class="hidden text-center py-16">
-      <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">Todavía nada guardado</p>
-      <p class="text-base text-white/80 mb-8">
-        Toca el corazón en cualquier pieza del catálogo para guardarla aquí.
-      </p>
-      <a href="/tienda" class="btn-gold inline-flex">Ver catálogo</a>
+    <div id="wish-empty" class={available.length === 0 && user ? '' : 'hidden'}>
+      <div class="text-center py-16">
+        <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">Todavía nada guardado</p>
+        <p class="text-base text-white/80 mb-8">
+          Toca el corazón en cualquier pieza del catálogo para guardarla aquí.
+        </p>
+        <a href="/tienda" class="btn-gold inline-flex">Ver catálogo</a>
+      </div>
     </div>
 
-    <div id="wish-loading" class="text-center py-16">
+    <div id="wish-loading" class={user ? 'hidden' : 'text-center py-16'}>
       <p class="text-white/80">Cargando favoritos…</p>
     </div>
 
-    <div id="wish-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-x-8"></div>
+    <div
+      id="wish-grid"
+      class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-x-8"
+      data-items={JSON.stringify(available)}
+    >
+    </div>
   </div>
 
   <script>
-    import { getWishlist, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
-    import { formatMXN } from '../lib/cart';
+    import { removeFromWishlist, type WishlistItem } from '../lib/wishlist';
+    import { getLocalWishlist, pruneLocalWishlist } from '../lib/wishlist-local';
+    import { escapeHtml, safeUrl } from '../lib/html';
 
-    const grid = document.getElementById('wish-grid')!;
+    const grid = document.getElementById('wish-grid') as HTMLElement;
     const empty = document.getElementById('wish-empty')!;
+    const loading = document.getElementById('wish-loading')!;
     const summary = document.getElementById('wish-summary')!;
+    const isAuth = document.documentElement.dataset.auth === '1';
+    const serverItems: WishlistItem[] = JSON.parse(grid.dataset.items ?? '[]');
 
-    async function render() {
-      const items = await getWishlist();
+    const money = (n: number) => `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
 
-      document.getElementById('wish-loading')?.classList.add('hidden');
+    function card(item: WishlistItem) {
+      const href = `/producto/${encodeURIComponent(item.slug ?? item.productId)}`;
+      const img = safeUrl(item.image);
+
+      return `
+        <article data-wish-row="${escapeHtml(item.productId)}">
+          <a href="${href}" class="block">
+            <div class="product-frame border-2 border-white/25">
+              ${img ? `<img src="${img}" alt="" loading="lazy">` : ''}
+            </div>
+            <div class="pt-4 flex items-start justify-between gap-3">
+              <h3 class="font-acentos text-base text-blancoRoto leading-snug">${escapeHtml(item.name)}</h3>
+              <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">${money(item.price)}</p>
+            </div>
+          </a>
+          <div class="mt-3 flex gap-2">
+            <a href="${href}" class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1">Elegir talla</a>
+            <button type="button" data-wish-remove="${escapeHtml(item.productId)}"
+              class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
+              Quitar
+            </button>
+          </div>
+        </article>`;
+    }
+
+    function render(items: WishlistItem[]) {
+      loading.classList.add('hidden');
       summary.textContent = `${items.length} ${items.length === 1 ? 'pieza' : 'piezas'}`;
 
       if (items.length === 0) {
@@ -50,45 +163,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
 
       empty.classList.add('hidden');
+      grid.innerHTML = items.map(card).join('');
 
-      grid.innerHTML = items
-        .map(
-          (i: WishlistItem) => `
-        <article data-wish-row="${i.productId}">
-          <a href="/producto/${i.slug ?? i.productId}" class="block">
-            <div class="aspect-[4/5] bg-white border-2 border-white/25 overflow-hidden">
-              ${i.image ? `<img src="${i.image}" alt="${i.name}" class="w-full h-full object-contain" loading="lazy">` : ''}
-            </div>
-            <div class="pt-4 flex items-start justify-between gap-3">
-              <h3 class="font-acentos text-base text-blancoRoto leading-snug">${i.name}</h3>
-              <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">$${formatMXN(i.price)}</p>
-            </div>
-          </a>
-          <div class="mt-3 flex gap-2">
-            <a href="/producto/${i.slug ?? i.productId}" class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1">
-              Elegir talla
-            </a>
-            <button type="button" data-wish-remove="${i.productId}"
-              class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
-              Quitar
-            </button>
-          </div>
-        </article>`
-        )
-        .join('');
-
-      grid.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
+      grid.querySelectorAll<HTMLButtonElement>('[data-wish-remove]').forEach((b) =>
         b.addEventListener('click', async () => {
+          b.disabled = true;
           await removeFromWishlist(b.dataset.wishRemove!);
-          render();
         })
       );
     }
 
-    render();
+    window.addEventListener('wishlist:updated', (e) => {
+      render((e as CustomEvent<WishlistItem[]>).detail ?? []);
+    });
+
+    if (isAuth) {
+      render(serverItems);
+    } else {
+      // Visitante: favoritos en localStorage, sin piezas que ya no existen.
+      const local = getLocalWishlist();
+      if (local.length === 0) {
+        render([]);
+      } else {
+        fetch('/api/wishlist?ids=1')
+          .then((r) => r.json())
+          .then((json) => render(Array.isArray(json?.ids) ? pruneLocalWishlist(json.ids) : local))
+          .catch(() => render(local));
+      }
+    }
   </script>
 </BaseLayout>
-
-<style>
-  /* Sin estilos globales: todo vive dentro de la página. */
-</style>

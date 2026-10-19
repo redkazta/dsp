@@ -2,37 +2,80 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../lib/supabase-server';
+import { listCustomerOrders, type CustomerOrder } from '../lib/customer-orders';
+import {
+  STATUS_FLOW,
+  STATUS_LABEL,
+  STATUS_HINT,
+  formatOrderMoney,
+  formatOrderDate,
+  trackingUrl,
+  type OrderStatus,
+} from '../lib/orders';
+
+const user = Astro.locals.user!;
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+const [orders, profileRes, addressesRes] = await Promise.all([
+  listCustomerOrders(supabase, user.id),
+  supabase
+    .from('customer_profiles')
+    .select('first_name, last_name, full_name, email, phone, birthdate, marketing_opt_in, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle(),
+  supabase
+    .from('customer_addresses')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('is_default', { ascending: false }),
+]);
+
+const profile = profileRes.data;
+const addresses = addressesRes.data ?? [];
+
+const fullName =
+  [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
+  profile?.full_name ||
+  user.email ||
+  'Cliente';
+
+const initial = fullName.charAt(0).toUpperCase();
+
+function timeline(order: CustomerOrder) {
+  const reached = new Set(order.order_status_history.map((h) => h.status));
+  reached.add(order.status);
+  return STATUS_FLOW.map((step) => ({
+    step,
+    done: reached.has(step),
+    stamp: order.order_status_history.find((h) => h.status === step)?.created_at ?? null,
+  }));
+}
+
+const ordersView = orders.map((o) => ({
+  ...o,
+  steps: timeline(o),
+  trackUrl: o.tracking_number ? trackingUrl(o.carrier, o.tracking_number) : null,
+}));
 ---
 
 <BaseLayout title="Mi cuenta | Dinero Sobre Problemas" description="Gestiona tu cuenta, tus datos y tus pedidos.">
-  <div id="loading" class="min-h-[60vh] flex items-center justify-center">
-    <p class="text-muted text-sm">Cargando…</p>
-  </div>
-
-  <div id="guest" class="hidden min-h-[60vh] flex items-center justify-center px-5">
-    <div class="text-center max-w-sm">
-      <p class="section-label mb-4">Cuenta</p>
-      <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto mb-4">Inicia sesión para continuar</h1>
-      <div class="gold-line mx-auto mb-8"></div>
-      <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <a href="/entrar" class="btn-gold">Iniciar sesión</a>
-        <a href="/registro" class="btn-outline">Crear cuenta</a>
-      </div>
-    </div>
-  </div>
-
-  <div id="account" class="hidden">
+  <div id="account">
     <!-- Encabezado -->
     <section class="border-b-2 border-white/25 bg-noise">
       <div class="page-container py-10 sm:py-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div class="flex items-center gap-5 min-w-0">
-          <div id="avatar" class="w-16 h-16 shrink-0 border-2 border-oro-brillo/60 flex items-center justify-center overflow-hidden bg-negro-carbono">
-            <span id="avatar-initial" class="font-titulos text-2xl text-oro-brillo">D</span>
+          <div class="w-16 h-16 shrink-0 border-2 border-oro-brillo/60 flex items-center justify-center overflow-hidden bg-negro-carbono">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" class="w-full h-full object-cover" />
+            ) : (
+              <span class="font-titulos text-2xl text-oro-brillo">{initial}</span>
+            )}
           </div>
           <div class="min-w-0">
             <p class="section-label mb-1">Mi cuenta</p>
-            <h1 id="profile-name" class="font-titulos text-2xl lg:text-3xl text-blancoRoto truncate">—</h1>
-            <p id="profile-email" class="text-sm text-muted mt-1 truncate">—</p>
+            <h1 class="font-titulos text-2xl lg:text-3xl text-blancoRoto truncate">{fullName}</h1>
+            <p class="text-sm text-muted mt-1 truncate">{user.email ?? ''}</p>
           </div>
         </div>
         <button id="logout-btn" class="btn-outline self-start sm:self-auto">Cerrar sesión</button>
@@ -43,14 +86,134 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="grid lg:grid-cols-3 gap-8 lg:gap-10">
         <!-- Pedidos -->
         <section class="lg:col-span-2 order-2 lg:order-1">
-          <h2 class="section-label mb-6">Mis pedidos</h2>
-          <div id="orders-list" class="space-y-4"></div>
+          <h2 id="pedidos" class="section-label mb-6">Mis pedidos</h2>
+
+          {
+            ordersView.length === 0 ? (
+              <div class="card p-8 sm:p-10 text-center">
+                <p class="text-muted mb-5">Aún no tienes pedidos.</p>
+                <a href="/tienda" class="btn-outline inline-flex">
+                  Ver catálogo
+                </a>
+              </div>
+            ) : (
+              <div class="space-y-4">
+                {ordersView.map((o) => {
+                  const status = o.status as OrderStatus;
+                  const isClosed = status === 'cancelled' || status === 'returned';
+                  return (
+                    <article class="card p-5" id={`order-${o.id}`}>
+                      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="font-acentos text-base text-blancoRoto">
+                            {o.order_number ?? o.id.slice(0, 8)}
+                          </p>
+                          <p class="text-sm text-muted mt-1">
+                            {formatOrderDate(o.created_at)} · {(o.order_items ?? []).length} pieza(s)
+                          </p>
+                        </div>
+                        <div class="sm:text-right shrink-0">
+                          <p class="font-acentos text-xl text-oro-brillo">{formatOrderMoney(Number(o.total_amount))}</p>
+                          <p class="text-xs uppercase tracking-wider text-oro-brillo mt-1">
+                            {STATUS_LABEL[status] ?? status}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p class="mt-3 text-sm text-muted">{STATUS_HINT[status] ?? ''}</p>
+
+                      {isClosed ? (
+                        <p class="mt-3 text-sm text-blancoRoto">Este pedido se cerró como {STATUS_LABEL[status]}.</p>
+                      ) : (
+                        <ol class="mt-4 flex items-center gap-1" aria-label="Progreso del pedido">
+                          {o.steps.map((s) => (
+                            <li
+                              class="flex-1 h-1.5"
+                              title={STATUS_LABEL[s.step]}
+                              style={s.done ? 'background:#ffe28a' : 'background:rgba(255,255,255,0.2)'}
+                            />
+                          ))}
+                        </ol>
+                      )}
+
+                      {o.trackUrl && (
+                        <p class="mt-3 text-sm text-blancoRoto">
+                          Guía: {o.carrier ?? 'Paquetería'} {o.tracking_number} ·{' '}
+                          <a
+                            href={o.trackUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-oro-brillo underline underline-offset-2"
+                          >
+                            Rastrear
+                          </a>
+                        </p>
+                      )}
+
+                      <details class="mt-4 border-t-2 border-white/15 pt-3">
+                        <summary class="cursor-pointer text-xs uppercase tracking-[0.16em] text-white/80">
+                          Ver detalle
+                        </summary>
+
+                        <ul class="mt-3 space-y-2">
+                          {o.order_items.map((i) => (
+                            <li class="flex justify-between gap-3 text-sm">
+                              <span class="text-white/80 min-w-0">
+                                {i.quantity} × {i.product_name ?? 'Pieza'}
+                                {i.size || i.color ? ` (${[i.size, i.color].filter(Boolean).join(' · ')})` : ''}
+                              </span>
+                              <span class="text-blancoRoto whitespace-nowrap">
+                                {formatOrderMoney(Number(i.unit_price) * Number(i.quantity))}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+
+                        {o.order_status_history.length > 0 && (
+                          <ol class="mt-4 space-y-1">
+                            {o.order_status_history.map((h) => (
+                              <li class="text-xs text-white/70">
+                                {formatOrderDate(h.created_at)} · {STATUS_LABEL[h.status as OrderStatus] ?? h.status}
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </details>
+                    </article>
+                  );
+                })}
+              </div>
+            )
+          }
 
           <h2 class="section-label mt-10 mb-4">Mis favoritos</h2>
-          <div id="wish-list" class="space-y-3"></div>
+          <div id="wish-list" class="space-y-3">
+            <p class="text-sm text-muted">Sin favoritos guardados.</p>
+          </div>
 
           <h2 class="section-label mt-10 mb-4">Mis direcciones</h2>
-          <div id="addresses-list" class="space-y-3"></div>
+          <div id="addresses-list" class="space-y-3">
+            {
+              addresses.length === 0 ? (
+                <p class="text-sm text-muted">Sin direcciones guardadas.</p>
+              ) : (
+                addresses.map((a: any) => (
+                  <div class="card p-4">
+                    <p class="text-sm text-blancoRoto mb-1">
+                      {a.label}
+                      {a.is_default ? ' · Principal' : ''}
+                    </p>
+                    <p class="text-sm text-muted leading-relaxed">
+                      {a.street}
+                      {a.colonia ? `, ${a.colonia}` : ''}
+                      <br />
+                      {a.city}, {a.state ?? ''} {a.postal_code ?? ''}
+                    </p>
+                  </div>
+                ))
+              )
+            }
+          </div>
         </section>
 
         <!-- Datos -->
@@ -59,26 +222,54 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <form id="profile-form" class="card p-5 sm:p-6 space-y-4">
             <label class="block">
               <span class="field-label">Nombre *</span>
-              <input name="first_name" class="input-dark" autocomplete="given-name" required />
+              <input
+                name="first_name"
+                class="input-dark"
+                autocomplete="given-name"
+                required
+                value={profile?.first_name ?? ''}
+              />
             </label>
 
             <label class="block">
               <span class="field-label">Apellidos</span>
-              <input name="last_name" class="input-dark" autocomplete="family-name" />
+              <input
+                name="last_name"
+                class="input-dark"
+                autocomplete="family-name"
+                value={profile?.last_name ?? ''}
+              />
             </label>
 
             <label class="block">
               <span class="field-label">Teléfono</span>
-              <input name="phone" class="input-dark" placeholder="10 dígitos" inputmode="tel" autocomplete="tel" />
+              <input
+                name="phone"
+                class="input-dark"
+                placeholder="10 dígitos"
+                inputmode="tel"
+                autocomplete="tel"
+                value={profile?.phone ?? ''}
+              />
             </label>
 
             <label class="block">
               <span class="field-label">Fecha de nacimiento</span>
-              <input name="birthdate" type="date" class="input-dark" />
+              <input
+                name="birthdate"
+                type="date"
+                class="input-dark"
+                value={profile?.birthdate ? String(profile.birthdate).slice(0, 10) : ''}
+              />
             </label>
 
             <label class="flex items-start gap-3 cursor-pointer pt-1">
-              <input name="marketing_opt_in" type="checkbox" class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0" />
+              <input
+                name="marketing_opt_in"
+                type="checkbox"
+                class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
+                checked={Boolean(profile?.marketing_opt_in)}
+              />
               <span class="text-sm text-muted leading-relaxed">
                 Recibir novedades y drops exclusivos por correo.
               </span>
@@ -88,6 +279,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             <p id="save-ok" role="status" class="hidden text-sm text-oro-brillo text-center">Guardado ✓</p>
             <p id="save-error" role="alert" class="hidden text-sm text-red-400 text-center"></p>
           </form>
+
+          <button
+            type="button"
+            id="change-password"
+            class="mt-4 w-full text-sm text-white/70 hover:text-oro-brillo py-2 transition-colors"
+          >
+            Cambiar contraseña
+          </button>
         </aside>
       </div>
     </div>
@@ -107,192 +306,114 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </style>
 
   <script>
-    import { getProfile, getMyAddresses, signOut, updateProfile } from '../lib/auth';
-    import {
-      getMyOrders,
-      STATUS_LABEL,
-      STATUS_HINT,
-      formatOrderMoney,
-      formatOrderDate,
-      type OrderStatus,
-    } from '../lib/orders';
-    import { getWishlist, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
+    import { signOut, updateProfile } from '../lib/auth';
+    import { removeFromWishlist, type WishlistItem } from '../lib/wishlist';
+    import { getLocalWishlist } from '../lib/wishlist-local';
+    import { escapeHtml, safeUrl } from '../lib/html';
 
-    const loading = document.getElementById('loading')!;
-    const guest = document.getElementById('guest')!;
-    const account = document.getElementById('account')!;
     const form = document.getElementById('profile-form') as HTMLFormElement;
     const saveOk = document.getElementById('save-ok')!;
     const saveError = document.getElementById('save-error')!;
-
     const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
 
-    async function init() {
-      const profile = await getProfile();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      saveOk.classList.add('hidden');
+      saveError.classList.add('hidden');
 
-      loading.classList.add('hidden');
+      const submit = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+      submit.disabled = true;
 
-      if (!profile) {
-        guest.classList.remove('hidden');
+      const first = field('first_name').value.trim();
+
+      const { error } = await updateProfile({
+        first_name: first,
+        last_name: field('last_name').value.trim(),
+        phone: field('phone').value.trim(),
+        birthdate: field('birthdate').value || null,
+        marketing_opt_in: field('marketing_opt_in').checked,
+      });
+
+      submit.disabled = false;
+
+      if (error || !first) {
+        saveError.textContent = 'No pudimos guardar tus datos. Revisa el nombre e intenta de nuevo.';
+        saveError.classList.remove('hidden');
         return;
       }
 
-      account.classList.remove('hidden');
-
-      const name =
-        [profile.first_name, profile.last_name].filter(Boolean).join(' ') ||
-        profile.full_name ||
-        profile.email ||
-        'Cliente';
-
-      document.getElementById('profile-name')!.textContent = name;
-      document.getElementById('profile-email')!.textContent = profile.email ?? '';
-      document.getElementById('avatar-initial')!.textContent = name.charAt(0).toUpperCase();
-
-      if (profile.avatar_url) {
-        document.getElementById('avatar')!.innerHTML =
-          `<img src="${profile.avatar_url}" alt="" class="w-full h-full object-cover">`;
-      }
-
-      field('first_name').value = profile.first_name ?? '';
-      field('last_name').value = profile.last_name ?? '';
-      field('phone').value = profile.phone ?? '';
-      field('birthdate').value = profile.birthdate ? String(profile.birthdate).slice(0, 10) : '';
-      field('marketing_opt_in').checked = Boolean(profile.marketing_opt_in);
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        saveOk.classList.add('hidden');
-        saveError.classList.add('hidden');
-
-        const submit = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-        submit.disabled = true;
-
-        const { error } = await updateProfile({
-          first_name: field('first_name').value.trim(),
-          last_name: field('last_name').value.trim(),
-          phone: field('phone').value.trim(),
-          birthdate: field('birthdate').value || null,
-          marketing_opt_in: field('marketing_opt_in').checked,
-        });
-
-        submit.disabled = false;
-
-        if (error) {
-          saveError.textContent = 'No pudimos guardar tus datos. Intenta de nuevo.';
-          saveError.classList.remove('hidden');
-          return;
-        }
-
-        const updated =
-          [field('first_name').value.trim(), field('last_name').value.trim()].filter(Boolean).join(' ') ||
-          'Cliente';
-        document.getElementById('profile-name')!.textContent = updated;
-        document.getElementById('avatar-initial')!.textContent = updated.charAt(0).toUpperCase();
-
-        saveOk.classList.remove('hidden');
-        setTimeout(() => saveOk.classList.add('hidden'), 2500);
-      });
-
-      // Pedidos
-      const orders = await getMyOrders();
-      const list = document.getElementById('orders-list')!;
-      list.innerHTML =
-        orders.length === 0
-          ? `<div class="card p-8 sm:p-10 text-center">
-               <p class="text-muted mb-5">Aún no tienes pedidos.</p>
-               <a href="/tienda" class="btn-outline inline-flex">Ver catálogo</a>
-             </div>`
-          : orders
-              .map((o: any) => {
-                const status = o.status as OrderStatus;
-                return `
-            <div class="card p-5">
-              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? String(o.id).slice(0, 8)}</p>
-                  <p class="text-sm text-muted mt-1">
-                    ${formatOrderDate(o.created_at)} · ${(o.order_items ?? []).length} pieza(s)
-                  </p>
-                </div>
-                <div class="sm:text-right shrink-0">
-                  <p class="font-acentos text-xl text-oro-brillo">${formatOrderMoney(Number(o.total_amount))}</p>
-                  <p class="text-xs uppercase tracking-wider text-oro-brillo mt-1">
-                    ${STATUS_LABEL[status] ?? status}
-                  </p>
-                </div>
-              </div>
-              <p class="mt-3 text-sm text-muted">${STATUS_HINT[status] ?? ''}</p>
-              ${o.tracking_number ? `<p class="mt-2 text-sm text-blancoRoto">Guía: ${o.carrier ?? ''} ${o.tracking_number}</p>` : ''}
-              <div class="mt-4 flex flex-wrap gap-2">
-                <a href="/confirmacion?order=${encodeURIComponent(o.order_number ?? o.id)}" class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs">
-                  Ver seguimiento
-                </a>
-              </div>
-            </div>`;
-              })
-              .join('');
-
-      // Favoritos
-      const wish = await getWishlist();
-      const wishList = document.getElementById('wish-list')!;
-      wishList.innerHTML =
-        wish.length === 0
-          ? `<p class="text-sm text-muted">Sin favoritos guardados.</p>`
-          : wish
-              .map(
-                (i: WishlistItem) => `
-            <div class="card p-4 flex items-center gap-4" data-wish-row="${i.productId}">
-              <div class="w-14 h-16 shrink-0 bg-white border-2 border-white/30 overflow-hidden">
-                ${i.image ? `<img src="${i.image}" alt="" class="w-full h-full object-contain">` : ''}
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-acentos text-base text-blancoRoto truncate">${i.name}</p>
-                <p class="text-sm text-oro-brillo">${formatOrderMoney(i.price)}</p>
-              </div>
-              <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-                <a href="/producto/${i.slug ?? i.productId}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>
-                <button type="button" data-wish-remove="${i.productId}"
-                  class="min-h-[40px] px-3 text-xs uppercase tracking-wider text-muted hover:text-red-400">
-                  Quitar
-                </button>
-              </div>
-            </div>`
-              )
-              .join('');
-
-      wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
-        b.addEventListener('click', async () => {
-          await removeFromWishlist(b.dataset.wishRemove!);
-          b.closest('[data-wish-row]')?.remove();
-        })
-      );
-
-      // Direcciones
-      const addresses = await getMyAddresses();
-      const addrList = document.getElementById('addresses-list')!;
-      addrList.innerHTML =
-        addresses.length === 0
-          ? `<p class="text-sm text-muted">Sin direcciones guardadas.</p>`
-          : addresses
-              .map(
-                (a: any) => `
-            <div class="card p-4">
-              <p class="text-sm text-blancoRoto mb-1">${a.label}${a.is_default ? ' · Principal' : ''}</p>
-              <p class="text-sm text-muted leading-relaxed">
-                ${a.street}${a.colonia ? ', ' + a.colonia : ''}<br>
-                ${a.city}, ${a.state ?? ''} ${a.postal_code ?? ''}
-              </p>
-            </div>`
-              )
-              .join('');
-    }
+      saveOk.classList.remove('hidden');
+      setTimeout(() => saveOk.classList.add('hidden'), 2500);
+    });
 
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await signOut();
       window.location.href = '/';
     });
 
-    init();
+    document.getElementById('change-password')?.addEventListener('click', () => {
+      window.location.href = '/nueva-password';
+    });
+
+    // ---------- Favoritos (SSR + local) ----------
+    const wishList = document.getElementById('wish-list')!;
+    const isAuth = document.documentElement.dataset.auth === '1';
+    // El servidor ya pintó la lista del drawer; aquí la usamos como respaldo.
+    const serverWish: WishlistItem[] = JSON.parse(
+      document.getElementById('drawer')?.dataset.wishlist ?? '[]'
+    );
+
+    function renderWish(items: WishlistItem[]) {
+      if (items.length === 0) {
+        wishList.innerHTML = '<p class="text-sm text-muted">Sin favoritos guardados.</p>';
+        return;
+      }
+
+      wishList.innerHTML = items
+        .map(
+          (i) => `
+        <div class="card p-4 flex items-center gap-4" data-wish-row="${escapeHtml(i.productId)}">
+          <div class="w-14 h-16 shrink-0 bg-white border-2 border-white/30 overflow-hidden">
+            ${safeUrl(i.image) ? `<img src="${safeUrl(i.image)}" alt="" class="w-full h-full object-contain">` : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-acentos text-base text-blancoRoto truncate">${escapeHtml(i.name)}</p>
+            <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>
+            <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
+              class="min-h-[40px] px-3 text-xs uppercase tracking-wider text-muted hover:text-red-400">
+              Quitar
+            </button>
+          </div>
+        </div>`
+        )
+        .join('');
+
+      wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          const box = b.closest('[data-wish-row]') as HTMLElement | null;
+          box?.style.setProperty('opacity', '0.4');
+          b.setAttribute('disabled', 'true');
+          await removeFromWishlist(b.dataset.wishRemove!);
+          box?.remove();
+        })
+      );
+    }
+
+    window.addEventListener('wishlist:updated', (e) => {
+      renderWish((e as CustomEvent<WishlistItem[]>).detail ?? []);
+    });
+
+    renderWish(isAuth ? serverWish : getLocalWishlist());
+
+    // ---------- Mensaje pendiente de otra pantalla ----------
+    const sessionMsg = sessionStorage.getItem('dsp_checkout_error');
+    if (sessionMsg) {
+      sessionStorage.removeItem('dsp_checkout_error');
+      saveError.textContent = sessionMsg;
+      saveError.classList.remove('hidden');
+    }
   </script>
 </BaseLayout>

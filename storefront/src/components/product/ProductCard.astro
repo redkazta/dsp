@@ -45,19 +45,19 @@ const sizes = [
   </button>
 
   <a href={href} class="block">
-  <!-- Imagen -->
-  <div class="relative aspect-[4/5] overflow-hidden bg-white border-2 product-media transition-colors duration-300">
+  <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
+  <div class="product-frame border-2 product-media transition-colors duration-300">
     {
       image ? (
         <img
           src={image}
           alt={product.name}
-          class="w-full h-full object-contain transition-transform duration-700 ease-out"
+          class="transition-transform duration-700 ease-out"
           loading="lazy"
           decoding="async"
         />
       ) : (
-        <div class="w-full h-full flex items-center justify-center">
+        <div class="absolute inset-0 flex items-center justify-center">
           <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-negro-profundo/20">
             Sin imagen
           </span>
@@ -168,9 +168,13 @@ const sizes = [
       btn.querySelector('svg')?.setAttribute('fill', active ? 'currentColor' : 'none');
     };
 
-    document.querySelectorAll<HTMLButtonElement>('.wish-btn').forEach((btn) => {
-      isInWishlist(btn.dataset.wishId!).then((active) => paint(btn, active)).catch(() => {});
-    });
+    // Un solo request para todas las tarjetas visibles (antes: uno por tarjeta)
+    Promise.all(
+      [...document.querySelectorAll<HTMLButtonElement>('.wish-btn')].map(async (btn) => {
+        const active = await isInWishlist(btn.dataset.wishId!).catch(() => false);
+        paint(btn, active);
+      })
+    );
 
     document.addEventListener('click', async (e) => {
       const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.wish-btn');

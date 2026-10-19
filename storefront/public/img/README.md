@@ -1,24 +1,10 @@
 # 📸 Imágenes de productos
 
-**Mete aquí las fotos de tus playeras, hoodies y demás.**
+Todas las fotos se publican **cuadradas (1:1), con la prenda centrada y el
+mismo margen**. El catálogo, la ficha, el carrito y los favoritos muestran ese
+cuadrado, así que cualquier foto que respete el estándar queda alineada sola.
 
----
-
-## Nombres de archivo
-
-Usa minúsculas y guiones. Ejemplos:
-
-```
-camisa-dsp-v3-aurora-01.jpg
-camisa-dsp-v3-aurora-02.jpg
-camisa-dsp-v3-silver-01.jpg
-hoodie-nocturno-01.jpg
-playera-oro-01.jpg
-beanie-dsp-01.jpg
-cargo-utility-01.jpg
-```
-
-Máximo 2 dígitos al final para ordenar: `-01`, `-02`, `-03`.
+> Guía completa y cómo regenerarlas: [`docs/IMAGENES_PRODUCTO.md`](../../../docs/IMAGENES_PRODUCTO.md)
 
 ---
 
@@ -26,39 +12,37 @@ Máximo 2 dígitos al final para ordenar: `-01`, `-02`, `-03`.
 
 | Dato | Valor |
 |------|-------|
-| Formato | JPG o WebP (no PNG, pesa mucho) |
-| Tamaño | **1200 × 1500 px** (proporción 4:5) |
-| Peso | menos de **300 KB** |
-| Fondo | neutro (gris claro u oscuro) |
-| Estilo | iluminación dramática, editorial |
+| Formato | JPG (calidad ~90) o WebP |
+| Tamaño | **1200 × 1200 px** (1:1) |
+| Peso | menos de **150 KB** |
+| Fondo | blanco estudio (#FFFFFF) |
+| Prenda | centrada, ~33 % del área, margen mínimo del 12 % |
 
-> Si tus fotos son más grandes, comprímelas en [squoosh.app](https://squoosh.app) antes de subirlas.
+Si una foto llega en 4:5, el marco `.product-frame` la centra igual, pero el
+estándar es 1:1.
+
+---
+
+## Nombres
+
+```
+DSP_<n>.jpg                         Playeras: DSP_1.jpg … DSP_7.jpg
+DSP-JEANS-<color>-<nn>.jpg          Jeans sin flash (frente, espalda)
+DSP-JEANS-<color>-<nn>-flash.jpg    Jeans con flash (reflejo)
+```
+
+Colores: `gris`, `morado`, `naranja`. Orden: `01` frente, `02` espalda.
 
 ---
 
 ## Cómo conectarlas a un producto
 
-### Opción A — Desde el SQL Editor de Supabase (recomendado)
-
-Copia y pega esto, cambiando el `product_id` y el nombre del archivo:
+La primera imagen (`position = 0`) es la portada del catálogo; las demás salen
+como miniaturas en la ficha.
 
 ```sql
--- Ejemplo: 2 fotos para la Camisa ¡D$P! V3
 INSERT INTO product_images (product_id, url, alt_text, position) VALUES
-('p0000001-0000-0000-0000-000000000001', '/img/camisa-dsp-v3-aurora-01.jpg', 'Camisa ¡D$P! V3', 0),
-('p0000001-0000-0000-0000-000000000001', '/img/camisa-dsp-v3-aurora-02.jpg', 'Camisa ¡D$P! V3 detalle', 1);
-```
-
-La primera imagen (`position = 0`) es la que aparece en el catálogo.
-Las demás salen como miniaturas en la página del producto.
-
-### Opción B — Reemplazar una imagen existente
-
-```sql
-UPDATE product_images
-SET url = '/img/camisa-dsp-v3-aurora-01.jpg'
-WHERE product_id = 'p0000001-0000-0000-0000-000000000001'
-  AND position = 0;
+('a0000001-0000-4000-8000-000000000001', '/img/DSP_1.jpg', 'Camisa ¡D$P!', 0);
 ```
 
 ---
@@ -67,13 +51,12 @@ WHERE product_id = 'p0000001-0000-0000-0000-000000000001'
 
 | Producto | product_id |
 |----------|-----------|
-| Camisa ¡D$P! V3 | `p0000001-0000-0000-0000-000000000001` |
-| Hoodie ¡D$P! Nocturno | `p0000001-0000-0000-0000-000000000002` |
-| Playera Logo Oro | `p0000001-0000-0000-0000-000000000003` |
-| Beanie ¡D$P! | `p0000001-0000-0000-0000-000000000004` |
-| Pantalón Utility Cargo | `p0000001-0000-0000-0000-000000000005` |
+| DSP 1 – DSP 7 (playeras) | `a0000001-0000-4000-8000-00000000000{n}` (n = 1…7) |
+| Jeans gris metálico | `a0000001-0000-4000-8000-0000000000b1` |
+| Jeans morado reflectivo | `a0000001-0000-4000-8000-0000000000b2` |
+| Jeans naranja reflextivo | `a0000001-0000-4000-8000-0000000000b3` |
 
-> Estos IDs existen **solo si ya ejecutaste** `scripts/seed_products.sql` en Supabase.
+> Los jeans existen **solo si ya ejecutaste** `scripts/seed_jeans_products.sql`.
 
 ---
 
@@ -83,5 +66,5 @@ WHERE product_id = 'p0000001-0000-0000-0000-000000000001'
 SELECT p.name, i.url, i.position
 FROM product_images i
 JOIN products p ON p.id = i.product_id
-ORDER BY p.name, i.position;
+ORDER BY p.sku, i.position;
 ```

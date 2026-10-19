@@ -1,0 +1,101 @@
+---
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Recuperar contraseña | Dinero Sobre Problemas" description="Restablece el acceso a tu cuenta.">
+  <section class="min-h-[calc(100dvh-8rem)] flex items-start sm:items-center justify-center px-5 sm:px-6 py-10 sm:py-16 bg-noise">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <p class="section-label mb-3">Cuenta</p>
+        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto mb-4">Recuperar contraseña</h1>
+        <div class="gold-line mx-auto"></div>
+        <p class="mt-5 text-sm text-muted">
+          Escribe el correo con el que compraste y te enviamos un enlace para crear una nueva.
+        </p>
+      </div>
+
+      <form id="recover-form" class="space-y-4" novalidate>
+        <label class="block">
+          <span class="field-label">Correo electrónico *</span>
+          <input
+            type="email"
+            name="email"
+            placeholder="tu@correo.com"
+            required
+            class="input-dark"
+            autocomplete="email"
+            inputmode="email"
+          />
+        </label>
+
+        <button type="submit" id="recover-submit" class="btn-gold w-full">Enviar enlace</button>
+
+        <p id="recover-error" role="alert" class="hidden text-sm text-red-400 text-center leading-relaxed"></p>
+        <p id="recover-info" role="status" class="hidden text-sm text-oro-brillo text-center leading-relaxed"></p>
+      </form>
+
+      <p class="mt-8 text-center text-sm text-muted">
+        <a href="/entrar" class="text-oro-brillo font-semibold hover:text-white transition-colors">Volver a iniciar sesión</a>
+      </p>
+    </div>
+  </section>
+
+  <style>
+    .field-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #ffe28a;
+    }
+  </style>
+
+  <script>
+    import { sendPasswordReset } from '../lib/auth';
+
+    const form = document.getElementById('recover-form') as HTMLFormElement;
+    const submit = document.getElementById('recover-submit') as HTMLButtonElement;
+    const errorEl = document.getElementById('recover-error')!;
+    const infoEl = document.getElementById('recover-info')!;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.classList.add('hidden');
+      infoEl.classList.add('hidden');
+
+      const email = String(new FormData(form).get('email') ?? '').trim();
+      if (!email) {
+        errorEl.textContent = 'Escribe tu correo.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = 'Enviando…';
+
+      const { error } = await sendPasswordReset(email);
+
+      submit.disabled = false;
+      submit.textContent = 'Enviar enlace';
+
+      if (error) {
+        errorEl.textContent =
+          error.message === 'User not found'
+            ? 'No encontramos una cuenta con ese correo.'
+            : 'No pudimos enviar el enlace. Intenta de nuevo en un minuto.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // Misma respuesta exista o no la cuenta: no revelamos qué correos están dados de alta.
+      infoEl.textContent = 'Si existe una cuenta con ese correo, recibirás el enlace en unos minutos.';
+      infoEl.classList.remove('hidden');
+      form.reset();
+    });
+  </script>
+</BaseLayout>

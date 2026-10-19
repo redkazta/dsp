@@ -1,21 +1,48 @@
 /**
  * Middleware global.
+ *
  * - Refresca la sesión de Supabase en cookies.
- * - Expone nombre y rol al HTML renderizado (header, cuenta).
- * - Bloquea /admin antes de renderizar: sin sesión → /entrar, sin rol → /.
+ * - Resuelve nombre, correo y rol una sola vez por request y los publica
+ *   en `Astro.locals` (HTML server-rendered, sin parpadeos).
+ * - Bloquea /admin antes de renderizar y protege /cuenta y /checkout.
+ * - Los assets y los endpoints no pagan el costo de `getUser()`.
  */
 
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase-server';
+import { STAFF_ROLES, NOT_FOUND_HEADERS } from './lib/constants';
+
+/** Rutas que no necesitan sesión ni consultas a Supabase. */
+const PUBLIC_ASSET = /^\/(_astro|_image|fonts|images|icons)\/|^\/(favicon|og-image|robots|sitemap)\./i;
+const PUBLIC_FILE = /\.(?:css|js|mjs|map|svg|png|jpe?g|webp|avif|gif|ico|woff2?|ttf|otf|txt|xml|json)$/i;
+
+/** Se pueden visitar con o sin sesión. */
+const PUBLIC_PAGES = new Set(['/entrar', '/registro', '/recuperar', '/nueva-password']);
+
+/** Exigen sesión. */
+const PRIVATE_PREFIXES = ['/cuenta', '/checkout', '/confirmacion'];
+
+const isStaffRole = (role: string | null) =>
+  role !== null && (STAFF_ROLES as readonly string[]).includes(role);
+
+/** `next` seguro: solo rutas internas. */
+function safeNext(raw: string | null, fallback = '/cuenta') {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return fallback;
+  return raw;
+}
 
 export const onRequest = defineMiddleware(async (context: any, next: any) => {
+  const { pathname } = context.url;
+
+  if (PUBLIC_ASSET.test(pathname) || (PUBLIC_FILE.test(pathname) && !pathname.startsWith('/api/'))) {
+    return next();
+  }
+
   const supabase = createSupabaseServerClient(context.request, context.cookies);
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const { pathname } = context.url;
 
   let firstName: string | null = null;
   let phone: string | null = null;
@@ -25,8 +52,12 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     const meta = user.user_metadata ?? {};
 
     // Si el perfil falla (RLS, red), el header no se cae: usa los metadatos.
-    let profile: { first_name: string | null; full_name: string | null; phone: string | null; role: string | null } | null =
-      null;
+    let profile: {
+      first_name: string | null;
+      full_name: string | null;
+      phone: string | null;
+      role: string | null;
+    } | null = null;
 
     try {
       const { data } = await supabase
@@ -46,31 +77,45 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
       profile?.first_name ??
       (meta.given_name as string) ??
       (meta.first_name as string) ??
-      (fallbackName.split(' ')[0] ?? (user.email ?? '').split('@')[0]);
+      (fallbackName.split(' ')[0] || (user.email ?? '').split('@')[0] || null);
 
     phone = profile?.phone ?? (meta.phone as string) ?? null;
+
+    // El rol se decide aquí. Solo cuenta si viene de la tabla (no del metadata,
+    // que el usuario puede manipular al registrarse).
     role = profile?.role ?? null;
+  }
 
-    // Rutas privadas: solo staff
-    if (pathname.startsWith('/admin')) {
-      if (!role || ['admin', 'seller'].includes(role) === false) {
-        return context.redirect('/', 302);
-      }
-    }
+  const isStaff = isStaffRole(role);
 
-    // Con sesión, /entrar y /registro no tienen sentido
-    if (pathname === '/entrar' || pathname === '/registro') {
-      return context.redirect('/cuenta', 302);
-    }
-  } else if (pathname.startsWith('/admin')) {
-    return context.redirect('/entrar', 302);
+  // ---------- Rutas privadas del panel ----------
+  if (pathname.startsWith('/admin')) {
+    if (!user) return context.redirect(`/entrar?next=${encodeURIComponent(pathname)}`, 302);
+    if (!isStaff) return new Response('No encontrado', { status: 404, headers: NOT_FOUND_HEADERS });
+  }
+
+  // ---------- Rutas privadas del cliente ----------
+  if (PRIVATE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    if (!user) return context.redirect(`/entrar?next=${encodeURIComponent(pathname + context.url.search)}`, 302);
+  }
+
+  // ---------- Con sesión, las pantallas de acceso no tienen sentido ----------
+  if (user && ['/entrar', '/registro'].includes(pathname)) {
+    return context.redirect(safeNext(context.url.searchParams.get('next'), '/cuenta'), 302);
+  }
+
+  // ---------- Correo de recuperación: vuelve con un código a /nueva-password ----------
+  if (user && pathname === '/recuperar') {
+    return context.redirect('/nueva-password', 302);
   }
 
   context.locals.user = user;
   context.locals.isAuthenticated = Boolean(user);
   context.locals.firstName = firstName;
   context.locals.phone = phone;
+  context.locals.email = user?.email ?? null;
   context.locals.role = role;
+  context.locals.isStaff = isStaff;
 
   const response = await next();
 

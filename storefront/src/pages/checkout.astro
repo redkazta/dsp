@@ -3,8 +3,7 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
-void apiUrl;
+const { firstName, email, phone } = Astro.locals;
 ---
 
 <BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
@@ -41,7 +40,7 @@ void apiUrl;
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block">
               <span class="field-label">Nombre *</span>
-              <input name="firstName" required class="input-dark" autocomplete="given-name" />
+              <input name="firstName" required class="input-dark" autocomplete="given-name" value={firstName ?? ''} />
             </label>
             <label class="block">
               <span class="field-label">Apellidos *</span>
@@ -49,11 +48,11 @@ void apiUrl;
             </label>
             <label class="block sm:col-span-2">
               <span class="field-label">Correo *</span>
-              <input name="email" type="email" required class="input-dark" autocomplete="email" inputmode="email" />
+              <input name="email" type="email" required class="input-dark" autocomplete="email" inputmode="email" value={email ?? ''} />
             </label>
             <label class="block sm:col-span-2">
               <span class="field-label">Teléfono *</span>
-              <input name="phone" type="tel" required class="input-dark" autocomplete="tel" inputmode="tel" placeholder="10 dígitos" />
+              <input name="phone" type="tel" required class="input-dark" autocomplete="tel" inputmode="tel" placeholder="10 dígitos" value={phone ?? ''} />
             </label>
           </div>
         </fieldset>
@@ -75,7 +74,7 @@ void apiUrl;
             </label>
             <label class="block">
               <span class="field-label">Código postal *</span>
-              <input name="postalCode" required class="input-dark" autocomplete="postal-code" inputmode="numeric" />
+              <input name="postalCode" required class="input-dark" autocomplete="postal-code" inputmode="numeric" maxlength="5" />
             </label>
             <label class="block">
               <span class="field-label">Ciudad *</span>
@@ -166,7 +165,8 @@ void apiUrl;
             </div>
 
             <p class="mt-4 text-xs text-white/80">
-              Prueba de rechazo: <span class="text-oro-brillo">4000 0000 0000 0002</span>
+              Modo de prueba: no se cobra nada. Prueba de rechazo:
+              <span class="text-oro-brillo">4000 0000 0000 0002</span>
             </p>
           </div>
         </fieldset>
@@ -177,6 +177,12 @@ void apiUrl;
         <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
           <h2 class="font-titulos text-2xl text-blancoRoto mb-6">Tu pedido</h2>
           <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6"></div>
+
+          <p
+            id="checkout-summary-error"
+            role="status"
+            class="hidden mb-4 text-sm text-oro-brillo leading-relaxed border-2 border-oro-brillo/50 px-3 py-2"
+          ></p>
 
           <div class="space-y-3 pb-4 border-b-2 border-white/25 text-base">
             <div class="flex justify-between">
@@ -201,7 +207,10 @@ void apiUrl;
           <p id="pay-error" role="alert" class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"></p>
 
           <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
-            Al confirmar aceptas nuestros términos y política de privacidad.
+            Al confirmar aceptas nuestros
+            <a href="/terminos" class="text-oro-brillo underline underline-offset-2">términos</a>,
+            la <a href="/privacidad" class="text-oro-brillo underline underline-offset-2">política de privacidad</a>
+            y la <a href="/devoluciones" class="text-oro-brillo underline underline-offset-2">política de devoluciones</a>.
           </p>
         </div>
       </aside>
@@ -222,19 +231,15 @@ void apiUrl;
   </style>
 
   <script>
-    import { getCart, formatMXN } from '../lib/cart';
-    import {
-      createOrder,
-      shippingCostFor,
-      validateSimulatedCard,
-      FREE_SHIPPING_THRESHOLD,
-      STANDARD_SHIPPING,
-    } from '../lib/orders';
-    import { getProfile } from '../lib/auth';
+    import { getCart, clearCart, refreshCartPrices, formatMXN } from '../lib/cart';
+    import { shippingCostFor, STANDARD_SHIPPING } from '../lib/pricing';
+    import { validateSimulatedCard } from '../lib/card';
+    import { escapeHtml, friendlyError } from '../lib/html';
 
     const form = document.getElementById('checkout-form') as HTMLFormElement;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
     const errorEl = document.getElementById('pay-error')!;
+    const summaryError = document.getElementById('checkout-summary-error') as HTMLElement | null;
 
     function renderSummary() {
       const items = getCart();
@@ -255,8 +260,8 @@ void apiUrl;
           (i) => `
         <div class="flex justify-between items-center gap-3 py-3">
           <div class="min-w-0">
-            <p class="text-base text-blancoRoto">${i.name}</p>
-            <p class="text-sm text-white/80">${i.variantName} × ${i.qty}</p>
+            <p class="text-base text-blancoRoto">${escapeHtml(i.name)}</p>
+            <p class="text-sm text-white/80">${escapeHtml(i.variantName)} × ${i.qty}</p>
           </div>
           <span class="text-base font-acentos text-oro-brillo whitespace-nowrap">$${formatMXN(i.price * i.qty)}</span>
         </div>`
@@ -270,8 +275,6 @@ void apiUrl;
       document.getElementById('co-shipping')!.textContent =
         shipping === 0 ? 'Gratis' : `$${formatMXN(STANDARD_SHIPPING)}`;
       document.getElementById('co-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
-
-      return subtotal;
     }
 
     function showError(message: string) {
@@ -354,31 +357,71 @@ void apiUrl;
       payBtn.textContent = 'Procesando pago…';
 
       try {
-        const order = await createOrder(
-          items,
-          {
-            firstName: value('firstName'),
-            lastName: value('lastName'),
-            email: value('email'),
-            phone: value('phone'),
-            street: value('street'),
-            colonia: value('colonia'),
-            city: value('city'),
-            state: value('state'),
-            postalCode: value('postalCode'),
-            references: value('references'),
-            notes: value('notes'),
-          },
-          { method: 'simulated', approved: true }
-        );
+        // El servidor decide el precio, el comprador y si el pago pasa.
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: items.map((i) => ({ variantId: i.variantId, qty: i.qty })),
+            customer: {
+              firstName: value('firstName'),
+              lastName: value('lastName'),
+              email: value('email'),
+              phone: value('phone'),
+              street: value('street'),
+              colonia: value('colonia'),
+              city: value('city'),
+              state: value('state'),
+              postalCode: value('postalCode'),
+              references: value('references'),
+              notes: value('notes'),
+            },
+            card: {
+              number: value('cardNumber'),
+              name: value('cardName'),
+              expiry: value('cardExpiry'),
+              cvv: value('cardCvv'),
+            },
+          }),
+        });
 
-        window.location.href = `/confirmacion?order=${encodeURIComponent(order.order_number ?? order.id)}`;
-      } catch (err: any) {
-        showError(err?.message ?? 'No pudimos registrar tu pedido. Intenta de nuevo.');
+        const order = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (order?.code === 'NO_SESSION') {
+            sessionStorage.setItem('dsp_checkout_error', friendlyError('NO_SESSION', ''));
+            window.location.href = '/entrar?next=/checkout';
+            return;
+          }
+
+          showError(friendlyError(order?.code, order?.error ?? 'No pudimos registrar tu pedido.'));
+          payBtn.disabled = false;
+          payBtn.textContent = 'Pagar y confirmar';
+          return;
+        }
+
+        clearCart();
+        window.location.href = `/confirmacion?order=${encodeURIComponent(order.orderNumber ?? order.id)}`;
+      } catch {
+        showError('No pudimos conectar con la tienda. Revisa tu conexión e intenta de nuevo.');
         payBtn.disabled = false;
         payBtn.textContent = 'Pagar y confirmar';
       }
     });
+
+    // Precios y disponibilidad antes de mostrar el resumen:
+    // si el carrito trae piezas viejas, se actualiza o se retiran.
+    refreshCartPrices()
+      .then(({ removed }) => {
+        if (removed.length > 0 && summaryError) {
+          summaryError.textContent = `Retiramos ${removed.length} ${
+            removed.length === 1 ? 'pieza' : 'piezas'
+          } que ya no están disponibles.`;
+          summaryError.classList.remove('hidden');
+        }
+        renderSummary();
+      })
+      .catch(() => renderSummary());
 
     renderSummary();
   </script>

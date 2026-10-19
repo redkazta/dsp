@@ -136,6 +136,36 @@
   .card {
     @apply bg-negro-carbono border-2 border-blancoRoto/20;
   }
+
+  /* ============================================
+     Marco de producto
+
+     Todas las fotos se guardan ya cuadradas (1:1) en
+     /public/img: prenda centrada, mismo peso visual.
+     Este marco es la red de seguridad: cualquier foto
+     nueva (aunque venga 4:5, con menos margen o
+     descentrada) se ve alineada igual en grid, ficha,
+     carrito y panel.
+     ============================================ */
+  .product-frame {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .product-frame img,
+  .product-frame > picture > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    /* contain + márgenes fijos = nada se recorta al centrar */
+    object-fit: contain;
+    object-position: center;
+    padding: 6%;
+  }
 }
 
 @layer utilities {
@@ -158,6 +188,7 @@
 
   .line-clamp-2 {
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;

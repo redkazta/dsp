@@ -170,7 +170,7 @@ const GOOGLE_CLIENT_ID =
     }
 
     const next = new URLSearchParams(window.location.search).get('next');
-    window.location.href = next && next.startsWith('/') ? next : '/cuenta';
+    window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta';
   }
 
   // Acelera el SDK mientras el usuario lee el formulario
@@ -204,7 +204,10 @@ const GOOGLE_CLIENT_ID =
       ux_mode: 'popup',
     });
 
-    // Prompt en modo popup: genera el token sin salir de la página
+    // Prompt en modo popup: genera el token sin salir de la página.
+    // timeout: si FedCM no responde, el usuario recupera el botón.
+    setLoading(false, 'Continuar con Google');
+
     google.accounts.id.prompt((notification: any) => {
       if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
         // FedCM puede no mostrar el diálogo: avisamos en vez de dejar el botón colgado
