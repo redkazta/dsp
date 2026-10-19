@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Productos">
@@ -82,9 +82,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       updateProduct,
       softDeleteProduct,
       uploadProductImage,
-    } from '../../lib/admin';
-    import { TENANT_ID } from '../../lib/constants';
-    import { escapeHtml, safeUrl } from '../../lib/html';
+    } from '../../../lib/admin';
+    import { TENANT_ID } from '../../../lib/constants';
+    import { escapeHtml, safeUrl } from '../../../lib/html';
 
     let products: any[] = [];
 

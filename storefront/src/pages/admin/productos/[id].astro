@@ -5,10 +5,10 @@
  * Datos reales desde Supabase en el servidor; el JS solo ejecuta acciones
  * puntuales (guardar, subir foto, reordenar, editar stock por variante).
  */
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getProduct, getCategories } from '../../lib/admin';
-import { TENANT_ID } from '../../lib/constants';
-import { createSupabaseServerClient } from '../../lib/supabase-server';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getProduct, getCategories } from '../../../lib/admin';
+import { TENANT_ID } from '../../../lib/constants';
+import { createSupabaseServerClient } from '../../../lib/supabase-server';
 
 const id = Astro.params.id ?? '';
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
@@ -322,7 +322,7 @@ const money = (n: number) =>
       deleteProductImage,
       reorderProductImages,
       uploadProductImage,
-    } from '../../lib/admin';
+    } from '../../../lib/admin';
 
     const root = document.querySelector<HTMLElement>('[data-product-editor]')!;
     const productId = root.dataset.productId!;
