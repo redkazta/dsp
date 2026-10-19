@@ -2,15 +2,26 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProductCard from '../components/product/ProductCard.astro';
+import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { getProducts, TENANT_SLUG } from '../lib/supabase';
 
-let featured: any[] = [];
+const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
+const CAT_JEANS = 'c0000001-0000-4000-8000-000000000002';
+
+let camisas: any[] = [];
+let jeans: any[] = [];
+
 try {
-  const { data, error } = await getProducts(TENANT_SLUG, { page: 1, limit: 8 });
-  if (!error && data) featured = data;
+  const [camisasRes, jeansRes] = await Promise.all([
+    getProducts(TENANT_SLUG, { page: 1, limit: 12, categoryId: CAT_CAMISAS, sort: 'name-asc' }),
+    getProducts(TENANT_SLUG, { page: 1, limit: 12, categoryId: CAT_JEANS, sort: 'name-asc' }),
+  ]);
+
+  camisas = camisasRes.data ?? [];
+  jeans = jeansRes.data ?? [];
 } catch {
-  featured = [];
+  camisas = [];
+  jeans = [];
 }
 ---
 
@@ -32,13 +43,13 @@ try {
     <div class="absolute right-0 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-3 pr-10 z-10">
       {
         [
-          { src: '/img/DSP_2.jpg', label: 'Aurora' },
-          { src: '/img/DSP_3.jpg', label: 'Silver' },
-          { src: '/img/DSP_5.jpg', label: 'Violet' },
-          { src: '/img/DSP_6.jpg', label: 'Crimson' },
+          { src: '/img/DSP_2.jpg', label: 'Aurora', slug: 'camisa-dsp-v3-aurora' },
+          { src: '/img/DSP_3.jpg', label: 'Silver', slug: 'camisa-dsp-v3-silver' },
+          { src: '/img/DSP_5.jpg', label: 'Violet', slug: 'camisa-dsp-v3-violet' },
+          { src: '/img/DSP_6.jpg', label: 'Crimson', slug: 'camisa-dsp-v3-crimson' },
         ].map((p) => (
           <a
-            href="/tienda"
+            href={`/producto/${p.slug}`}
             class="group relative block w-24 h-24 product-frame border-2 border-white/30 hover:border-oro-brillo transition-colors duration-300"
           >
             <img src={p.src} alt={p.label} loading="lazy" />
@@ -99,35 +110,28 @@ try {
     </div>
   </section>
 
-  <!-- ============ DESTACADOS ============ -->
-  <section class="bg-negro-carbono border-y-2 border-white/25">
-    <div class="page-container py-16 sm:py-24 lg:py-32">
-      <div class="text-center mb-10 sm:mb-16">
-        <p class="section-label mb-4">Selección</p>
-        <h2 class="font-titulos text-3xl sm:text-4xl md:text-5xl text-blancoRoto mb-6">Piezas destacadas</h2>
-        <div class="gold-line mx-auto"></div>
-      </div>
+  <!-- ============ CARRUSELES POR CATEGORÍA ============ -->
+  <div class="bg-negro-carbono border-y-2 border-white/25 py-6">
+    <ProductCarousel
+      title="Camisas"
+      subtitle="Reflective V3 · 7 acabados"
+      products={camisas}
+      href="/tienda?category=c0000001-0000-4000-8000-000000000001"
+      hrefLabel="Ver camisas"
+    />
 
-      {
-        featured.length === 0 ? (
-          <div class="text-center py-16">
-            <p class="text-base text-white/80 mb-6">Nuevos drops en camino.</p>
-            <a href="/tienda" class="btn-outline">Ir a la tienda</a>
-          </div>
-        ) : (
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-8">
-            {featured.map((product) => (
-              <ProductCard product={product} />
-            ))}
-          </div>
-        )
-      }
-
-      <div class="text-center mt-12 sm:mt-16">
-        <a href="/tienda" class="btn-outline">Ver catálogo completo</a>
-      </div>
+    <div class="page-container">
+      <div class="gold-line mx-0"></div>
     </div>
-  </section>
+
+    <ProductCarousel
+      title="Jeans"
+      subtitle="Jeep! Jeans · reflectivo"
+      products={jeans}
+      href="/tienda?category=c0000001-0000-4000-8000-000000000002"
+      hrefLabel="Ver jeans"
+    />
+  </div>
 
   <!-- ============ MARCA ============ -->
   <section class="relative py-20 sm:py-28 lg:py-40 overflow-hidden">

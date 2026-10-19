@@ -8,9 +8,12 @@
 export const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 export const TENANT_SLUG = 'dinerosobreproblemas';
 
-/** Envío estándar y umbral de envío gratis (MXN) */
-export const FREE_SHIPPING_THRESHOLD = 1500;
-export const STANDARD_SHIPPING = 150;
+/** Moneda de la tienda. Un solo lugar para cambiarla. */
+export const CURRENCY = 'USD';
+
+/** Envío estándar y umbral de envío gratis (en CURRENCY) */
+export const FREE_SHIPPING_THRESHOLD = 150;
+export const STANDARD_SHIPPING = 15;
 
 /** Roles con acceso al panel */
 export const STAFF_ROLES = ['admin', 'seller'] as const;

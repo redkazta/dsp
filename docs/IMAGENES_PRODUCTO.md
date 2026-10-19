@@ -13,18 +13,35 @@ cuadrado, así que cualquier foto que respete el estándar queda alineada sola.
 | Formato | JPG (calidad ~90) o WebP |
 | Tamaño | 1200 × 1200 px |
 | Fondo | Blanco estudio (#FFFFFF a pantalla completa) |
-| Prenda | Centrada, ocupa ~33 % del área (~57 % del lado) |
-| Margen | 12 % mínimo en cada borde (la prenda nunca toca el marco) |
+| Prenda | Centrada, ocupa ~38 % del área (~68 % del lado) |
+| Margen | 6 % mínimo en cada borde (la prenda nunca toca el marco) |
 | Ubicación | `storefront/public/img/` |
 | Servicio en URL | `/img/<archivo>.jpg` |
 
 ## Nombres
 
 ```
-/img/DSP_<n>.jpg                     Playeras: DSP_1.jpg … DSP_7.jpg
+/img/DSP_<n>.jpg                     Camisas: DSP_1.jpg … DSP_7.jpg
 /img/DSP-JEANS-<color>-<nn>.jpg      Jeans sin flash (frente, espalda)
 /img/DSP-JEANS-<color>-<nn>-flash.jpg Jeans con flash (reflejo)
 ```
+
+Cada archivo corresponde a un producto (no a una variante):
+
+| Archivo | Producto |
+|---|---|
+| `DSP_1.jpg` | Camisa ¡D$P! V3 Azul acero |
+| `DSP_2.jpg` | Camisa ¡D$P! V3 Aurora |
+| `DSP_3.jpg` | Camisa ¡D$P! V3 Silver |
+| `DSP_4.jpg` | Camisa ¡D$P! V3 Glow |
+| `DSP_5.jpg` | Camisa ¡D$P! V3 Violet |
+| `DSP_6.jpg` | Camisa ¡D$P! V3 Crimson |
+| `DSP_7.jpg` | Camisa ¡D$P! V3 Jade |
+| `DSP-JEANS-gris-*.jpg` | Jeep! Jeans gris metálico |
+| `DSP-JEANS-morado-*.jpg` | Jeep! Jeans morado reflectivo |
+| `DSP-JEANS-naranja-*.jpg` | Jeep! Jeans naranja reflextivo |
+
+Precio de todo el catálogo: **$35 USD**.
 
 Colores de jeans: `gris`, `morado`, `naranja`.
 Orden: `01` = frente, `02` = espalda, `03`/`04` = mismas vistas con flash.
@@ -55,7 +72,7 @@ con distinto tamaño según el color. Para publicarlas se usó
 
 1. Detecta el bounding box de la prenda (todo lo que no sea blanco puro).
 2. Calcula un marco cuadrado centrado en ella.
-3. Escala para que **cada prenda ocupe la misma área** (33 % del encuadre).
+3. Escala para que **cada prenda ocupe la misma área** (38 % del encuadre).
 4. Exporta a 1200 × 1200 con fondo blanco y margen uniforme.
 
 `scripts/images-finalize.ps1` renombró los resultados al estándar y eliminó las

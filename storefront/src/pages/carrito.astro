@@ -72,7 +72,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
                       <p class="text-xs text-white/70 mt-0.5">{p.category ?? 'Pieza'}</p>
                     </div>
                     <p class="font-acentos text-sm text-oro-brillo whitespace-nowrap">
-                      ${p.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      ${p.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </a>
@@ -131,7 +131,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-              Envío gratis desde {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('es-MX')} MXN`}
+              Envío gratis desde {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('en-US')} USD`}
             </p>
             <p class="text-xs text-white/60">Piezas producidas bajo pedido · 2 a 3 semanas</p>
           </div>

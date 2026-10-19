@@ -26,7 +26,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <input name="name" placeholder="Nombre *" required class="input-dark sm:col-span-2" />
         <textarea name="description" placeholder="Descripción" rows="3" class="input-dark sm:col-span-2"></textarea>
 
-        <input name="price" type="number" min="0" step="0.01" placeholder="Precio MXN *" required class="input-dark" />
+        <input name="price" type="number" min="0" step="0.01" placeholder="Precio USD *" required class="input-dark" />
 
         <select name="categoryId" class="input-dark">
           <option value="">Sin categoría</option>
@@ -111,7 +111,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 ${escapeHtml(p.categories?.name ?? 'Sin categoría')} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
               </p>
             </div>
-            <p class="font-acentos text-sm text-oro-brillo shrink-0">$${Number(p.base_price).toLocaleString('es-MX')}</p>
+            <p class="font-acentos text-sm text-oro-brillo shrink-0">$${Number(p.base_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
             <div class="flex gap-2 shrink-0">
               <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 ${p.is_active ? 'Ocultar' : 'Activar'}

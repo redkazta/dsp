@@ -66,7 +66,7 @@ if (isAuth && Astro.locals.user) {
 }
 
 const announcements = [
-  'Envío gratis en pedidos superiores a $1,500 MXN',
+  'Envío gratis en pedidos superiores a $150 USD',
   'Drop Reflective disponible por tiempo limitado',
 ];
 
@@ -76,7 +76,7 @@ const jsonLd = {
   name: 'Dinero Sobre Problemas',
   url: Astro.site,
   logo: new URL('/favicon.svg', Astro.site ?? Astro.url.origin).toString(),
-  currenciesAccepted: 'MXN',
+  currenciesAccepted: 'USD',
   paymentAccepted: 'Tarjeta de crédito, débito',
 };
 ---
@@ -618,7 +618,7 @@ const jsonLd = {
               <span class="search-item-name">${escapeHtml(p.name)}</span>
               <span class="search-item-cat">${escapeHtml(p.category ?? 'Pieza')}</span>
             </span>
-            <span class="search-item-price">$${Number(p.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+            <span class="search-item-price">$${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </a>`;
           })
           .join('');

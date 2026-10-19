@@ -8,7 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, TENANT_ID } from './constants';
 
-export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING };
+export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, CURRENCY } from './constants';
 
 export interface PricedItem {
   variantId: string;
@@ -33,7 +33,12 @@ export function round2(n: number) {
 }
 
 export function formatMXN(n: number): string {
-  return n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Importe con símbolo de moneda: $35.00 */
+export function formatMoney(n: number): string {
+  return `$${formatMXN(n)}`;
 }
 
 export interface RawRequestedItem {

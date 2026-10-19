@@ -113,7 +113,7 @@ export function trackingUrl(carrier: string | null | undefined, trackingNumber: 
 }
 
 export function formatOrderMoney(n: number) {
-  return `$${Number(n).toLocaleString('es-MX', {
+  return `$${Number(n).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
