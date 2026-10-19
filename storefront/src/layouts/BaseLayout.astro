@@ -1,377 +1,4 @@
----
-/**
- * BaseLayout.astro - Layout principal
- * Dinero Sobre Problemas · Estética editorial, negro/oro/plata
- */
-import '../styles/global.css';
-import StoreDrawer from '../components/store/StoreDrawer.astro';
-
-export interface Props {
-  title?: string;
-  description?: string;
-  image?: string;
-}
-
-const {
-  title = 'Dinero Sobre Problemas | Streetwear Reflective Premium',
-  description = 'Camisas reflectivas, hoodies y piezas atemporales. Diseño callejero con energía de lujo.',
-  image = '/og-image.jpg',
-} = Astro.props;
-
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
-
-const navLinks = [
-  { href: '/tienda', label: 'Tienda' },
-  { href: '/nosotros', label: 'Nosotros' },
-];
-
-const isAuth = Astro.locals.isAuthenticated;
-const firstName = Astro.locals.firstName;
-const accountHref = isAuth ? '/cuenta' : '/entrar';
-const greetingSub = isAuth ? 'Ver mi cuenta' : 'Entrar o crear cuenta';
-
-const announcements = [
-  'Envío gratis en pedidos superiores a $1,500 MXN',
-  'Drop Reflective disponible por tiempo limitado',
-];
-
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'ClothingStore',
-  name: 'Dinero Sobre Problemas',
-  url: Astro.site,
-  logo: new URL('/favicon.svg', Astro.site ?? Astro.url.origin).toString(),
-  currenciesAccepted: 'MXN',
-  paymentAccepted: 'Tarjeta de crédito, débito',
-};
----
-
-<!doctype html>
-<html lang="es-MX" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0A0A0A" />
-    <meta name="generator" content={Astro.generator} />
-    <meta name="google-site-verification" content="9vg0e3aFgw6r_ZeKvXzVRruULlWTkwhMjmQQHIguAM4" />
-    <meta name="theme-color" content="#0A0A0A" />
-
-    <meta name="theme-color" content="#0A0A0A" />
-
-    <!-- SEO -->
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Dinero Sobre Problemas" />
-    <meta property="og:locale" content="es_MX" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL(image, Astro.site ?? Astro.url.origin).toString()} />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-
-    <!-- Fuentes -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
-  </head>
-
-  <body class="min-h-screen flex flex-col bg-negro-profundo">
-    <!-- Barra de anuncios rotativa -->
-    <div class="bg-oro-brillo text-negro-profundo overflow-hidden" id="announcement-bar">
-      <div class="relative h-9 flex items-center justify-center">
-        {
-          announcements.map((text, i) => (
-            <p
-              class="announcement-slide absolute inset-0 flex items-center justify-center px-4 font-acentos text-[10px] sm:text-[11px] uppercase tracking-[0.14em] sm:tracking-[0.28em] text-center font-semibold transition-opacity duration-700"
-              data-index={i}
-            >
-              {text}
-            </p>
-          ))
-        }
-      </div>
-    </div>
-
-    <!-- Header -->
-    <header class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
-      <div class="page-container">
-        <div class="flex items-center gap-3 h-16 sm:h-20">
-          <!-- Mobile menu -->
-          <button
-            id="menu-toggle"
-            class="lg:hidden -ml-3 p-2.5 min-w-[44px] min-h-[44px] text-blancoRoto hover:text-oro-brillo transition-colors"
-            aria-label="Abrir menú"
-            aria-expanded="false"
-            aria-controls="mobile-menu"
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
-
-          <!-- Perfil (izquierda) -->
-          <a
-            href={accountHref}
-            class="profile-pill hidden sm:inline-flex"
-            aria-label={isAuth ? `Cuenta de ${firstName ?? 'cliente'}` : 'Iniciar sesión'}
-          >
-            <span class="profile-avatar" aria-hidden="true">
-              {
-                isAuth ? (
-                  <span>{firstName?.charAt(0).toUpperCase() ?? 'D'}</span>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
-                  </svg>
-                )
-              }
-            </span>
-            <span class="profile-text">
-              <span class="profile-hello">{isAuth ? `Bienvenido, ${firstName ?? 'cliente'}` : 'Bienvenido'}</span>
-              <span class="profile-action">{greetingSub}</span>
-            </span>
-          </a>
-
-          <!-- Logo (centro) -->
-          <a href="/" class="mx-auto flex flex-col items-center shrink-0 lg:ml-8">
-            <span class="font-titulos text-lg sm:text-xl lg:text-2xl tracking-[0.15em] text-blancoRoto leading-none hover:text-oro-brillo transition-colors">
-              DINERO
-            </span>
-            <span class="font-acentos text-[8px] sm:text-[9px] uppercase tracking-[0.4em] text-oro-brillo">
-              Sobre Problemas
-            </span>
-          </a>
-
-          <!-- Nav desktop -->
-          <nav class="hidden lg:flex items-center gap-10 ml-10">
-            {
-              navLinks.map((link) => (
-                <a
-                  href={link.href}
-                  class="relative font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto hover:text-oro-brillo transition-colors duration-300 group"
-                >
-                  {link.label}
-                  <span class="absolute -bottom-1.5 left-0 h-0.5 w-0 bg-oro-brillo transition-[width] duration-300 group-hover:w-full" />
-                </a>
-              ))
-            }
-          </nav>
-
-          <!-- Acciones (derecha, flotantes) -->
-          <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
-            <a
-              href="/tienda"
-              aria-label="Buscar"
-              class="header-icon hidden lg:inline-flex"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
-              </svg>
-            </a>
-
-            <a
-              href={accountHref}
-              aria-label={isAuth ? 'Mi cuenta' : 'Iniciar sesión'}
-              class="header-icon sm:hidden"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
-              </svg>
-            </a>
-
-            <StoreDrawer />
-          </div>
-        </div>
-      </div>
-
-      <!-- Nav mobile -->
-      <nav id="mobile-menu" class="hidden lg:hidden border-t-2 border-white/25 bg-negro-profundo">
-        <div class="page-container py-2 flex flex-col">
-          <a
-            href={accountHref}
-            class="py-4 min-h-[56px] flex items-center gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-oro-brillo border-b border-white/15"
-          >
-            <span class="profile-avatar sm:hidden" aria-hidden="true">
-              {isAuth ? firstName?.charAt(0).toUpperCase() : 'D'}
-            </span>
-            {isAuth ? `Bienvenido, ${firstName ?? 'cliente'}` : 'Iniciar sesión'}
-          </a>
-          {
-            navLinks.map((link) => (
-              <a
-                href={link.href}
-                class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
-              >
-                {link.label}
-              </a>
-            ))
-          }
-          <a
-            href="/favoritos"
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
-          >
-            Favoritos
-          </a>
-          <a
-            href="/carrito"
-            class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors"
-          >
-            Carrito
-          </a>
-        </div>
-      </nav>
-    </header>
-
-    <!-- Main -->
-    <main class="flex-1">
-      <slot />
-    </main>
-
-    <!-- Trust badges -->
-    <section class="border-t-2 border-white/25 bg-negro-carbono">
-      <div class="page-container py-10 sm:py-12 grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          [
-            { t: 'Envío express', d: '24-48h en zona metropolitana', icon: 'M5 12h14M12 5l7 7-7 7' },
-            { t: 'Pago seguro', d: 'Tarjetas de crédito y débito', icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
-            { t: 'Devoluciones', d: '30 días sin preguntas', icon: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5' },
-            { t: 'Atención 1:1', d: 'WhatsApp y DM abiertos', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
-          ].map((item) => (
-            <div class="flex items-start gap-4">
-              <div class="shrink-0 w-11 h-11 border-2 border-oro-brillo/70 flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d={item.icon} />
-                </svg>
-              </div>
-              <div>
-                <h4 class="font-acentos text-xs uppercase tracking-[0.2em] text-blancoRoto mb-1">{item.t}</h4>
-                <p class="text-sm text-muted leading-relaxed">{item.d}</p>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="border-t-2 border-white/25 bg-negro-profundo">
-      <div class="page-container py-12 sm:py-16 lg:py-20">
-        <div class="grid gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <!-- Marca -->
-          <div class="sm:col-span-2">
-            <h3 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-3">Dinero Sobre Problemas</h3>
-            <div class="gold-line mb-5" style="margin-left: 0"></div>
-            <p class="text-base text-muted leading-relaxed max-w-md mb-6">
-              Streetwear artesanal prensado a mano, una pieza a la vez.
-              Diseño callejero con energía de lujo.
-            </p>
-            <!-- Redes -->
-            <div class="flex gap-3">
-              {
-                [
-                  { name: 'Instagram', href: 'https://www.instagram.com/somos_dsp', d: 'M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2Zm0 3.4a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8Zm0 10.6a4.2 4.2 0 1 1 0-8.4 4.2 4.2 0 0 1 0 8.4Zm6.6-10.9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z' },
-                  { name: 'TikTok', href: 'https://www.tiktok.com/@somosdsp', d: 'M16.6 5.8a4.3 4.3 0 0 1-2.5-3.8h-3v13.1a2.6 2.6 0 1 1-1.9-2.5v-3.1a5.7 5.7 0 1 0 4.9 5.6V9.4a7.2 7.2 0 0 0 4.2 1.3V7.6a4.2 4.2 0 0 1-1.7-1.8Z' },
-                  { name: 'Facebook', href: 'https://facebook.com', d: 'M14 9h2.5l.5-3H14V4.5c0-.9.3-1.5 1.6-1.5H17V.2C16.6.1 15.6 0 14.5 0 12 0 10.3 1.5 10.3 4.2V6H8v3h2.3v9H14V9Z' },
-                ].map((s) => (
-                  <a
-                    href={s.href}
-                    aria-label={s.name}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="w-11 h-11 border-2 border-white/30 flex items-center justify-center text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors duration-300"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d={s.d} />
-                    </svg>
-                  </a>
-                ))
-              }
-            </div>
-          </div>
-
-          <!-- Tienda -->
-          <div>
-            <h4 class="section-label mb-5">Tienda</h4>
-            <ul class="space-y-3">
-              {
-                [
-                  { href: '/tienda', label: 'Catálogo' },
-                  { href: '/nosotros', label: 'Nosotros' },
-                  { href: '/contacto', label: 'Contacto' },
-                  { href: '/tallas', label: 'Guía de tallas' },
-                ].map((l) => (
-                  <li>
-                    <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
-                      {l.label}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-
-          <!-- Ayuda -->
-          <div>
-            <h4 class="section-label mb-5">Ayuda</h4>
-            <ul class="space-y-3">
-              {
-                [
-                  { href: '/envios', label: 'Envíos' },
-                  { href: '/devoluciones', label: 'Devoluciones' },
-                  { href: '/privacidad', label: 'Privacidad' },
-                  { href: '/terminos', label: 'Términos' },
-                ].map((l) => (
-                  <li>
-                    <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
-                      {l.label}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Barra inferior -->
-      <div class="border-t-2 border-white/25">
-        <div class="page-container py-5 sm:py-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
-          <p class="text-[11px] sm:text-xs text-white/80 font-acentos tracking-wider">
-            © {new Date().getFullYear()} DINERO SOBRE PROBLEMAS
-          </p>
-          <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/80 font-acentos tracking-wider">
-            <a href="/privacidad" class="py-1 hover:text-oro-brillo transition-colors">Privacidad</a>
-            <a href="/terminos" class="py-1 hover:text-oro-brillo transition-colors">Términos</a>
-            <a href="/envios" class="py-1 hover:text-oro-brillo transition-colors">Envíos</a>
-            <a href="/contacto" class="py-1 hover:text-oro-brillo transition-colors">Contacto</a>
-          </div>
-          <!-- Métodos de pago -->
-          <div class="flex items-center gap-2">
-            {
-              ['VISA', 'MC', 'AMEX', 'OXXO'].map((m) => (
-                <span class="px-2.5 py-1 border-2 border-white/30 text-[10px] font-acentos tracking-wider text-white/80">
-                  {m}
-                </span>
-              ))
-            }
-          </div>
-        </div>
-      </div>
-    </footer>
+</footer>
 
     <script>
       // Menú mobile con estado accesible
@@ -385,9 +12,7 @@ const jsonLd = {
           document.body.style.overflow = open ? 'hidden' : '';
         };
 
-        toggle.addEventListener('click', () =>
-          setOpen(menu.classList.contains('hidden'))
-        );
+        toggle.addEventListener('click', () => setOpen(menu.classList.contains('hidden')));
 
         // Cierra al navegar
         menu.querySelectorAll('a').forEach((a) =>
@@ -398,6 +23,96 @@ const jsonLd = {
         window
           .matchMedia('(min-width: 1024px)')
           .addEventListener('change', (e) => e.matches && setOpen(false));
+      }
+
+      // Perfil dropdown
+      const profileTrigger = document.getElementById('profile-trigger');
+      const profileMenu = document.querySelector('.profile-menu');
+
+      if (profileTrigger && profileMenu) {
+        const toggleProfileMenu = () => {
+          const isOpen = profileTrigger.getAttribute('aria-expanded') === 'true';
+          profileTrigger.setAttribute('aria-expanded', String(!isOpen));
+          profileMenu.classList.toggle('hidden', isOpen);
+        };
+
+        profileTrigger.addEventListener('click', (e) => {
+          e.preventDefault();
+          toggleProfileMenu();
+        });
+
+        // Cierra al hacer click fuera
+        document.addEventListener('click', (e) => {
+          if (!profileTrigger.contains(e.target as Node) && !profileMenu.contains(e.target as Node)) {
+            profileTrigger.setAttribute('aria-expanded', 'false');
+            profileMenu.classList.add('hidden');
+          }
+        });
+
+        // Cierra al presionar Escape
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && profileTrigger.getAttribute('aria-expanded') === 'true') {
+            profileTrigger.setAttribute('aria-expanded', 'false');
+            profileMenu.classList.add('hidden');
+          }
+        });
+      }
+
+      // Header wishlist y carrito - conectar con StoreDrawer
+      const headerWishlist = document.getElementById('header-wishlist');
+      const headerCart = document.getElementById('header-cart');
+
+      if (headerWishlist) {
+        headerWishlist.addEventListener('click', () => {
+          const event = new CustomEvent('store:open', { detail: { tab: 'wishlist' } });
+          document.dispatchEvent(event);
+        });
+      }
+
+      if (headerCart) {
+        headerCart.addEventListener('click', () => {
+          const event = new CustomEvent('store:open', { detail: { tab: 'cart' } });
+          document.dispatchEvent(event);
+        });
+      }
+
+      // Actualizar contadores en el header
+      const updateHeaderCounts = () => {
+        const wishCount = document.getElementById('wish-count');
+        const cartCount = document.getElementById('cart-count');
+        const headerWishCount = document.getElementById('header-wish-count');
+        const headerCartCount = document.getElementById('header-cart-count');
+
+        if (wishCount && headerWishCount) {
+          headerWishCount.textContent = wishCount.textContent;
+          headerWishCount.classList.toggle('hidden', wishCount.textContent === '0');
+        }
+
+        if (cartCount && headerCartCount) {
+          headerCartCount.textContent = cartCount.textContent;
+          headerCartCount.classList.toggle('hidden', cartCount.textContent === '0');
+        }
+      };
+
+      // Actualizar contadores cuando cambien
+      document.addEventListener('wishlist:updated', updateHeaderCounts);
+      document.addEventListener('cart:updated', updateHeaderCounts);
+
+      // Inicializar contadores
+      updateHeaderCounts();
+
+      // Sign out button
+      const signoutBtn = document.getElementById('btn-signout');
+      if (signoutBtn) {
+        signoutBtn.addEventListener('click', async () => {
+          try {
+            const { supabase } = await import('../../lib/supabase');
+            await supabase.auth.signOut();
+            window.location.href = '/entrar';
+          } catch (error) {
+            console.error('Error signing out:', error);
+          }
+        });
       }
 
       // Anuncios rotativos
@@ -412,129 +127,5 @@ const jsonLd = {
         }, 3500);
       }
     </script>
-  </body>
+</body>
 </html>
-
-<style>
-  /* Píldora de perfil a la izquierda del header */
-  .profile-pill {
-    align-items: center;
-    gap: 0.65rem;
-    min-height: 46px;
-    padding: 0.35rem 1rem 0.35rem 0.35rem;
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.04);
-    transition:
-      border-color 0.25s ease,
-      background-color 0.25s ease;
-  }
-
-  .profile-pill:hover {
-    border-color: #ffe28a;
-    background: rgba(255, 226, 138, 0.08);
-  }
-
-  .profile-avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
-    border-radius: 999px;
-    background: #ffe28a;
-    color: #060606;
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: 1rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .profile-text {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1.15;
-  }
-
-  .profile-hello {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #ffffff;
-    max-width: 11rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .profile-action {
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #ffe28a;
-  }
-
-  /* Botón flotante del header (carrito, favoritos, buscar) */
-  .header-icon {
-    position: relative;
-    width: 46px;
-    height: 46px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    background: #121212;
-    color: #ffffff;
-    box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.9);
-    transition:
-      border-color 0.25s ease,
-      color 0.25s ease,
-      transform 0.25s ease,
-      box-shadow 0.25s ease;
-  }
-
-  .header-icon:hover {
-    border-color: #ffe28a;
-    color: #ffe28a;
-    transform: translateY(-2px);
-    box-shadow: 0 0 26px -6px rgba(255, 226, 138, 0.65);
-  }
-
-  .header-badge {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: #ffe28a;
-    color: #060606;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 20px;
-    text-align: center;
-    border: 2px solid #060606;
-  }
-
-  /* Favoritos: mismo botón pero con un punto dorado sutil para distinguirlo */
-  .header-icon--wish {
-    background: #1a1710;
-  }
-
-  .header-icon--wish:hover {
-    background: rgba(255, 226, 138, 0.14);
-  }
-
-  /* En móvil los dos botones quedan más compactos */
-  @media (max-width: 640px) {
-    .header-icon {
-      width: 42px;
-      height: 42px;
-    }
-  }
-</style>
