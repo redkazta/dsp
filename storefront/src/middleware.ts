@@ -46,8 +46,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       profile?.first_name ??
       (meta.given_name as string) ??
       (meta.first_name as string) ??
-      fallbackName.split(' ')[0] ||
-      (user.email ?? '').split('@')[0];
+      (fallbackName.split(' ')[0] || (user.email ?? '').split('@')[0]);
 
     phone = profile?.phone ?? (meta.phone as string) ?? null;
     role = profile?.role ?? null;
