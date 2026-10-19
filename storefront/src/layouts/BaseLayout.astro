@@ -106,7 +106,7 @@
       if (signoutBtn) {
         signoutBtn.addEventListener('click', async () => {
           try {
-            const { supabase } = await import('../../lib/supabase');
+            const { supabase } = await import('../lib/supabase');
             await supabase.auth.signOut();
             window.location.href = '/entrar';
           } catch (error) {
