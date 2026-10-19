@@ -22,28 +22,44 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Evita zoom automático en iOS al enfocar inputs */
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-negro-profundo text-blancoRoto font-cuerpo;
+    /* Evita scroll horizontal por elementos decorativos */
+    overflow-x: hidden;
+  }
+
+  /* Área táctil mínima recomendada (44px) */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {
     @apply bg-oro-elegante text-negro-profundo;
   }
 
-  /* Scrollbar elegante */
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-negro-profundo;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-negro-elevado rounded-full border border-oro-elegante/20;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-oro-elegante/40;
+  /* Scrollbar elegante (solo desktop) */
+  @media (min-width: 1024px) {
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      @apply bg-negro-profundo;
+    }
+    ::-webkit-scrollbar-thumb {
+      @apply bg-negro-elevado rounded-full border border-oro-elegante/20;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      @apply bg-oro-elegante/40;
+    }
   }
 }
 
@@ -53,18 +69,22 @@
     @apply relative inline-flex items-center justify-center gap-2
       bg-oro-elegante text-negro-profundo font-acentos font-medium
       text-xs uppercase tracking-[0.2em]
-      px-8 py-4 overflow-hidden
-      transition-all duration-400
-      hover:bg-oro-suave hover:tracking-[0.28em];
+      px-6 sm:px-8 py-4 min-h-[48px]
+      transition-[background-color,box-shadow] duration-300
+      hover:bg-oro-suave
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-elegante focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
+      disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Botón outline plateado */
   .btn-outline {
-    @apply inline-flex items-center justify-center
+    @apply inline-flex items-center justify-center gap-2
       border border-plata-metalico/30 text-plata-claro font-acentos
-      text-xs uppercase tracking-[0.2em] px-8 py-4
-      transition-all duration-400
-      hover:border-oro-elegante hover:text-oro-elegante;
+      text-xs uppercase tracking-[0.2em] px-6 sm:px-8 py-4 min-h-[48px]
+      transition-[border-color,color,background-color] duration-300
+      hover:border-oro-elegante hover:text-oro-elegante
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-elegante focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
+      disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* Línea decorativa dorada */
@@ -74,23 +94,30 @@
 
   /* Etiqueta de sección */
   .section-label {
-    @apply font-acentos text-[10px] uppercase tracking-[0.35em] text-oro-elegante;
+    @apply font-acentos text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.35em] text-oro-elegante;
   }
 
   /* Card de producto (usar junto con la clase `group` en el markup) */
   .product-card {
     @apply relative block overflow-hidden bg-negro-carbono
       border border-plata-metalico/10
-      transition-all duration-500
+      transition-colors duration-300
       hover:border-oro-elegante/40;
   }
 
-  /* Input oscuro */
+  /* Input oscuro — 16px en móvil evita zoom de iOS */
   .input-dark {
     @apply w-full bg-negro-profundo border border-plata-metalico/20
-      px-4 py-3 text-sm text-plata-claro placeholder:text-plata-metalico/40
+      px-4 py-3 min-h-[48px] text-base sm:text-sm
+      text-plata-claro placeholder:text-plata-metalico/40
       outline-none transition-colors duration-300
-      focus:border-oro-elegante;
+      focus:border-oro-elegante
+      focus-visible:ring-1 focus-visible:ring-oro-elegante/40;
+  }
+
+  /* Contenedor de página consistente */
+  .page-container {
+    @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-10;
   }
 }
 
@@ -121,5 +148,26 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* Ocultar scrollbar en carruseles horizontales */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Respeto a prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

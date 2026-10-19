@@ -8,7 +8,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
 
 <BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
   <section class="border-b border-plata-metalico/10 bg-noise">
-    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12">
+    <div class="page-container py-12">
       <nav class="mb-6">
         <ol class="flex items-center gap-2 font-acentos text-[10px] uppercase tracking-[0.2em] text-plata-metalico/40">
           <li><a href="/carrito" class="hover:text-oro-elegante transition-colors">Carrito</a></li>
@@ -16,7 +16,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
           <li class="text-oro-elegante">Checkout</li>
         </ol>
       </nav>
-      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
+      <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
     </div>
   </section>
 
@@ -25,8 +25,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL ?? '';
     <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
   </div>
 
-  <div id="checkout-content" class="hidden max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
-    <form id="checkout-form" class="grid lg:grid-cols-3 gap-12">
+  <div id="checkout-content" class="hidden page-container py-12 lg:py-16">
+    <form id="checkout-form" class="grid lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Datos de envío -->
       <div class="lg:col-span-2 space-y-10">
         <!-- Contacto -->

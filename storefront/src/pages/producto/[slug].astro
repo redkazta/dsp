@@ -82,7 +82,7 @@ const productLd = product
     ) : (
       <>
         {/* Breadcrumb */}
-        <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 border-b border-plata-metalico/10">
+        <div class="page-container py-6 border-b border-plata-metalico/10">
           <ol class="flex items-center gap-2 font-acentos text-[10px] uppercase tracking-[0.2em] text-plata-metalico/40">
             <li><a href="/" class="hover:text-oro-elegante transition-colors">Inicio</a></li>
             <li>/</li>
@@ -92,7 +92,7 @@ const productLd = product
           </ol>
         </div>
 
-        <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-12 lg:py-20">
+        <div class="page-container py-10 sm:py-16 lg:py-20">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
             {/* Galería */}
             <div>
@@ -132,7 +132,7 @@ const productLd = product
                 </a>
               )}
 
-              <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6 leading-tight">
+              <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-6 leading-tight">
                 {product.name}
               </h1>
 
@@ -343,7 +343,7 @@ const productLd = product
   {
     product && related.length > 0 && (
       <section class="border-t border-plata-metalico/10 bg-negro-carbono">
-        <div class="max-w-[1400px] mx-auto px-6 lg:px-10 py-20">
+        <div class="page-container py-20">
           <div class="text-center mb-14">
             <p class="section-label mb-4">También te puede gustar</p>
             <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto">Completa el look</h2>
