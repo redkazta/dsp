@@ -5,7 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductList from '../components/product/ProductList.astro';
 import { getProducts, getCategories, TENANT_SLUG } from '../lib/supabase';
 
-const categoryId = Astro.url.searchParams.get('category') ?? undefined;
+const categoryParam = Astro.url.searchParams.get('category') ?? undefined;
 const search = Astro.url.searchParams.get('q') ?? '';
 const sortParam = Astro.url.searchParams.get('sort') ?? 'newest';
 const sort = ['newest', 'price-asc', 'price-desc', 'name-asc'].includes(sortParam)
@@ -14,10 +14,10 @@ const sort = ['newest', 'price-asc', 'price-desc', 'name-asc'].includes(sortPara
 
 const PRICE_BANDS = [
   { value: '', label: 'Todos los precios', min: undefined, max: undefined },
-  { value: '0-700', label: 'Hasta $700', min: 0, max: 700 },
-  { value: '700-1200', label: '$700 – $1,200', min: 700, max: 1200 },
-  { value: '1200-2000', label: '$1,200 – $2,000', min: 1200, max: 2000 },
-  { value: '2000-', label: 'Más de $2,000', min: 2000, max: undefined },
+  { value: '0-50', label: 'Hasta $50', min: 0, max: 50 },
+  { value: '50-100', label: '$50 – $100', min: 50, max: 100 },
+  { value: '100-200', label: '$100 – $200', min: 100, max: 200 },
+  { value: '200-', label: 'Más de $200', min: 200, max: undefined },
 ];
 
 const priceParam = Astro.url.searchParams.get('precio') ?? '';
@@ -27,29 +27,39 @@ let products: any[] = [];
 let categories: any[] = [];
 let errorMessage: string | null = null;
 
-try {
-  const [productsResult, categoriesResult] = await Promise.all([
-    getProducts(TENANT_SLUG, {
-      page: 1,
-      limit: 48,
-      categoryId,
-      search: search || undefined,
-      sort,
-      minPrice: priceBand.min,
-      maxPrice: priceBand.max,
-    }),
-    getCategories(TENANT_SLUG),
-  ]);
+/** Acepta id (UUID) o slug de categoría: /tienda?category=jeans */
+let categoryId = categoryParam;
 
-  if (productsResult.error) {
-    errorMessage = productsResult.error;
-  } else {
-    products = productsResult.data ?? [];
-  }
-  categories = categoriesResult.data ?? [];
-} catch (err: any) {
-  errorMessage = err?.message ?? String(err);
+const baseCategories = await getCategories(TENANT_SLUG);
+const categoryList: any[] = baseCategories.data ?? [];
+
+// Si llega un slug, se traduce al id para que la consulta y los chips coincidan.
+if (categoryParam) {
+  const match = categoryList.find(
+    (c: any) => c.id === categoryParam || c.slug === categoryParam
+  );
+  categoryId = match?.id ?? categoryParam;
 }
+
+const [productsResult] = await Promise.all([
+  getProducts(TENANT_SLUG, {
+    page: 1,
+    limit: 48,
+    categoryId,
+    search: search || undefined,
+    sort,
+    minPrice: priceBand.min,
+    maxPrice: priceBand.max,
+  }),
+]);
+
+if (productsResult.error) {
+  errorMessage = productsResult.error;
+} else {
+  products = productsResult.data ?? [];
+}
+
+categories = categoryList;
 
 const sortOptions = [
   { value: 'newest', label: 'Más recientes' },

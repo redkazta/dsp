@@ -14,6 +14,7 @@
 -- `slug` la crea add_product_slugs.sql, pero se asegura aquí para que este
 -- archivo funcione solo (p. ej. en un proyecto nuevo).
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS slug TEXT;
 
 DELETE FROM product_images WHERE product_id IN (
   SELECT id FROM products WHERE tenant_id = '11111111-1111-1111-1111-111111111111'
@@ -27,9 +28,9 @@ DELETE FROM categories WHERE tenant_id = '11111111-1111-1111-1111-111111111111';
 -- =====================================================
 -- CATEGORÍAS
 -- =====================================================
-INSERT INTO categories (id, tenant_id, name) VALUES
-  ('c0000001-0000-4000-8000-000000000001', '11111111-1111-1111-1111-111111111111', 'Camisas'),
-  ('c0000001-0000-4000-8000-000000000002', '11111111-1111-1111-1111-111111111111', 'Jeans');
+INSERT INTO categories (id, tenant_id, name, slug) VALUES
+  ('c0000001-0000-4000-8000-000000000001', '11111111-1111-1111-1111-111111111111', 'Camisas', 'camisas'),
+  ('c0000001-0000-4000-8000-000000000002', '11111111-1111-1111-1111-111111111111', 'Jeans', 'jeans');
 
 -- =====================================================
 -- CAMISAS (DSP_1 … DSP_7)
