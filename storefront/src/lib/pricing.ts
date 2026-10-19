@@ -32,14 +32,18 @@ export function round2(n: number) {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
-export function formatMXN(n: number): string {
+/** Importe con dos decimales y separador de miles, sin símbolo: 1,234.00 */
+export function formatAmount(n: number): string {
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** Importe con símbolo de moneda: $35.00 */
+/** Importe con símbolo: $35.00 */
 export function formatMoney(n: number): string {
-  return `$${formatMXN(n)}`;
+  return `$${formatAmount(n)}`;
 }
+
+/** Alias histórico (mismo formato USD). Preferir `formatAmount`. */
+export const formatMXN = formatAmount;
 
 export interface RawRequestedItem {
   variantId?: unknown;

@@ -17,8 +17,8 @@ export const paymentConfig = {
 
 // Utilidades para pagos
 export const paymentUtils = {
-  formatPrice: (amount: number, currency: string = 'MXN') => {
-    return new Intl.NumberFormat('es-MX', {
+  formatPrice: (amount: number, currency: string = 'USD') => {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
