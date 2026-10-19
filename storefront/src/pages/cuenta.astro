@@ -378,7 +378,7 @@ const ordersView = orders.map((o) => ({
           </div>
           <div class="flex-1 min-w-0">
             <p class="font-acentos text-base text-blancoRoto truncate">${escapeHtml(i.name)}</p>
-            <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</p>
+            <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 shrink-0">
             <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>

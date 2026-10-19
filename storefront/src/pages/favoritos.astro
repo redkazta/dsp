@@ -125,7 +125,7 @@ const available = items.filter((i) => !stale.includes(i.productId));
     const isAuth = document.documentElement.dataset.auth === '1';
     const serverItems: WishlistItem[] = JSON.parse(grid.dataset.items ?? '[]');
 
-    const money = (n: number) => `$${Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+    const money = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     function card(item: WishlistItem) {
       const href = `/producto/${encodeURIComponent(item.slug ?? item.productId)}`;

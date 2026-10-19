@@ -104,11 +104,12 @@ INSERT INTO products (id, tenant_id, category_id, name, description, base_price,
  'Jeans de denim negro con grabado reflextivo naranja en ambas piernas.',
  35.00, 'DSP-JEANS-NARANJA', 'jeans-naranja-reflextivo', true);
 
--- Una sola variante "Unitalla" por jean (producción bajo pedido)
+-- Una sola variante "Unitalla" por jean (producción bajo pedido: stock alto
+-- para que la ficha no los marque como agotados; no se descuenta inventario)
 INSERT INTO product_variants (product_id, name, size, color, price, stock) VALUES
-  ('a0000001-0000-4000-8000-0000000000b1', 'Unitalla · Gris metálico', NULL, 'Gris metálico', 35.00, 0),
-  ('a0000001-0000-4000-8000-0000000000b2', 'Unitalla · Morado',        NULL, 'Morado',        35.00, 0),
-  ('a0000001-0000-4000-8000-0000000000b3', 'Unitalla · Naranja',       NULL, 'Naranja',       35.00, 0);
+  ('a0000001-0000-4000-8000-0000000000b1', 'Unitalla · Gris metálico', NULL, 'Gris metálico', 35.00, 999),
+  ('a0000001-0000-4000-8000-0000000000b2', 'Unitalla · Morado',        NULL, 'Morado',        35.00, 999),
+  ('a0000001-0000-4000-8000-0000000000b3', 'Unitalla · Naranja',       NULL, 'Naranja',       35.00, 999);
 
 -- =====================================================
 -- IMÁGENES (una por producto)
@@ -136,10 +137,10 @@ INSERT INTO product_images (product_id, url, alt_text, position) VALUES
   ('a0000001-0000-4000-8000-0000000000b3', '/img/DSP-JEANS-naranja-02-flash.jpg', 'Jeans naranja, frente con flash', 1);
 
 -- Verificación
-SELECT c.name AS categoria, p.name, p.base_price, count(i.id) AS imagenes
+SELECT c.name AS categoria, p.name, p.base_price, p.slug, count(i.id) AS imagenes
 FROM products p
 LEFT JOIN categories c ON c.id = p.category_id
 LEFT JOIN product_images i ON i.product_id = p.id
 WHERE p.tenant_id = '11111111-1111-1111-1111-111111111111'
-GROUP BY c.name, p.name, p.base_price
+GROUP BY c.name, p.name, p.base_price, p.slug
 ORDER BY c.name, p.name;

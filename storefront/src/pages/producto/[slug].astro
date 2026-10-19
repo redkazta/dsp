@@ -137,9 +137,9 @@ const productLd = product
 
               <div class="flex items-center gap-4 mb-8">
                 <p class="font-acentos text-3xl text-oro-brillo font-medium">
-                  ${Number(price).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-                <span class="text-white/80 text-base">MXN</span>
+                <span class="text-white/80 text-base">USD</span>
                 <button
                   type="button"
                   id="wish-toggle"
