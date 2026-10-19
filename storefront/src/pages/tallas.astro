@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const rows = [
+  { size: 'XS', chest: '86–91', length: '66' },
+  { size: 'S', chest: '91–97', length: '69' },
+  { size: 'M', chest: '97–102', length: '71' },
+  { size: 'L', chest: '102–107', length: '74' },
+  { size: 'XL', chest: '107–112', length: '76' },
+  { size: '2XL', chest: '112–117', length: '79' },
+  { size: '3XL', chest: '117–122', length: '81' },
+];
+---
+
+<BaseLayout
+  title="Guía de tallas | Dinero Sobre Problemas"
+  description="Medidas en centímetros para elegir tu talla correcta."
+>
+  <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
+    <p class="section-label mb-4">Ayuda</p>
+    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Guía de tallas</h1>
+    <p class="text-sm text-plata-metalico/60 mb-12">
+      Medidas de la prenda extendida, en centímetros. El corte es relajado;
+      si buscas un ajuste más holgado, sube una talla.
+    </p>
+
+    <div class="overflow-x-auto border border-plata-metalico/15">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-plata-metalico/15 bg-negro-carbono">
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-elegante">Talla</th>
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-elegante">Pecho (cm)</th>
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-elegante">Largo (cm)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map((r) => (
+              <tr class="border-b border-plata-metalico/10 last:border-0">
+                <td class="px-5 py-4 font-acentos text-plata-claro">{r.size}</td>
+                <td class="px-5 py-4 text-plata-metalico/70">{r.chest}</td>
+                <td class="px-5 py-4 text-plata-metalico/70">{r.length}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-12 space-y-6 text-sm text-plata-metalico/70 leading-relaxed">
+      <div>
+        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-3">
+          Cómo medirte
+        </h2>
+        <ul class="space-y-2 list-disc pl-5">
+          <li><strong class="text-plata-claro">Pecho:</strong> mide alrededor de la parte más ancha del torso, con la cinta horizontal.</li>
+          <li><strong class="text-plata-claro">Largo:</strong> desde el hombro hasta el borde inferior de la prenda.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-elegante mb-3">
+          Dudas
+        </h2>
+        <p>
+          Escríbenos a
+          <a href="mailto:hola@dinerosobreproblemas.com" class="text-oro-elegante hover:text-oro-suave transition-colors">
+            hola@dinerosobreproblemas.com
+          </a>
+          o por Instagram y te ayudamos a elegir.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-14">
+      <a href="/tienda" class="btn-gold inline-block">Ver catálogo</a>
+    </div>
+  </article>
+</BaseLayout>
