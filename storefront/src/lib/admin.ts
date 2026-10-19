@@ -165,6 +165,95 @@ export async function softDeleteProduct(id: string) {
   if (error) throw new Error(error.message);
 }
 
+/** Detalle completo de un producto para el editor. */
+export async function getProduct(id: string): Promise<AdminProduct | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, product_variants(*), product_images(*), categories(id, name)')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+
+  // Imágenes ordenadas por posición (portada primero)
+  data.product_images = [...(data.product_images ?? [])].sort(
+    (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+  );
+
+  return data as AdminProduct;
+}
+
+/** Variante: nombre, talla, color, precio y stock. */
+export async function updateVariant(
+  variantId: string,
+  patch: { name?: string; size?: string | null; color?: string | null; price?: number; stock?: number }
+) {
+  const { error } = await supabase.from('product_variants').update(patch).eq('id', variantId);
+  if (error) throw new Error(error.message);
+}
+
+/** Agrega una variante (nueva talla o color) al producto. */
+export async function createVariant(input: {
+  productId: string;
+  name: string;
+  size: string | null;
+  color: string | null;
+  price: number;
+  stock: number;
+}) {
+  const { error } = await supabase.from('product_variants').insert({
+    product_id: input.productId,
+    name: input.name,
+    size: input.size,
+    color: input.color,
+    price: input.price,
+    stock: input.stock,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+/** Elimina una variante. */
+export async function deleteVariant(variantId: string) {
+  const { error } = await supabase.from('product_variants').delete().eq('id', variantId);
+  if (error) throw new Error(error.message);
+}
+
+/** Adjunta una imagen ya subida al producto. */
+export async function addProductImage(input: {
+  productId: string;
+  url: string;
+  alt?: string | null;
+  position?: number;
+}) {
+  const { error } = await supabase.from('product_images').insert({
+    product_id: input.productId,
+    url: input.url,
+    alt_text: input.alt ?? null,
+    position: input.position ?? 0,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteProductImage(imageId: string) {
+  const { error } = await supabase.from('product_images').delete().eq('id', imageId);
+  if (error) throw new Error(error.message);
+}
+
+/** Reordena la galería: el índice del arreglo pasa a ser la posición. */
+export async function reorderProductImages(orderedIds: string[]) {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from('product_images')
+      .update({ position: i })
+      .eq('id', orderedIds[i]);
+
+    if (error) throw new Error(error.message);
+  }
+}
+
 /**
  * Sube una imagen al bucket público y devuelve la URL.
  */

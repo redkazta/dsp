@@ -1,0 +1,495 @@
+---
+/**
+ * ProductEditor — ficha editable de un producto (ERP).
+ *
+ * Datos reales desde Supabase en el servidor; el JS solo ejecuta acciones
+ * puntuales (guardar, subir foto, reordenar, editar stock por variante).
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getProduct, getCategories } from '../../lib/admin';
+import { TENANT_ID } from '../../lib/constants';
+import { createSupabaseServerClient } from '../../lib/supabase-server';
+
+const id = Astro.params.id ?? '';
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+const [product, categories] = await Promise.all([getProduct(id), getCategories(TENANT_ID)]);
+
+if (!product) {
+  return Astro.redirect('/admin/productos');
+}
+
+// Últimas ventas que incluyen este producto
+const { data: itemRows } = await supabase
+  .from('order_items')
+  .select('quantity, unit_price, order_id, orders(order_number, status)')
+  .eq('product_id', product.id)
+  .limit(50);
+
+const sales = (itemRows ?? []) as any[];
+const soldUnits = sales.reduce((n, r) => n + Number(r.quantity ?? 0), 0);
+
+const variants = product.product_variants ?? [];
+const images = product.product_images ?? [];
+const totalStock = variants.reduce((n, v) => n + (v.stock ?? 0), 0);
+
+const money = (n: number) =>
+  `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+---
+
+<AdminLayout title={product.name}>
+  <div data-product-editor data-product-id={product.id} data-slug={product.slug ?? ''} class="pb-10">
+    <!-- Encabezado -->
+    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-10">
+      <div class="min-w-0">
+        <nav class="mb-3">
+          <a href="/admin/productos" class="text-xs uppercase tracking-[0.2em] text-white/70 hover:text-oro-brillo">
+            ← Productos
+          </a>
+        </nav>
+        <p class="section-label mb-2">{product.categories?.name ?? 'Sin categoría'} · {product.sku ?? 'Sin SKU'}</p>
+        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto truncate">{product.name}</h1>
+      </div>
+
+      <div class="flex flex-wrap gap-3 shrink-0">
+        <a
+          href={`/producto/${product.slug ?? product.id}`}
+          target="_blank"
+          rel="noopener"
+          class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs"
+        >
+          Ver en tienda
+        </a>
+        <button type="button" data-toggle-active class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs">
+          {product.is_active ? 'Ocultar de la tienda' : 'Publicar'}
+        </button>
+      </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      {[
+        { label: 'Precio', value: money(Number(product.base_price)) },
+        { label: 'Stock total', value: String(totalStock) },
+        { label: 'Variantes', value: String(variants.length) },
+        { label: 'Unidades vendidas', value: String(soldUnits) },
+      ].map((m) => (
+        <div class="card p-4">
+          <p class="text-xs uppercase tracking-[0.16em] text-white/70 mb-2">{m.label}</p>
+          <p class="font-acentos text-2xl text-oro-brillo">{m.value}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Datos -->
+        <section class="card p-5 sm:p-6">
+          <h2 class="section-label mb-5">Datos del producto</h2>
+
+          <form data-form="product" class="grid sm:grid-cols-2 gap-4">
+            <label class="block sm:col-span-2">
+              <span class="field-label">Nombre *</span>
+              <input name="name" required class="input-dark" value={product.name} />
+            </label>
+
+            <label class="block sm:col-span-2">
+              <span class="field-label">Descripción</span>
+              <textarea name="description" rows="4" class="input-dark !min-h-[110px] py-3">
+                {product.description ?? ''}
+              </textarea>
+            </label>
+
+            <label class="block">
+              <span class="field-label">Precio (USD) *</span>
+              <input
+                name="base_price"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                class="input-dark"
+                value={Number(product.base_price)}
+              />
+            </label>
+
+            <label class="block">
+              <span class="field-label">Categoría</span>
+              <select name="category_id" class="input-dark">
+                <option value="">Sin categoría</option>
+                {categories.map((c: any) => (
+                  <option value={c.id} selected={c.id === product.category_id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div class="sm:col-span-2 flex items-center gap-4">
+              <button type="submit" class="btn-gold !min-h-[44px] !px-6 !py-2 !text-xs">Guardar cambios</button>
+              <span data-form-status="product" class="text-sm text-oro-brillo"></span>
+            </div>
+          </form>
+        </section>
+
+        <!-- Variantes y stock -->
+        <section class="card p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="section-label">Variantes y stock</h2>
+            <button type="button" data-open-new-variant class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
+              + Variante
+            </button>
+          </div>
+
+          <div data-new-variant-form class="hidden mb-5 border-2 border-dashed border-white/25 p-4">
+            <form data-form="new-variant" class="grid sm:grid-cols-5 gap-3">
+              <input name="size" placeholder="Talla" class="input-dark !min-h-[44px]" />
+              <input name="color" placeholder="Color" class="input-dark !min-h-[44px]" />
+              <input name="price" type="number" step="0.01" min="0" placeholder="Precio" class="input-dark !min-h-[44px]" />
+              <input name="stock" type="number" step="1" min="0" placeholder="Stock" class="input-dark !min-h-[44px]" />
+              <button type="submit" class="btn-gold !min-h-[44px] !px-3 !py-2 !text-xs">Crear</button>
+            </form>
+          </div>
+
+          {variants.length === 0 ? (
+            <p class="text-sm text-white/70">Sin variantes. Crea al menos una para poder vender.</p>
+          ) : (
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-xs uppercase tracking-[0.14em] text-white/60 border-b-2 border-white/20">
+                    <th class="py-2 pr-3">Talla</th>
+                    <th class="py-2 pr-3">Color</th>
+                    <th class="py-2 pr-3">Precio</th>
+                    <th class="py-2 pr-3">Stock</th>
+                    <th class="py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.map((v) => (
+                    <tr class="border-b border-white/10" data-variant={v.id}>
+                      <td class="py-2 pr-3">
+                        <input class="input-dark !min-h-[40px] !py-1" value={v.size ?? 'Unitalla'} data-field="size" />
+                      </td>
+                      <td class="py-2 pr-3">
+                        <input class="input-dark !min-h-[40px] !py-1" value={v.color ?? ''} data-field="color" />
+                      </td>
+                      <td class="py-2 pr-3">
+                        <input
+                          class="input-dark !min-h-[40px] !py-1"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={Number(v.price)}
+                          data-field="price"
+                        />
+                      </td>
+                      <td class="py-2 pr-3">
+                        <input
+                          class="input-dark !min-h-[40px] !py-1"
+                          type="number"
+                          step="1"
+                          min="0"
+                          value={v.stock ?? 0}
+                          data-field="stock"
+                        />
+                      </td>
+                      <td class="py-2 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          data-save-variant
+                          class="text-xs uppercase tracking-wider text-oro-brillo hover:text-white px-2"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          type="button"
+                          data-delete-variant
+                          class="text-xs uppercase tracking-wider text-red-400/70 hover:text-red-400 px-2"
+                        >
+                          Borrar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <aside class="space-y-8">
+        <!-- Galería -->
+        <section class="card p-5">
+          <h2 class="section-label mb-4">Galería</h2>
+
+          <div class="space-y-3 mb-4">
+            {images.length === 0 ? (
+              <p class="text-sm text-white/70">Sin imágenes.</p>
+            ) : (
+              images.map((img: any, i: number) => (
+                <div class="flex items-center gap-3" data-image={img.id}>
+                  <div class="product-frame w-16 shrink-0 border-2 border-white/25">
+                    <img src={img.url} alt="" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-xs text-white/80 truncate">{img.url.split('/').pop()}</p>
+                    <p class="text-[11px] uppercase tracking-wider text-oro-brillo">
+                      {i === 0 ? 'Portada' : `Foto ${i + 1}`}
+                    </p>
+                  </div>
+                  <div class="flex flex-col shrink-0">
+                    <button
+                      type="button"
+                      data-image-up
+                      aria-label="Subir"
+                      class="text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
+                      disabled={i === 0}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      data-image-down
+                      aria-label="Bajar"
+                      class="text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
+                      disabled={i === images.length - 1}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <button type="button" data-image-delete class="text-xs text-red-400/70 hover:text-red-400 px-1 shrink-0">
+                    ✕
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          <label class="block border-2 border-dashed border-white/25 p-4 text-center cursor-pointer hover:border-oro-brillo transition-colors">
+            <span class="text-xs uppercase tracking-[0.16em] text-white/80">+ Subir foto</span>
+            <input type="file" accept="image/*" data-image-upload class="hidden" />
+          </label>
+          <p data-gallery-status class="mt-2 text-xs text-oro-brillo" />
+        </section>
+
+        <!-- Ventas -->
+        <section class="card p-5">
+          <h2 class="section-label mb-4">Últimas ventas</h2>
+          {sales.length === 0 ? (
+            <p class="text-sm text-white/70">Aún sin ventas registradas.</p>
+          ) : (
+            <ul class="space-y-2">
+              {sales.slice(0, 8).map((s) => (
+                <li class="flex justify-between gap-3 text-sm">
+                  <span class="text-white/80">
+                    {s.orders?.order_number ?? '—'}
+                    <span class="block text-xs text-white/50">{s.orders?.status ?? ''}</span>
+                  </span>
+                  <span class="text-blancoRoto whitespace-nowrap">
+                    {s.quantity} × {money(Number(s.unit_price))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <style>
+    .field-label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #ffe28a;
+    }
+  </style>
+
+  <script>
+    import {
+      updateProduct,
+      updateVariant,
+      createVariant,
+      deleteVariant,
+      addProductImage,
+      deleteProductImage,
+      reorderProductImages,
+      uploadProductImage,
+    } from '../../lib/admin';
+
+    const root = document.querySelector<HTMLElement>('[data-product-editor]')!;
+    const productId = root.dataset.productId!;
+    const slug = root.dataset.slug ?? '';
+
+    function flash(el: HTMLElement | null, text: string) {
+      if (!el) return;
+      el.textContent = text;
+      window.setTimeout(() => (el.textContent = ''), 2500);
+    }
+
+    // ---------- Datos del producto ----------
+    root.querySelector<HTMLFormElement>('[data-form="product"]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget as HTMLFormElement;
+      const fd = new FormData(form);
+      const out = form.querySelector<HTMLElement>('[data-form-status="product"]');
+
+      try {
+        await updateProduct(productId, {
+          name: String(fd.get('name') ?? '').trim(),
+          description: String(fd.get('description') ?? '').trim() || null,
+          base_price: Number(fd.get('base_price')),
+          category_id: (fd.get('category_id') as string) || null,
+        });
+        flash(out, 'Guardado ✓');
+      } catch (err: any) {
+        flash(out, err?.message ?? 'Error al guardar');
+      }
+    });
+
+    // ---------- Publicar / ocultar ----------
+    root.querySelector<HTMLButtonElement>('[data-toggle-active]')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      const publish = btn.textContent?.includes('Publicar') ?? false;
+      btn.disabled = true;
+      try {
+        await updateProduct(productId, { is_active: publish });
+        window.location.reload();
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // ---------- Variantes ----------
+    root.querySelector('[data-open-new-variant]')?.addEventListener('click', () =>
+      root.querySelector('[data-new-variant-form]')?.classList.toggle('hidden')
+    );
+
+    root.querySelector<HTMLFormElement>('[data-form="new-variant"]')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget as HTMLFormElement;
+      const fd = new FormData(form);
+
+      const size = String(fd.get('size') ?? '').trim() || null;
+      const color = String(fd.get('color') ?? '').trim() || null;
+      const base = Number((root.querySelector('[name="base_price"]') as HTMLInputElement | null)?.value ?? 0);
+      const price = Number(fd.get('price')) || base;
+      const stock = Number(fd.get('stock')) || 0;
+
+      try {
+        await createVariant({
+          productId,
+          name: [size, color].filter(Boolean).join(' · ') || 'Unitalla',
+          size,
+          color,
+          price,
+          stock,
+        });
+        window.location.reload();
+      } catch (err: any) {
+        alert(err?.message ?? 'No se pudo crear la variante');
+      }
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-variant]').forEach((row) => {
+      const variantId = row.dataset.variant!;
+      const field = (name: string) => row.querySelector<HTMLInputElement>(`[data-field="${name}"]`)!;
+
+      row.querySelector('[data-save-variant]')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        btn.disabled = true;
+        try {
+          const size = field('size').value.trim();
+          const color = field('color').value.trim();
+
+          await updateVariant(variantId, {
+            size: size || null,
+            color: color || null,
+            name: [size, color].filter(Boolean).join(' · ') || 'Unitalla',
+            price: Number(field('price').value),
+            stock: Number(field('stock').value),
+          });
+
+          btn.textContent = 'Listo ✓';
+          window.setTimeout(() => (btn.textContent = 'Guardar'), 1500);
+        } catch (err: any) {
+          alert(err?.message ?? 'No se pudo guardar');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      row.querySelector('[data-delete-variant]')?.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta variante?')) return;
+        await deleteVariant(variantId);
+        window.location.reload();
+      });
+    });
+
+    // ---------- Galería ----------
+    const galleryStatus = root.querySelector<HTMLElement>('[data-gallery-status]');
+    const rows = () => [...root.querySelectorAll<HTMLElement>('[data-image]')];
+
+    async function persistOrder() {
+      const ids = rows().map((r) => r.dataset.image!).filter(Boolean);
+      if (ids.length === 0) return;
+      await reorderProductImages(ids);
+      window.location.reload();
+    }
+
+    root.querySelectorAll<HTMLElement>('[data-image-up]').forEach((btn, i) =>
+      btn.addEventListener('click', async () => {
+        const list = rows();
+        if (i === 0) return;
+        list[i - 1].before(list[i]);
+        flash(galleryStatus, 'Guardando orden…');
+        await persistOrder();
+      })
+    );
+
+    root.querySelectorAll<HTMLElement>('[data-image-down]').forEach((btn, i) =>
+      btn.addEventListener('click', async () => {
+        const list = rows();
+        if (i >= list.length - 1) return;
+        list[i + 1].after(list[i]);
+        flash(galleryStatus, 'Guardando orden…');
+        await persistOrder();
+      })
+    );
+
+    root.querySelectorAll<HTMLElement>('[data-image-delete]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const row = btn.closest<HTMLElement>('[data-image]');
+        if (!row) return;
+        if (!confirm('¿Quitar esta foto de la galería?')) return;
+        await deleteProductImage(row.dataset.image!);
+        window.location.reload();
+      })
+    );
+
+    root.querySelector<HTMLInputElement>('[data-image-upload]')?.addEventListener('change', async (e) => {
+      const input = e.currentTarget as HTMLInputElement;
+      const file = input.files?.[0];
+      if (!file) return;
+
+      flash(galleryStatus, 'Subiendo…');
+
+      try {
+        const url = await uploadProductImage(file, slug || productId);
+        await addProductImage({ productId, url, alt: null, position: rows().length });
+        window.location.reload();
+      } catch (err: any) {
+        flash(galleryStatus, err?.message ?? 'No se pudo subir');
+      } finally {
+        input.value = '';
+      }
+    });
+  </script>
+</AdminLayout>

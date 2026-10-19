@@ -30,19 +30,33 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <div class="grid grid-cols-2 gap-3">
           <a href="/admin/productos" class="card p-6 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Productos</p>
-            <p class="text-xs text-white/80">Crear y editar</p>
+            <p class="text-xs text-white/80">Precios, stock y fotos</p>
           </a>
           <a href="/admin/pedidos" class="card p-6 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Pedidos</p>
             <p class="text-xs text-white/80">Estatus y envíos</p>
           </a>
+          <a href="/tienda" target="_blank" rel="noopener" class="card p-6 hover:border-oro-brillo/60 transition-colors">
+            <p class="font-acentos text-sm text-white mb-1">Ver tienda</p>
+            <p class="text-xs text-white/80">Como cliente</p>
+          </a>
+          <a href="/cuenta" class="card p-6 hover:border-oro-brillo/60 transition-colors">
+            <p class="font-acentos text-sm text-white mb-1">Mi cuenta</p>
+            <p class="text-xs text-white/80">Perfil y pedidos</p>
+          </a>
         </div>
+
+        <h2 class="font-acentos text-xs uppercase tracking-[0.25em] text-oro-brillo mt-8 mb-5">
+          Stock bajo
+        </h2>
+        <div id="low-stock" class="space-y-2"></div>
       </section>
     </div>
   </div>
 
   <script>
-    import { getDashboardStats, listOrders } from '../../lib/admin';
+    import { getDashboardStats, listOrders, listAllProducts } from '../../lib/admin';
+    import { escapeHtml } from '../../lib/html';
     import { TENANT_ID } from '../../lib/constants';
     import { STATUS_LABEL, formatOrderMoney, type OrderStatus } from '../../lib/orders';
 
@@ -50,9 +64,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       const loading = document.getElementById('admin-loading')!;
       const dash = document.getElementById('admin-dashboard')!;
 
-      const [stats, orders] = await Promise.all([
+      const [stats, orders, products] = await Promise.all([
         getDashboardStats(TENANT_ID),
         listOrders(TENANT_ID),
+        listAllProducts(TENANT_ID),
       ]);
 
       loading.classList.add('hidden');
@@ -87,6 +102,36 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <p class="text-xs uppercase tracking-wider text-oro-brillo">${STATUS_LABEL[o.status as OrderStatus] ?? o.status}</p>
             </div>
             <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">${formatOrderMoney(Number(o.total_amount))}</p>
+          </a>`
+              )
+              .join('');
+
+      // Stock bajo: variantes con 5 piezas o menos (se ordena por urgencia)
+      const lowStock = products
+        .flatMap((p: any) =>
+          (p.product_variants ?? []).map((v: any) => ({
+            productId: p.id,
+            product: p.name,
+            variant: v.name ?? v.size ?? 'Unitalla',
+            stock: Number(v.stock ?? 0),
+          }))
+        )
+        .filter((v: any) => v.stock <= 5 && v.stock < 900) // 999 = sin límite real
+        .sort((a: any, b: any) => a.stock - b.stock)
+        .slice(0, 6);
+
+      document.getElementById('low-stock')!.innerHTML =
+        lowStock.length === 0
+          ? `<p class="text-sm text-white/70">Todo el inventario está por encima de 5 piezas.</p>`
+          : lowStock
+              .map(
+                (v: any) => `
+          <a href="/admin/productos/${v.productId}" class="flex items-center justify-between gap-3 card p-3 hover:border-oro-brillo transition-colors">
+            <span class="min-w-0">
+              <span class="block text-sm text-white truncate">${escapeHtml(v.product)}</span>
+              <span class="block text-xs text-white/70">${escapeHtml(v.variant)}</span>
+            </span>
+            <span class="font-acentos text-sm ${v.stock === 0 ? 'text-red-400' : 'text-oro-brillo'} whitespace-nowrap">${v.stock} pza</span>
           </a>`
               )
               .join('');

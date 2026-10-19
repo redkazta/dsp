@@ -80,7 +80,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       getCategories,
       createProduct,
       updateProduct,
-      updateVariantStock,
       softDeleteProduct,
       uploadProductImage,
     } from '../../lib/admin';
@@ -106,7 +105,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="flex-1 min-w-0">
-              <p class="font-acentos text-sm text-white truncate">${escapeHtml(p.name)}</p>
+              <a href="/admin/productos/${escapeHtml(p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors truncate block">
+                ${escapeHtml(p.name)}
+              </a>
               <p class="text-xs text-white/80">
                 ${escapeHtml(p.categories?.name ?? 'Sin categoría')} · Stock: ${stock} · ${p.is_active ? 'Activo' : 'Inactivo'}
               </p>
@@ -116,9 +117,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 ${p.is_active ? 'Ocultar' : 'Activar'}
               </button>
-              <button data-stock="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
+              <a href="/admin/productos/${escapeHtml(p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
+                Editar
+              </a>
+              <a href="/admin/productos/${escapeHtml(p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-oro-brillo/60 text-oro-brillo hover:border-oro-brillo transition-colors">
                 Stock
-              </button>
+              </a>
               <button data-delete="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">
                 Borrar
               </button>
@@ -132,25 +136,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           const id = (el as HTMLElement).dataset.toggle!;
           const p = products.find((x) => x.id === id);
           await updateProduct(id, { is_active: !p.is_active });
-          await refresh();
-        })
-      );
-
-      container.querySelectorAll('[data-stock]').forEach((el) =>
-        el.addEventListener('click', async () => {
-          const id = (el as HTMLElement).dataset.stock!;
-          const p = products.find((x) => x.id === id);
-          const input = prompt(
-            `Stock para ${p.name} (${p.product_variants.length} variantes).\nIngresa el stock por talla:`,
-            '10'
-          );
-          if (input === null) return;
-          const val = Number(input);
-          if (isNaN(val)) return;
-
-          for (const v of p.product_variants) {
-            await updateVariantStock(v.id, val);
-          }
           await refresh();
         })
       );
