@@ -21,21 +21,19 @@ const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
 
 <!-- Disparadores -->
 <div class={`store-actions ${className}`}>
-  <!-- Favoritos: mini panel al pasar el mouse -->
+  <!-- Favoritos: mini panel al hover, click navega a /favoritos -->
   <div class="store-trigger" data-panel="wishlist">
-    <button
-      type="button"
+    <a
+      href="/favoritos"
       id="drawer-open-wishlist"
       class="header-icon header-icon--wish"
-      aria-label="Abrir favoritos"
-      aria-haspopup="dialog"
-      aria-expanded="false"
+      aria-label="Favoritos"
     >
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
       </svg>
       <span id="wish-count" class="header-badge hidden">0</span>
-    </button>
+    </a>
 
     <div id="mini-wishlist" class="mini-panel" role="region" aria-label="Favoritos" hidden>
       <div class="mini-head">
@@ -49,22 +47,20 @@ const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
     </div>
   </div>
 
-  <!-- Carrito: mini panel al pasar el mouse -->
+  <!-- Carrito: mini panel al hover, click navega a /carrito -->
   <div class="store-trigger" data-panel="cart">
-    <button
-      type="button"
+    <a
+      href="/carrito"
       id="drawer-open-cart"
       class="header-icon"
-      aria-label="Abrir carrito"
-      aria-haspopup="dialog"
-      aria-expanded="false"
+      aria-label="Carrito"
     >
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
         <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
       </svg>
       <span id="cart-count" class="header-badge hidden">0</span>
-    </button>
+    </a>
 
     <div id="mini-cart" class="mini-panel" role="region" aria-label="Carrito" hidden>
       <div class="mini-head">
@@ -78,7 +74,7 @@ const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
           <span id="mini-cart-total" class="font-acentos text-lg text-oro-brillo">$0.00</span>
         </div>
         <a href="/checkout" class="btn-gold w-full !min-h-[44px] !px-4 !py-2 !text-xs">Finalizar compra</a>
-        <button type="button" data-drawer="cart" class="mini-link">Ver carrito completo</button>
+        <a href="/carrito" class="mini-link">Ver carrito completo</a>
       </div>
     </div>
   </div>
@@ -994,7 +990,8 @@ const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
     });
   }
 
-  // Clic en los iconos: panel completo (en móvil es la única vía)
+  // Clic en los iconos: navegan a /carrito o /favoritos (ya no abren drawer)
+  // El mini panel sigue funcionando con hover
   openCartBtn?.addEventListener('click', () => hideMini(true));
   openWishBtn?.addEventListener('click', () => hideMini(true));
 
