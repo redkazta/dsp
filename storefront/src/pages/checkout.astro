@@ -27,160 +27,227 @@ const { firstName, email, phone } = Astro.locals;
     <a href="/tienda" class="btn-gold inline-flex">Ir a la tienda</a>
   </div>
 
-  <div id="checkout-content" class="hidden page-container py-8 sm:py-12 lg:py-16">
-    <form id="checkout-form" class="grid lg:grid-cols-3 gap-8 lg:gap-12" novalidate>
-      <!-- Datos -->
-      <div class="lg:col-span-2 space-y-10 order-2 lg:order-1">
-        <!-- Contacto -->
-        <fieldset>
-          <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">1</span>
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Contacto</span>
-          </legend>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="block">
-              <span class="field-label">Nombre *</span>
-              <input name="firstName" required class="input-dark" autocomplete="given-name" value={firstName ?? ''} />
-            </label>
-            <label class="block">
-              <span class="field-label">Apellidos *</span>
-              <input name="lastName" required class="input-dark" autocomplete="family-name" />
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="field-label">Correo *</span>
-              <input name="email" type="email" required class="input-dark" autocomplete="email" inputmode="email" value={email ?? ''} />
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="field-label">Teléfono *</span>
-              <input name="phone" type="tel" required class="input-dark" autocomplete="tel" inputmode="tel" placeholder="10 dígitos" value={phone ?? ''} />
-            </label>
-          </div>
-        </fieldset>
-
-        <!-- Envío -->
-        <fieldset>
-          <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">2</span>
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Dirección de envío</span>
-          </legend>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="block sm:col-span-2">
-              <span class="field-label">Calle y número *</span>
-              <input name="street" required class="input-dark" autocomplete="street-address" />
-            </label>
-            <label class="block">
-              <span class="field-label">Colonia *</span>
-              <input name="colonia" required class="input-dark" />
-            </label>
-            <label class="block">
-              <span class="field-label">Código postal *</span>
-              <input name="postalCode" required class="input-dark" autocomplete="postal-code" inputmode="numeric" maxlength="5" />
-            </label>
-            <label class="block">
-              <span class="field-label">Ciudad *</span>
-              <input name="city" required class="input-dark" autocomplete="address-level2" />
-            </label>
-            <label class="block">
-              <span class="field-label">Estado *</span>
-              <input name="state" required class="input-dark" autocomplete="address-level1" />
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="field-label">Referencias</span>
-              <input name="references" class="input-dark" placeholder="Entre calles, número de casa…" />
-            </label>
-            <label class="block sm:col-span-2">
-              <span class="field-label">Notas del pedido</span>
-              <textarea
-                name="notes"
-                rows="3"
-                class="input-dark !min-h-[96px] py-3"
-                placeholder="Diseño, color, talla especial o cualquier indicación."
-              ></textarea>
-            </label>
-          </div>
-        </fieldset>
-
-        <!-- Pago -->
-        <fieldset>
-          <legend class="flex items-center gap-3 mb-6">
-            <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm shrink-0">3</span>
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Pago</span>
-          </legend>
-
-          <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
-            <div class="flex items-start gap-3 mb-6">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" class="mt-0.5 shrink-0">
-                <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
-              </svg>
-              <div>
-                <p class="text-base text-blancoRoto font-semibold">Tarjeta de crédito o débito</p>
-                <p class="text-sm text-white/80 leading-relaxed mt-1">
-                  Modo de prueba: no se cobra nada. Usa cualquier tarjeta válida de 16 dígitos.
-                </p>
+  <div class="page-container py-8 sm:py-12 lg:py-16">
+    <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
+      <!-- Formulario principal -->
+      <div class="lg:col-span-2 order-2 lg:order-1">
+        <form id="checkout-form" class="space-y-8" novalidate>
+          <!-- Sección de contacto -->
+          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+              <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">1</span>
+              Información de contacto
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="field-label">Nombre *</label>
+                <input 
+                  name="firstName" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="given-name" 
+                  value={firstName ?? ''}
+                />
+              </div>
+              <div class="space-y-2">
+                <label class="field-label">Apellidos *</label>
+                <input 
+                  name="lastName" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="family-name" 
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label">Correo electrónico *</label>
+                <input 
+                  name="email" 
+                  type="email" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="email" 
+                  inputmode="email" 
+                  value={email ?? ''}
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label">Teléfono *</label>
+                <input 
+                  name="phone" 
+                  type="tel" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="tel" 
+                  inputmode="tel" 
+                  placeholder="10 dígitos"
+                  value={phone ?? ''}
+                />
               </div>
             </div>
+          </section>
 
+          <!-- Sección de envío -->
+          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+              <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">2</span>
+              Dirección de envío
+            </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label class="block sm:col-span-2">
-                <span class="field-label">Número de tarjeta *</span>
-                <input
-                  name="cardNumber"
-                  id="card-number"
-                  required
-                  inputmode="numeric"
-                  autocomplete="cc-number"
-                  placeholder="4242 4242 4242 4242"
-                  maxlength="19"
-                  class="input-dark"
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label">Calle y número *</label>
+                <input 
+                  name="street" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="street-address" 
                 />
-              </label>
-              <label class="block sm:col-span-2">
-                <span class="field-label">Nombre en la tarjeta *</span>
-                <input name="cardName" required class="input-dark" autocomplete="cc-name" />
-              </label>
-              <label class="block">
-                <span class="field-label">Vigencia MM/AA *</span>
-                <input
-                  name="cardExpiry"
-                  id="card-expiry"
-                  required
-                  autocomplete="cc-exp"
-                  placeholder="12/29"
-                  maxlength="5"
-                  class="input-dark"
+              </div>
+              <div class="space-y-2">
+                <label class="field-label">Colonia *</label>
+                <input 
+                  name="colonia" 
+                  required 
+                  class="input-dark" 
                 />
-              </label>
-              <label class="block">
-                <span class="field-label">CVV *</span>
-                <input
-                  name="cardCvv"
-                  required
-                  inputmode="numeric"
-                  autocomplete="cc-csc"
-                  placeholder="123"
-                  maxlength="4"
-                  class="input-dark"
+              </div>
+              <div class="space-y-2">
+                <label class="field-label">Código postal *</label>
+                <input 
+                  name="postalCode" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="postal-code" 
+                  inputmode="numeric" 
+                  maxlength="5" 
                 />
-              </label>
+              </div>
+              <div class="space-y-2">
+                <label class="field-label">Ciudad *</label>
+                <input 
+                  name="city" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="address-level2" 
+                />
+              </div>
+              <div class="space-y-2">
+                <label class="field-label">Estado *</label>
+                <input 
+                  name="state" 
+                  required 
+                  class="input-dark" 
+                  autocomplete="address-level1" 
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label">Referencias</label>
+                <input 
+                  name="references" 
+                  class="input-dark" 
+                  placeholder="Entre calles, número de casa…" 
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label">Notas del pedido</label>
+                <textarea 
+                  name="notes" 
+                  rows="3" 
+                  class="input-dark !min-h-[96px] py-3" 
+                  placeholder="Diseño, color, talla especial o cualquier indicación."
+                ></textarea>
+              </div>
             </div>
+          </section>
 
-            <p class="mt-4 text-xs text-white/80">
-              Modo de prueba: no se cobra nada. Prueba de rechazo:
-              <span class="text-oro-brillo">4000 0000 0000 0002</span>
-            </p>
-          </div>
-        </fieldset>
+          <!-- Sección de pago -->
+          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+              <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">3</span>
+              Pago
+            </h2>
+
+            <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
+              <div class="flex items-start gap-3 mb-6">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" class="mt-0.5 shrink-0">
+                  <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
+                </svg>
+                <div>
+                  <p class="text-base text-blancoRoto font-semibold">Tarjeta de crédito o débito</p>
+                  <p class="text-sm text-white/80 leading-relaxed mt-1">
+                    Modo de prueba: no se cobra nada. Usa cualquier tarjeta válida de 16 dígitos.
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2 sm:col-span-2">
+                  <label class="field-label">Número de tarjeta *</label>
+                  <input 
+                    name="cardNumber" 
+                    id="card-number" 
+                    required 
+                    inputmode="numeric" 
+                    autocomplete="cc-number" 
+                    placeholder="4242 4242 4242 4242" 
+                    maxlength="19" 
+                    class="input-dark" 
+                  />
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                  <label class="field-label">Nombre en la tarjeta *</label>
+                  <input 
+                    name="cardName" 
+                    required 
+                    class="input-dark" 
+                    autocomplete="cc-name" 
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label class="field-label">Vigencia MM/AA *</label>
+                  <input 
+                    name="cardExpiry" 
+                    id="card-expiry" 
+                    required 
+                    autocomplete="cc-exp" 
+                    placeholder="12/29" 
+                    maxlength="5" 
+                    class="input-dark" 
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label class="field-label">CVV *</label>
+                  <input 
+                    name="cardCvv" 
+                    required 
+                    inputmode="numeric" 
+                    autocomplete="cc-csc" 
+                    placeholder="123" 
+                    maxlength="4" 
+                    class="input-dark" 
+                  />
+                </div>
+              </div>
+
+              <p class="mt-4 text-xs text-white/80">
+                Modo de prueba: no se cobra nada. Prueba de rechazo:
+                <span class="text-oro-brillo">4000 0000 0000 0002</span>
+              </p>
+            </div>
+          </section>
+        </form>
       </div>
 
-      <!-- Resumen -->
+      <!-- Resumen del pedido -->
       <aside class="lg:col-span-1 order-1 lg:order-2">
-        <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
+        <div class="lg:sticky lg:top-28 bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
           <h2 class="font-titulos text-2xl text-blancoRoto mb-6">Tu pedido</h2>
-          <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6"></div>
+          <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6">
+            <!-- Los items se renderizan aquí -->
+          </div>
 
-          <p
-            id="checkout-summary-error"
-            role="status"
+          <p 
+            id="checkout-summary-error" 
+            role="status" 
             class="hidden mb-4 text-sm text-oro-brillo leading-relaxed border-2 border-oro-brillo/50 px-3 py-2"
           ></p>
 
@@ -196,15 +263,24 @@ const { firstName, email, phone } = Astro.locals;
           </div>
 
           <div class="flex justify-between items-center py-5">
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Total</span>
+            <span class="font-acentos text-base uppercase tracking-[0.18em] text-blancoRoto">Total</span>
             <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
-          <button type="submit" id="pay-btn" class="btn-gold w-full">
+          <button 
+            type="submit" 
+            form="checkout-form" 
+            id="pay-btn" 
+            class="btn-gold w-full"
+          >
             Pagar y confirmar
           </button>
 
-          <p id="pay-error" role="alert" class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"></p>
+          <p 
+            id="pay-error" 
+            role="alert" 
+            class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"
+          ></p>
 
           <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
             Al confirmar aceptas nuestros
@@ -214,7 +290,7 @@ const { firstName, email, phone } = Astro.locals;
           </p>
         </div>
       </aside>
-    </form>
+    </div>
   </div>
 
   <style>
@@ -228,6 +304,57 @@ const { firstName, email, phone } = Astro.locals;
       text-transform: uppercase;
       color: #ffe28a;
     }
+
+    .input-dark {
+      width: 100%;
+      background: #0e0e0e;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      color: #ffffff;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .input-dark:focus {
+      outline: none;
+      border-color: #ffe28a;
+      box-shadow: 0 0 0 3px rgba(255, 226, 138, 0.1);
+    }
+
+    .input-dark::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-gold {
+      background: #ffe28a;
+      color: #060606;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-weight: 600;
+      font-size: 0.875rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 1rem 1.5rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+    }
+
+    .btn-gold:hover {
+      background: #ffed9f;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.4);
+    }
+
+    .gold-line {
+      height: 2px;
+      width: 24px;
+      background: linear-gradient(to right, transparent, #ffe28a, transparent);
+      margin: 0 auto;
+    }
   </style>
 
   <script>
@@ -240,6 +367,16 @@ const { firstName, email, phone } = Astro.locals;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
     const errorEl = document.getElementById('pay-error')!;
     const summaryError = document.getElementById('checkout-summary-error') as HTMLElement | null;
+
+    function getProfile() {
+      return fetch('/api/profile')
+        .then((res) => res.json())
+        .catch(() => null);
+    }
+
+    function value(field: string): string {
+      return (form.elements.namedItem(field) as HTMLInputElement | HTMLTextAreaElement)?.value?.trim() || '';
+    }
 
     function renderSummary() {
       const items = getCart();
@@ -283,21 +420,6 @@ const { firstName, email, phone } = Astro.locals;
       errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // Prellenar con los datos de la cuenta
-    getProfile()
-      .then((profile) => {
-        if (!profile) return;
-        const set = (name: string, value: string | null | undefined) => {
-          const el = form.elements.namedItem(name) as HTMLInputElement | null;
-          if (el && !el.value && value) el.value = value;
-        };
-        set('firstName', profile.first_name);
-        set('lastName', profile.last_name);
-        set('email', profile.email);
-        set('phone', profile.phone);
-      })
-      .catch(() => {});
-
     // Formato amable de la tarjeta
     const cardNumber = document.getElementById('card-number') as HTMLInputElement;
     cardNumber?.addEventListener('input', () => {
@@ -318,13 +440,10 @@ const { firstName, email, phone } = Astro.locals;
       const items = getCart();
       if (items.length === 0) return;
 
-      const data = new FormData(form);
-      const value = (name: string) => String(data.get(name) ?? '').trim();
-
-      const required: Array<[string, string]> = [
+      const required = [
         ['firstName', 'Escribe tu nombre.'],
         ['lastName', 'Escribe tus apellidos.'],
-        ['email', 'Escribe tu correo.'],
+        ['email', 'Escribe tu correo electrónico.'],
         ['phone', 'Escribe tu teléfono.'],
         ['street', 'Escribe tu calle y número.'],
         ['colonia', 'Escribe tu colonia.'],
@@ -408,6 +527,21 @@ const { firstName, email, phone } = Astro.locals;
         payBtn.textContent = 'Pagar y confirmar';
       }
     });
+
+    // Prellenar con los datos de la cuenta
+    getProfile()
+      .then((profile) => {
+        if (!profile) return;
+        const set = (name: string, value: string | null | undefined) => {
+          const el = form.elements.namedItem(name) as HTMLInputElement | null;
+          if (el && !el.value && value) el.value = value;
+        };
+        set('firstName', profile.first_name);
+        set('lastName', profile.last_name);
+        set('email', profile.email);
+        set('phone', profile.phone);
+      })
+      .catch(() => {});
 
     // Precios y disponibilidad antes de mostrar el resumen:
     // si el carrito trae piezas viejas, se actualiza o se retiran.
