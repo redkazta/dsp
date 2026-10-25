@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="#0A0A0A"/>
-  <text x="50" y="62" font-family="serif" font-size="40" fill="#D4AF37" text-anchor="middle">DSP</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0a"/>
+  <text
+    x="32"
+    y="45"
+    text-anchor="middle"
+    font-family="'Playfair Display', Georgia, 'Times New Roman', serif"
+    font-weight="700"
+    font-size="35"
+    letter-spacing="-1"
+    fill="#e8e8e8"
+  >!D$P!</text>
 </svg>

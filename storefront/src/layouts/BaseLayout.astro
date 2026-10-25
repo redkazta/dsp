@@ -76,7 +76,7 @@ const jsonLd = {
   '@type': 'ClothingStore',
   name: 'Dinero Sobre Problemas',
   url: Astro.site,
-  logo: new URL('/favicon.svg', Astro.site ?? Astro.url.origin).toString(),
+  logo: new URL('/img/logo/DSP.jpg', Astro.site ?? Astro.url.origin).toString(),
   currenciesAccepted: 'USD',
   paymentAccepted: 'Tarjeta de crédito, débito',
 };
@@ -95,7 +95,8 @@ const jsonLd = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/img/logo/DSP.jpg" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -142,8 +143,8 @@ const jsonLd = {
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
       <div class="page-container">
-        <!-- Alto fijo: el logo va centrado con left-1/2 y se lee a la misma altura
-             que el resto del header en todas las pantallas. -->
+        <!-- Alto fijo: izquierda = logo de marca, centro = logo giratorio
+             (intercambiado con el menú), derecha = acciones. -->
         <div class="relative flex items-center h-24 sm:h-28">
           <!-- Mobile menu -->
           <button
@@ -158,17 +159,35 @@ const jsonLd = {
             </svg>
           </button>
 
-          <!-- Logo (centro exacto del header) -->
+          <!-- Logo fijo (izquierda) -->
           <a
             href="/"
-            class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+            class="header-logo flex items-center justify-center shrink-0 ml-1 sm:ml-2 lg:ml-0"
             aria-label="Dinero Sobre Problemas — inicio"
           >
-            <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain" />
+            <img
+              src="/img/logo/DSP.jpg"
+              alt="¡D$P!"
+              class="header-logo-img w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain"
+            />
           </a>
 
-          <!-- Nav desktop -->
-          <nav class="hidden lg:flex items-center gap-10">
+          <!-- Logo giratorio (centro del header, antes iba el menú) -->
+          <a
+            href="/tienda"
+            class="header-spinner"
+            aria-label="Ver el drop"
+          >
+            <img
+              src="/img/logo/DSP.jpg"
+              alt=""
+              aria-hidden="true"
+              class="logo-animated header-spinner-img"
+            />
+          </a>
+
+          <!-- Nav desktop (Tienda / Nosotros), ahora a la derecha del logo giratorio -->
+          <nav class="hidden lg:flex items-center gap-8 xl:gap-10 ml-auto">
             {
               navLinks.map((link) => (
                 <a
@@ -183,7 +202,7 @@ const jsonLd = {
           </nav>
 
           <!-- Acciones (derecha) -->
-          <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto">
+          <div class="flex items-center gap-1.5 sm:gap-2.5 ml-auto lg:ml-8">
             <button
               type="button"
               id="search-open"
@@ -679,6 +698,43 @@ const jsonLd = {
 </html>
 
 <style>
+  /* ---------- Header: logo de marca (izquierda) + logo giratorio (centro) ---------- */
+  .header-logo-img {
+    display: block;
+  }
+
+  /* En móvil el giratorio va junto al menú (centrarlo lo haría chocar con el
+     logo fijo y los iconos). En desktop recupera el centro exacto del header. */
+  .header-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-left: 0.25rem;
+  }
+
+  .header-spinner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* El giro necesita aire: deja que el logo se salga de su caja */
+    overflow: visible;
+  }
+
+  @media (min-width: 1024px) {
+    .header-spinner {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      margin-left: 0;
+      width: 5rem;
+      height: 5rem;
+    }
+  }
+
   /* Píldora de perfil a la izquierda del header */
   .profile-pill {
     align-items: center;

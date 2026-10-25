@@ -16,22 +16,63 @@ try {
   camisas = [];
 }
 
-const camisasImages = camisas.flatMap(
-  (p: any) => (p.product_images ?? []).map((img: any) => img.url)
-);
+// Un slide por pieza (su foto principal): el carrusel se ve variado en vez de
+// repetir la misma playera en varias tomas.
+const camisasImages = camisas
+  .map((p: any) => {
+    const images = [...(p.product_images ?? [])].sort(
+      (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+    );
+    return images[0]?.url;
+  })
+  .filter(Boolean) as string[];
 ---
 
 <BaseLayout>
-  <!-- HERO: solo el carrusel de fondo (define el alto), el logo centrado y "Ver drop" abajo -->
-  <section class="relative h-[85vh] lg:h-[90vh] overflow-hidden bg-negro-profundo">
+  <!--
+    HERO: solo el carrusel de fondo (define el alto) y "Ver drop" pegado abajo.
+    El alto es 30% mayor que antes (85vh → 110vh en móvil, 90vh → 117vh en desktop).
+  -->
+  <section class="relative h-[110vh] lg:h-[117vh] overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 pb-16">
-      <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-32 h-32 lg:w-48 lg:h-48 object-contain" />
-    </div>
-
-    <div class="absolute inset-x-0 bottom-0 z-10 pb-8 sm:pb-10 flex justify-center">
-      <a href="/tienda" class="btn-gold inline-flex">Ver drop</a>
+    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-6 sm:pb-8">
+      <a href="/tienda" class="btn-drop">Ver drop</a>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  /* Botón apaisado y a nivel del borde inferior: menos alto que el btn-gold
+     genérico para que no "flote" sobre la última foto. */
+  .btn-drop {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.7rem 2.5rem;
+    background: #ffe28a;
+    color: #060606;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    line-height: 1;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    border-radius: 0.375rem;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-drop:hover {
+    background: #ffed9f;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.45);
+  }
+
+  @media (max-width: 640px) {
+    .btn-drop {
+      min-height: 42px;
+      padding: 0.65rem 2rem;
+    }
+  }
+</style>

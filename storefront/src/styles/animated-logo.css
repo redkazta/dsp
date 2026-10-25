@@ -1,33 +1,36 @@
-/* Animated logo for D$P! - giro constante con una maroma corta en desktop.
-   El desplazamiento se mantiene pequeño para que el logo siga centrado en el header. */
+/* Animated logo for D$P! — desktop: gira y se mece de lado a lado.
+   Móvil: solo gira sobre su propio eje. */
 .logo-animated {
   display: inline-block;
   animation: maroma 4s linear infinite;
   animation-iteration-count: infinite;
   transform-origin: center center;
-  max-height: 75%;
-  max-width: 75%;
   will-change: transform;
 }
 
-/* Giro constante + desplazamiento corto de lado a lado */
+/* Giro constante + desplazamiento lateral (maroma) */
 @keyframes maroma {
   0%   { transform: translateX(0) rotate(0deg); }
-  25%  { transform: translateX(10px) rotate(90deg); }
+  25%  { transform: translateX(14px) rotate(90deg); }
   50%  { transform: translateX(0) rotate(180deg); }
-  75%  { transform: translateX(-10px) rotate(270deg); }
+  75%  { transform: translateX(-14px) rotate(270deg); }
   100% { transform: translateX(0) rotate(360deg); }
 }
 
-/* Móvil: solo gira sobre su propio eje hacia la derecha */
-@media (max-width: 640px) {
+/* Móvil: solo gira sobre su propio eje, sin salirse de su lugar */
+@media (max-width: 1023px) {
   .logo-animated {
-    animation: spin-right 2s linear infinite;
-    animation-iteration-count: infinite;
+    animation: spin-right 3s linear infinite;
   }
 }
 
 @keyframes spin-right {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-animated {
+    animation: none;
+  }
 }
