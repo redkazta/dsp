@@ -1,18 +1,17 @@
-/* Animated logo for D$P! - varias maromas constantes en un ciclo */
+/* Animated logo for D$P! - maroma constante: giro + oscillación suave */
 .logo-animated {
   display: inline-block;
-  animation: maroma-completa 4s ease-in-out infinite;
+  animation: maroma 5s ease-in-out infinite;
   animation-iteration-count: infinite;
   transform-origin: center center;
 }
 
-/* Giro + desplazamiento + regreso constante */
-@keyframes maroma-completa {
+/* Giro constante + desplazamiento suave de ida y vuelta (oscilación) */
+@keyframes maroma {
   0%   { transform: translateX(0) rotate(0deg); }
-  20%  { transform: translateX(60px) rotate(72deg); }
-  40%  { transform: translateX(60px) rotate(144deg); }
-  60%  { transform: translateX(0) rotate(216deg); }
-  80%  { transform: translateX(0) rotate(288deg); }
+  25%  { transform: translateX(30px) rotate(90deg); }
+  50%  { transform: translateX(0) rotate(180deg); }
+  75%  { transform: translateX(-30px) rotate(270deg); }
   100% { transform: translateX(0) rotate(360deg); }
 }
 
