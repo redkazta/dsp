@@ -2,26 +2,18 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProductCard from '../components/product/ProductCard.astro';
 import HeroCarousel from '../components/hero/HeroCarousel.astro';
 import { getProducts, TENANT_SLUG } from '../lib/supabase';
 
 const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
-const CAT_JEANS = 'c0000001-0000-4000-8000-000000000002';
 
 let camisas: any[] = [];
-let jeans: any[] = [];
 
 try {
-  const [camisasRes, jeansRes] = await Promise.all([
-    getProducts(TENANT_SLUG, { page: 1, limit: 8, categoryId: CAT_CAMISAS, sort: 'newest' }),
-    getProducts(TENANT_SLUG, { page: 1, limit: 8, categoryId: CAT_JEANS, sort: 'newest' }),
-  ]);
-  camisas = camisasRes.data ?? [];
-  jeans = jeansRes.data ?? [];
+  const res = await getProducts(TENANT_SLUG, { page: 1, limit: 8, categoryId: CAT_CAMISAS, sort: 'newest' });
+  camisas = res.data ?? [];
 } catch {
   camisas = [];
-  jeans = [];
 }
 
 const camisasImages = camisas.flatMap(
@@ -30,72 +22,12 @@ const camisasImages = camisas.flatMap(
 ---
 
 <BaseLayout>
-  <!-- HERO: 3 zonas, carrusel de fondo -->
   <section class="relative min-h-[95vh] flex items-center overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="relative z-10 w-full h-full flex items-center">
-      <div class="grid grid-cols-3 w-full">
-        <!-- Zona 1: Logo -->
-        <div class="flex flex-col items-center justify-center">
-          <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-24 h-24 lg:w-32 lg:h-32 object-contain" />
-        </div>
-
-        <!-- Zona 2: Tienda / Nosotros -->
-        <div class="flex flex-col items-center justify-center text-center">
-          <a href="/tienda" class="btn-gold inline-flex mb-6">Ver drop</a>
-          <h1 class="font-titulos text-6xl sm:text-8xl lg:text-9xl leading-[0.85] text-blancoRoto mb-4 tracking-tighter">
-            D$P!
-          </h1>
-          <p class="text-xl sm:text-2xl text-blancoRoto font-acentos tracking-[0.3em] uppercase mb-8">Reflective V3</p>
-          <div class="flex gap-4">
-            <a href="/tienda?category=camisas" class="btn-outline">Camisas</a>
-            <a href="/tienda?category=jeans" class="btn-outline">Jeans</a>
-          </div>
-        </div>
-
-        <!-- Zona 3: Iconos -->
-        <div class="flex flex-col items-center justify-center gap-4">
-          <a href="/tienda" class="btn-gold inline-flex">Comprar</a>
-          <a href="/nosotros" class="btn-outline inline-flex">Nosotros</a>
-        </div>
-      </div>
+    <div class="relative z-10 page-container w-full flex flex-col items-center justify-center h-full py-16">
+      <a href="/tienda" class="btn-gold inline-flex mb-6">Ver drop</a>
+      <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-32 h-32 lg:w-48 lg:h-48 object-contain mb-6" />
     </div>
-  </section>
-
-  <!-- APARTADO: CAMISAS -->
-  <section class="bg-negro-carbono py-16">
-    <div class="page-container">
-      <div class="mb-10">
-        <p class="section-label mb-2">Camisas</p>
-        <h2 class="font-titulos text-4xl sm:text-5xl text-blancoRoto">Reflective V3</h2>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {camisas.map((product) => (
-          <ProductCard product={product} />
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- APARTADO: JEANS -->
-  <section class="bg-negro-profundo py-16">
-    <div class="page-container">
-      <div class="mb-10">
-        <p class="section-label mb-2">Jeans</p>
-        <h2 class="font-titulos text-4xl sm:text-5xl text-blancoRoto">Jeep! Reflectivo</h2>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {jeans.map((product) => (
-          <ProductCard product={product} />
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="bg-negro-carbono py-16 sm:py-24 text-center">
-    <h2 class="font-titulos text-4xl sm:text-6xl text-blancoRoto mb-4">Sin miedo</h2>
-    <a href="/tienda" class="btn-gold inline-flex">Comprar ahora</a>
   </section>
 </BaseLayout>
