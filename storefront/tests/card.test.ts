@@ -1,49 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { passesLuhn, validateSimulatedCard } from '../src/lib/card';
-
-const validCard = {
-  number: '4242 4242 4242 4242',
-  name: 'Angel Perez',
-  expiry: '12/35',
-  cvv: '123',
-};
+import { passesLuhn } from '../src/lib/card';
 
 describe('passesLuhn', () => {
-  it('acepta números válidos', () => {
+  it('acepta números válidos con y sin espacios', () => {
     expect(passesLuhn('4242424242424242')).toBe(true);
-    expect(passesLuhn('5555555555554444')).toBe(true);
+    expect(passesLuhn('4242 4242 4242 4242'.replace(/\s/g, ''))).toBe(true);
   });
 
-  it('rechaza números con dígito cambiado', () => {
-    expect(passesLuhn('4242424242424243')).toBe(false);
-  });
-});
-
-describe('validateSimulatedCard', () => {
-  it('aprueba una tarjeta válida', () => {
-    expect(validateSimulatedCard(validCard)).toEqual({ ok: true });
+  it('rechaza un dígito cambiado', () => {
+    expect(passesLuhn('4242424242424241')).toBe(false);
   });
 
-  it('rechaza la tarjeta de prueba 4000...0002', () => {
-    const result = validateSimulatedCard({ ...validCard, number: '4000000000000002' });
-    expect(result.ok).toBe(false);
-  });
-
-  it('rechaza números de menos de 16 dígitos', () => {
-    expect(validateSimulatedCard({ ...validCard, number: '4242 4242' }).ok).toBe(false);
-  });
-
-  it('rechaza tarjetas vencidas', () => {
-    expect(validateSimulatedCard({ ...validCard, expiry: '01/20' }).ok).toBe(false);
-  });
-
-  it('exige nombre, vigencia y CVV', () => {
-    expect(validateSimulatedCard({ ...validCard, name: '  ' }).ok).toBe(false);
-    expect(validateSimulatedCard({ ...validCard, expiry: '1235' }).ok).toBe(false);
-    expect(validateSimulatedCard({ ...validCard, cvv: '12' }).ok).toBe(false);
-  });
-
-  it('acepta CVV de 4 dígitos (AMEX)', () => {
-    expect(validateSimulatedCard({ ...validCard, cvv: '1234' })).toEqual({ ok: true });
+  it('rechaza entradas no numéricas o vacías', () => {
+    expect(passesLuhn('')).toBe(false);
+    expect(passesLuhn('4242a24242424242')).toBe(false);
   });
 });

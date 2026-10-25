@@ -4,6 +4,11 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const { firstName, email, phone } = Astro.locals;
+
+const paymentAvailable = Boolean(
+  import.meta.env.STRIPE_SECRET_KEY && import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
+);
+const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 
 <BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
@@ -17,11 +22,15 @@ const { firstName, email, phone } = Astro.locals;
         </ol>
       </nav>
       <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
-      <p class="mt-3 text-base text-white/80">Producción bajo pedido · Pago seguro simulado</p>
+      <p class="mt-3 text-base text-white/80">Producción bajo pedido · Pago seguro con Stripe</p>
     </div>
   </section>
 
-  <div id="checkout-alert" class="hidden max-w-3xl mx-auto px-5 py-3 mb-4 bg-oro-brillo/10 border-2 border-oro-brillo text-oro-brillo text-sm font-acentos tracking-wide rounded-sm"></div>
+  <div
+    id="checkout-alert"
+    role="alert"
+    class="hidden max-w-3xl mx-auto px-5 py-3 mb-4 bg-oro-brillo/10 border-2 border-oro-brillo text-oro-brillo text-sm font-acentos tracking-wide rounded-sm"
+  ></div>
 
   <div id="checkout-empty" class="hidden max-w-3xl mx-auto px-5 py-24 sm:py-32 text-center">
     <p class="font-titulos text-3xl text-blancoRoto mb-6">Tu carrito está vacío</p>
@@ -29,7 +38,7 @@ const { firstName, email, phone } = Astro.locals;
     <a href="/tienda" class="btn-gold inline-flex">Ir a la tienda</a>
   </div>
 
-  <div class="page-container py-8 sm:py-12 lg:py-16">
+  <div id="checkout-content" class="page-container py-8 sm:py-12 lg:py-16">
     <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Formulario principal -->
       <div class="lg:col-span-2 order-2 lg:order-1">
@@ -42,45 +51,49 @@ const { firstName, email, phone } = Astro.locals;
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2">
-                <label class="field-label">Nombre *</label>
-                <input 
-                  name="firstName" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="given-name" 
+                <label class="field-label" for="firstName">Nombre *</label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  required
+                  class="input-dark"
+                  autocomplete="given-name"
                   value={firstName ?? ''}
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label">Apellidos *</label>
-                <input 
-                  name="lastName" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="family-name" 
+                <label class="field-label" for="lastName">Apellidos *</label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  required
+                  class="input-dark"
+                  autocomplete="family-name"
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label">Correo electrónico *</label>
-                <input 
-                  name="email" 
-                  type="email" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="email" 
-                  inputmode="email" 
+                <label class="field-label" for="email">Correo electrónico *</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  class="input-dark"
+                  autocomplete="email"
+                  inputmode="email"
                   value={email ?? ''}
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label">Teléfono *</label>
-                <input 
-                  name="phone" 
-                  type="tel" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="tel" 
-                  inputmode="tel" 
+                <label class="field-label" for="phone">Teléfono *</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  class="input-dark"
+                  autocomplete="tel"
+                  inputmode="tel"
                   placeholder="10 dígitos"
                   value={phone ?? ''}
                 />
@@ -96,65 +109,67 @@ const { firstName, email, phone } = Astro.locals;
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label">Calle y número *</label>
-                <input 
-                  name="street" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="street-address" 
+                <label class="field-label" for="street">Calle y número *</label>
+                <input
+                  id="street"
+                  name="street"
+                  required
+                  class="input-dark"
+                  autocomplete="street-address"
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label">Colonia *</label>
-                <input 
-                  name="colonia" 
-                  required 
-                  class="input-dark" 
+                <label class="field-label" for="colonia">Colonia *</label>
+                <input id="colonia" name="colonia" required class="input-dark" />
+              </div>
+              <div class="space-y-2">
+                <label class="field-label" for="postalCode">Código postal *</label>
+                <input
+                  id="postalCode"
+                  name="postalCode"
+                  required
+                  class="input-dark"
+                  autocomplete="postal-code"
+                  inputmode="numeric"
+                  maxlength="5"
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label">Código postal *</label>
-                <input 
-                  name="postalCode" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="postal-code" 
-                  inputmode="numeric" 
-                  maxlength="5" 
+                <label class="field-label" for="city">Ciudad *</label>
+                <input
+                  id="city"
+                  name="city"
+                  required
+                  class="input-dark"
+                  autocomplete="address-level2"
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label">Ciudad *</label>
-                <input 
-                  name="city" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="address-level2" 
-                />
-              </div>
-              <div class="space-y-2">
-                <label class="field-label">Estado *</label>
-                <input 
-                  name="state" 
-                  required 
-                  class="input-dark" 
-                  autocomplete="address-level1" 
+                <label class="field-label" for="state">Estado *</label>
+                <input
+                  id="state"
+                  name="state"
+                  required
+                  class="input-dark"
+                  autocomplete="address-level1"
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label">Referencias</label>
-                <input 
-                  name="references" 
-                  class="input-dark" 
-                  placeholder="Entre calles, número de casa…" 
+                <label class="field-label" for="references">Referencias</label>
+                <input
+                  id="references"
+                  name="references"
+                  class="input-dark"
+                  placeholder="Entre calles, número de casa…"
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label">Notas del pedido</label>
-                <textarea 
-                  name="notes" 
-                  rows="3" 
-                  class="input-dark !min-h-[96px] py-3" 
+                <label class="field-label" for="notes">Notas del pedido</label>
+                <textarea
+                  id="notes"
+                  name="notes"
+                  rows="3"
+                  class="input-dark !min-h-[96px] py-3"
                   placeholder="Diseño, color, talla especial o cualquier indicación."
                 ></textarea>
               </div>
@@ -169,71 +184,19 @@ const { firstName, email, phone } = Astro.locals;
             </h2>
 
             <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
-              <div class="flex items-start gap-3 mb-6">
+              <div class="flex items-start gap-3">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" class="mt-0.5 shrink-0">
                   <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
                 </svg>
                 <div>
                   <p class="text-base text-blancoRoto font-semibold">Tarjeta de crédito o débito</p>
                   <p class="text-sm text-white/80 leading-relaxed mt-1">
-                    Modo de prueba: no se cobra nada. Usa cualquier tarjeta válida de 16 dígitos.
+                    {paymentAvailable
+                      ? 'Al continuar te llevamos a la pantalla segura de Stripe para capturar tu tarjeta. Tus datos nunca pasan por esta tienda.'
+                      : 'El pago con tarjeta no está disponible en este momento. Escríbenos para completar tu pedido.'}
                   </p>
                 </div>
               </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="space-y-2 sm:col-span-2">
-                  <label class="field-label">Número de tarjeta *</label>
-                  <input 
-                    name="cardNumber" 
-                    id="card-number" 
-                    required 
-                    inputmode="numeric" 
-                    autocomplete="cc-number" 
-                    placeholder="4242 4242 4242 4242" 
-                    maxlength="19" 
-                    class="input-dark" 
-                  />
-                </div>
-                <div class="space-y-2 sm:col-span-2">
-                  <label class="field-label">Nombre en la tarjeta *</label>
-                  <input 
-                    name="cardName" 
-                    required 
-                    class="input-dark" 
-                    autocomplete="cc-name" 
-                  />
-                </div>
-                <div class="space-y-2">
-                  <label class="field-label">Vigencia MM/AA *</label>
-                  <input 
-                    name="cardExpiry" 
-                    id="card-expiry" 
-                    required 
-                    autocomplete="cc-exp" 
-                    placeholder="12/29" 
-                    maxlength="5" 
-                    class="input-dark" 
-                  />
-                </div>
-                <div class="space-y-2">
-                  <label class="field-label">CVV *</label>
-                  <input 
-                    name="cardCvv" 
-                    required 
-                    inputmode="numeric" 
-                    autocomplete="cc-csc" 
-                    placeholder="123" 
-                    maxlength="4" 
-                    class="input-dark" 
-                  />
-                </div>
-              </div>
-
-              <p class="mt-4 text-xs text-white/80">
-                Modo de prueba: no se cobra nada. Prueba de rechazo:
-                <span class="text-oro-brillo">4000 0000 0000 0002</span>
-              </p>
             </div>
           </section>
         </form>
@@ -247,9 +210,9 @@ const { firstName, email, phone } = Astro.locals;
             <!-- Los items se renderizan aquí -->
           </div>
 
-          <p 
-            id="checkout-summary-error" 
-            role="status" 
+          <p
+            id="checkout-summary-error"
+            role="status"
             class="hidden mb-4 text-sm text-oro-brillo leading-relaxed border-2 border-oro-brillo/50 px-3 py-2"
           ></p>
 
@@ -269,18 +232,20 @@ const { firstName, email, phone } = Astro.locals;
             <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
-          <button 
-            type="submit" 
-            form="checkout-form" 
-            id="pay-btn" 
+          <button
+            type="submit"
+            form="checkout-form"
+            id="pay-btn"
             class="btn-gold w-full"
+            disabled={!paymentAvailable}
+            data-available={paymentAvailable ? 'true' : 'false'}
           >
             Pagar y confirmar
           </button>
 
-          <p 
-            id="pay-error" 
-            role="alert" 
+          <p
+            id="pay-error"
+            role="alert"
             class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"
           ></p>
 
@@ -350,10 +315,15 @@ const { firstName, email, phone } = Astro.locals;
       min-height: 52px;
     }
 
-    .btn-gold:hover {
+    .btn-gold:hover:not(:disabled) {
       background: #ffed9f;
       transform: translateY(-2px);
       box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.4);
+    }
+
+    .btn-gold:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .gold-line {
@@ -365,15 +335,16 @@ const { firstName, email, phone } = Astro.locals;
   </style>
 
   <script>
-    import { getCart, clearCart, refreshCartPrices, formatMXN } from '../lib/cart';
+    import { getCart, refreshCartPrices, formatMXN } from '../lib/cart';
     import { shippingCostFor, STANDARD_SHIPPING } from '../lib/pricing';
-    import { validateSimulatedCard } from '../lib/card';
     import { escapeHtml, friendlyError } from '../lib/html';
 
     const form = document.getElementById('checkout-form') as HTMLFormElement;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
     const errorEl = document.getElementById('pay-error')!;
     const summaryError = document.getElementById('checkout-summary-error') as HTMLElement | null;
+    const alertDiv = document.getElementById('checkout-alert') as HTMLElement;
+    const paymentAvailable = payBtn?.getAttribute('data-available') !== 'false';
 
     let cartReady = false;
 
@@ -398,62 +369,33 @@ const { firstName, email, phone } = Astro.locals;
         errorMessage = 'Este campo es obligatorio.';
       }
 
-      if (name === 'email') {
+      if (name === 'email' && val) {
         const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-        if (val && !emailRegex.test(val)) {
+        if (!emailRegex.test(val)) {
           isValid = false;
           errorMessage = 'Escribe un correo electrónico válido.';
         }
       }
 
-      if (name === 'phone') {
-        const phoneRegex = /^\d{10}$/;
-        if (val && !phoneRegex.test(val)) {
-          isValid = false;
-          errorMessage = 'El teléfono debe tener exactamente 10 dígitos.';
-        }
-      }
-
-      if (name === 'postalCode') {
-        const stateVal = value('state');
-        const isUS = ['California', 'Texas', 'Florida', 'New York', 'Arizona', 'Nevada'].includes(stateVal);
-        const regex = isUS ? /^\d{5}(-\d{4})?$/ : /^\d{5}$/;
-        if (val && !regex.test(val)) {
-          isValid = false;
-          errorMessage = isUS ? 'Código postal US: 5 dígitos (ej: 90210)' : 'Código postal MX: 5 dígitos';
-        }
-      }
-
-      if (name === 'cardNumber') {
+      if (name === 'phone' && val) {
         const digits = val.replace(/\D/g, '');
-        if (val && digits.length !== 16) {
+        if (digits.length < 10 || digits.length > 15) {
           isValid = false;
-          errorMessage = 'El número de tarjeta debe tener 16 dígitos.';
+          errorMessage = 'El teléfono debe tener 10 dígitos (o incluir lada).';
         }
       }
 
-      if (name === 'cardExpiry') {
-        const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
-        if (val && !expiryRegex.test(val)) {
-          isValid = false;
-          errorMessage = 'La vigencia debe tener formato MM/AA.';
-        }
+      if (name === 'postalCode' && val && !/^\d{4,6}$/.test(val)) {
+        isValid = false;
+        errorMessage = 'Código postal de 5 dígitos (o 4-6 si es de otro país).';
       }
 
-      if (name === 'cardCvv') {
-        const cvvRegex = /^\d{3,4}$/;
-        if (val && !cvvRegex.test(val)) {
-          isValid = false;
-          errorMessage = 'El CVV debe tener 3 o 4 dígitos.';
-        }
-      }
-
-      const parent = field.closest('.input-wrapper') || field.parentElement;
+      const parent = field.closest('.space-y-2') || field.parentElement;
 
       if (!isValid) {
         field.classList.add('invalid');
         if (parent) {
-          let errorDiv = parent.querySelector('.error-message');
+          let errorDiv = parent.querySelector('.error-message') as HTMLElement | null;
           if (!errorDiv) {
             errorDiv = document.createElement('div');
             errorDiv.className = 'error-message mt-1 text-xs text-red-400';
@@ -462,14 +404,11 @@ const { firstName, email, phone } = Astro.locals;
           errorDiv.textContent = errorMessage;
         }
         return false;
-      } else {
-        field.classList.remove('invalid');
-        const errorDiv = parent?.querySelector('.error-message');
-        if (errorDiv) {
-          errorDiv.remove();
-        }
       }
 
+      field.classList.remove('invalid');
+      const errorDiv = parent?.querySelector('.error-message');
+      if (errorDiv) errorDiv.remove();
       return true;
     }
 
@@ -478,9 +417,7 @@ const { firstName, email, phone } = Astro.locals;
       let isValid = true;
 
       inputs.forEach((input) => {
-        if (!validateField(input as HTMLInputElement | HTMLTextAreaElement)) {
-          isValid = false;
-        }
+        if (!validateField(input as HTMLInputElement | HTMLTextAreaElement)) isValid = false;
       });
 
       return isValid;
@@ -489,16 +426,16 @@ const { firstName, email, phone } = Astro.locals;
     function renderSummary() {
       const items = getCart();
       const empty = document.getElementById('checkout-empty')!;
-      const content = document.getElementById('checkout-content')!;
+      const main = document.getElementById('checkout-content')!;
 
       if (items.length === 0) {
         empty.classList.remove('hidden');
-        content.classList.add('hidden');
+        main.classList.add('hidden');
         return;
       }
 
       empty.classList.add('hidden');
-      content.classList.remove('hidden');
+      main.classList.remove('hidden');
 
       document.getElementById('checkout-items')!.innerHTML = items
         .map(
@@ -523,7 +460,6 @@ const { firstName, email, phone } = Astro.locals;
     }
 
     function showError(message: string) {
-      const alertDiv = document.getElementById('checkout-alert')!;
       alertDiv.textContent = message;
       alertDiv.classList.remove('hidden');
       alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -531,22 +467,20 @@ const { firstName, email, phone } = Astro.locals;
       errorEl.classList.remove('hidden');
     }
 
-    // Formato amable de la tarjeta
-    const cardNumber = document.getElementById('card-number') as HTMLInputElement;
-    cardNumber?.addEventListener('input', () => {
-      const digits = cardNumber.value.replace(/\D/g, '').slice(0, 16);
-      cardNumber.value = digits.replace(/(.{4})/g, '$1 ').trim();
-    });
-
-    const cardExpiry = document.getElementById('card-expiry') as HTMLInputElement;
-    cardExpiry?.addEventListener('input', () => {
-      const digits = cardExpiry.value.replace(/\D/g, '').slice(0, 4);
-      cardExpiry.value = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-    });
+    function restoreButton() {
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pagar y confirmar';
+    }
 
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.classList.add('hidden');
+      alertDiv.classList.add('hidden');
+
+      if (!paymentAvailable) {
+        showError('El pago con tarjeta no está disponible en este momento.');
+        return;
+      }
 
       if (!cartReady) {
         showError('Espera mientras verificamos tu carrito...');
@@ -564,23 +498,11 @@ const { firstName, email, phone } = Astro.locals;
         return;
       }
 
-      const card = validateSimulatedCard({
-        number: value('cardNumber').replace(/\s/g, ''),
-        name: value('cardName'),
-        expiry: value('cardExpiry'),
-        cvv: value('cardCvv'),
-      });
-
-      if (!card.ok) {
-        showError(card.error);
-        return;
-      }
-
       payBtn.disabled = true;
-      payBtn.textContent = 'Procesando pago…';
+      payBtn.textContent = 'Abriendo pago seguro…';
 
       try {
-        const res = await fetch('/api/orders', {
+        const res = await fetch('/api/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -598,37 +520,43 @@ const { firstName, email, phone } = Astro.locals;
               references: value('references'),
               notes: value('notes'),
             },
-            card: {
-              number: value('cardNumber').replace(/\s/g, ''),
-              name: value('cardName'),
-              expiry: value('cardExpiry'),
-              cvv: value('cardCvv'),
-            },
           }),
         });
 
-        const order = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          if (order?.code === 'NO_SESSION') {
+          if (data?.code === 'NO_SESSION') {
             sessionStorage.setItem('dsp_checkout_error', friendlyError('NO_SESSION', ''));
             window.location.href = '/entrar?next=/checkout';
             return;
           }
 
-          showError(friendlyError(order?.code, order?.error ?? 'No pudimos registrar tu pedido.'));
-          payBtn.disabled = false;
-          payBtn.textContent = 'Pagar y confirmar';
+          showError(friendlyError(data?.code, data?.error ?? 'No pudimos iniciar el pago.'));
+          restoreButton();
           return;
         }
 
-        clearCart();
-        window.location.href = `/confirmacion?order=${encodeURIComponent(order.orderNumber ?? order.id)}`;
+        // El carrito se vacía al volver del pago (solo si Stripe lo aprobó).
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
+        }
+
+        showError('No pudimos abrir la pantalla de pago. Intenta de nuevo.');
+        restoreButton();
       } catch {
         showError('No pudimos conectar con la tienda. Revisa tu conexión e intenta de nuevo.');
-        payBtn.disabled = false;
-        payBtn.textContent = 'Pagar y confirmar';
+        restoreButton();
       }
+    });
+
+    // Desmarcar el error de cada campo al corregirlo
+    form?.querySelectorAll('input, textarea').forEach((input) => {
+      input.addEventListener('blur', () => {
+        const el = input as HTMLInputElement;
+        if (el.value.trim()) validateField(el);
+      });
     });
 
     // Prellenar con los datos de la cuenta
@@ -650,6 +578,7 @@ const { firstName, email, phone } = Astro.locals;
     // si el carrito trae piezas viejas, se actualiza o se retiran.
     refreshCartPrices()
       .then(({ removed }) => {
+        cartReady = true;
         if (removed.length > 0 && summaryError) {
           summaryError.textContent = `Retiramos ${removed.length} ${
             removed.length === 1 ? 'pieza' : 'piezas'
@@ -658,8 +587,15 @@ const { firstName, email, phone } = Astro.locals;
         }
         renderSummary();
       })
-      .catch(() => renderSummary());
+      .catch(() => {
+        cartReady = true;
+        renderSummary();
+      });
 
     renderSummary();
+
+    if (!paymentAvailable) {
+      showError('El pago con tarjeta no está disponible en este momento. Escríbenos para completar tu pedido.');
+    }
   </script>
 </BaseLayout>

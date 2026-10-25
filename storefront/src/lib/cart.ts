@@ -2,7 +2,7 @@
  * Cart utilities - carrito persistente en localStorage.
  *
  * Solo guarda qué variante y cuántas piezas: el precio que se cobra
- * se recalcula en el servidor (`/api/orders`). Lo que se muestra aquí
+ * se recalcula en el servidor (`/api/checkout`). Lo que se muestra aquí
  * es referencial y se refresca con `refreshCartPrices()`.
  */
 

@@ -2,7 +2,8 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { createSupabaseServerClient } from '../lib/supabase-server';
+import { createSupabaseServerClient, createSupabaseAdminClient } from '../lib/supabase-server';
+import { confirmSessionOnReturn } from '../lib/checkout';
 import { getCustomerOrder } from '../lib/customer-orders';
 import {
   STATUS_FLOW,
@@ -17,11 +18,42 @@ import {
 const user = Astro.locals.user;
 const orderParam = (Astro.url.searchParams.get('order') ?? '').trim();
 
-let order = null;
+let order: Awaited<ReturnType<typeof getCustomerOrder>> = null;
 if (user && orderParam) {
   const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
   order = await getCustomerOrder(supabase, user.id, orderParam);
 }
+
+// Al volver del Checkout de Stripe, si el pago todavía no se refleja se le
+// pregunta a Stripe directamente (el webhook puede tardar unos segundos).
+// Solo el servidor puede leer el pedido, y `stripe=return` solo lo pone
+// nuestra propia success_url.
+const returning = Astro.url.searchParams.get('stripe') === 'return';
+const sessionId = (Astro.url.searchParams.get('session_id') ?? '').trim();
+const db = createSupabaseAdminClient();
+
+if (db && order && order.payment_status !== 'approved') {
+  try {
+    if (returning && sessionId) {
+      await confirmSessionOnReturn({ db, sessionId });
+    }
+
+    const { data: fresh } = await db
+      .from('orders')
+      .select('payment_status, status')
+      .eq('id', order.id)
+      .maybeSingle();
+
+    if (fresh) {
+      order.payment_status = fresh.payment_status ?? order.payment_status;
+      order.status = fresh.status ?? order.status;
+    }
+  } catch (err: any) {
+    console.error('[confirmacion]', err?.message);
+  }
+}
+
+const isPaid = order?.payment_status === 'approved';
 
 const reached = new Set((order?.order_status_history ?? []).map((h) => h.status));
 if (order) reached.add(order.status);
@@ -71,18 +103,27 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
           <div class="page-container py-12 sm:py-16 text-center">
             <div class="w-16 h-16 mx-auto mb-7 border-2 border-oro-brillo flex items-center justify-center">
               <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
-                <path d="m5 13 4 4L19 7" />
+                {isPaid ? <path d="m5 13 4 4L19 7" /> : <circle cx="12" cy="12" r="9" />}
               </svg>
             </div>
-            <p class="section-label mb-4">Pago aprobado</p>
+            <p class="section-label mb-4">{isPaid ? 'Pago aprobado' : 'Pago en proceso'}</p>
             <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
-              Gracias, {(order.contact_name ?? 'cliente').split(' ')[0]}
+              {isPaid ? `Gracias, ${(order.contact_name ?? 'cliente').split(' ')[0]}` : 'Estamos confirmando tu pago'}
             </h1>
             <div class="gold-line mx-auto mb-6"></div>
             <p class="text-base text-white/80">
               Pedido <span class="font-acentos text-oro-brillo">{order.order_number ?? order.id.slice(0, 8)}</span> ·{' '}
               {formatOrderDate(order.created_at)}
             </p>
+            {!isPaid && (
+              <p class="mt-4 max-w-xl mx-auto text-sm text-white/80 leading-relaxed">
+                Si ya pagaste, esto puede tardar unos segundos:{' '}
+                <a href={Astro.url.pathname + Astro.url.search} class="text-oro-brillo underline underline-offset-2">
+                  actualizar
+                </a>.
+                Si tu pago fue rechazado, el pedido quedará cancelado y no se fabricará.
+              </p>
+            )}
           </div>
         </section>
 

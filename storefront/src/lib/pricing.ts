@@ -1,7 +1,7 @@
 /**
  * Precios: única fuente de verdad del monto a cobrar.
  *
- * Corre en el servidor (`/api/orders`). El navegador solo manda
+ * Corre en el servidor (`/api/checkout`). El navegador solo manda
  * variantId + cantidad; los importes salen de `product_variants`.
  */
 

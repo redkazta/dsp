@@ -1,7 +1,7 @@
 /**
  * Pedidos: tipos del flujo de producción bajo pedido.
  *
- * La creación vive en el servidor (`pages/api/orders.ts`) y la lectura
+ * La creación vive en el servidor (`lib/checkout.ts` → Stripe) y la lectura
  * para el cliente en `lib/customer-orders.ts` (Supabase SSR).
  *
  * Sin stock: todo se produce bajo pedido, así que nunca se descuenta
@@ -43,7 +43,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
 };
 
 export const STATUS_HINT: Record<OrderStatus, string> = {
-  pending: 'Esperando confirmación del pago simulado.',
+  pending: 'Esperando la confirmación del pago en Stripe.',
   confirmed: 'Pago aprobado. Ya lo tenemos.',
   design: 'Revisamos contigo el diseño de la pieza.',
   preparing: 'Se prensa y confecciona a mano.',
@@ -75,8 +75,8 @@ export const PAYMENT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  simulated: 'Tarjeta (simulado)',
   stripe: 'Stripe',
+  simulated: 'Tarjeta (simulado, obsoleto)',
   transfer: 'Transferencia',
   cash: 'Contra entrega',
 };

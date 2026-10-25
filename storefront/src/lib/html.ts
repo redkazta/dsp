@@ -39,6 +39,10 @@ export function friendlyError(code: string | null | undefined, fallback: string)
       return 'Revisa los datos de contacto y envío.';
     case 'CARD_DECLINED':
       return 'La tarjeta fue rechazada. Prueba con otra.';
+    case 'PAYMENT_UNAVAILABLE':
+      return 'El pago con tarjeta no está disponible en este momento.';
+    case 'PAYMENT_ERROR':
+      return 'No pudimos iniciar el pago. Intenta de nuevo en un momento.';
     case 'UNAVAILABLE':
       return 'Una pieza de tu carrito ya no está disponible.';
     case 'STORAGE':

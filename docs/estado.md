@@ -9,10 +9,12 @@ Verificar: Supabase → Authentication → Providers → Google tiene el toggle 
 
 ## Pendientes elegidos por el usuario
 
-### 1. Checkout con Stripe real
-- Sustituir el pago simulado (`lib/orders.ts`) por Stripe Checkout
-- Webhook `checkout.session.completed` que confirme el pago
-- Al confirmar, mover el pedido de `pending` a `confirmed`
+### 1. Checkout con Stripe real — ✅ implementado (pendiente configurar)
+- Hecho: pedido `pending` → Stripe Checkout alojado → webhook firmado → `confirmed`.
+- Ver `docs/stripe.md`. Falta: aplicar `scripts/stripe_checkout.sql`, poner
+  `STRIPE_SECRET_KEY`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
+  y `SUPABASE_SERVICE_ROLE_KEY` en Vercel, y crear el webhook en Stripe.
+- Rollover: rotar la `sk_test_` que se compartió por chat.
 
 ### 3. Página de producto pulida (conversión)
 - Zoom de imagen al hover
@@ -26,7 +28,7 @@ Verificar: Supabase → Authentication → Providers → Google tiene el toggle 
 ## Completado
 
 - **Pedidos de punta a punta** (`scripts/orders_wishlist_payments.sql`):
-  - Checkout con datos de contacto/envío, notas y **pago con tarjeta simulado** (`lib/orders.ts`, rechazo con `4000 0000 0000 0002`).
+  - Checkout con datos de contacto/envío, notas y **pago real con Stripe Checkout** (`lib/checkout.ts`, `pages/api/checkout.ts`, `pages/api/webhooks/stripe.ts`); la tarjeta se captura en Stripe.
   - Folio `DSP-000123`, historial automático por trigger y fotografía de cada pieza (nombre, talla, color, imagen) al momento de comprar.
   - Flujo sin stock: `pending → confirmed → design → preparing → ready → shipped → delivered`.
   - `/confirmacion` con línea de tiempo del pedido y `/cuenta` con seguimiento.
