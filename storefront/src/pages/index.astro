@@ -30,20 +30,34 @@ const camisasImages = camisas.flatMap(
 ---
 
 <BaseLayout>
-  <!-- HERO: galería de playeras como fondo, más alto -->
+  <!-- HERO: 3 zonas, carrusel de fondo -->
   <section class="relative min-h-[95vh] flex items-center overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="relative z-10 page-container w-full py-16">
-      <div class="max-w-2xl">
-        <a href="/tienda" class="btn-gold inline-flex mb-6">Ver drop</a>
-        <h1 class="font-titulos text-6xl sm:text-8xl lg:text-9xl leading-[0.85] text-blancoRoto mb-4 tracking-tighter">
-          D$P!
-        </h1>
-        <p class="text-xl sm:text-2xl text-blancoRoto font-acentos tracking-[0.3em] uppercase mb-8">Reflective V3</p>
-        <div class="flex gap-4">
-          <a href="/tienda?category=camisas" class="btn-outline">Camisas</a>
-          <a href="/tienda?category=jeans" class="btn-outline">Jeans</a>
+    <div class="relative z-10 w-full h-full flex items-center">
+      <div class="grid grid-cols-3 w-full">
+        <!-- Zona 1: Logo -->
+        <div class="flex flex-col items-center justify-center">
+          <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-24 h-24 lg:w-32 lg:h-32 object-contain" />
+        </div>
+
+        <!-- Zona 2: Tienda / Nosotros -->
+        <div class="flex flex-col items-center justify-center text-center">
+          <a href="/tienda" class="btn-gold inline-flex mb-6">Ver drop</a>
+          <h1 class="font-titulos text-6xl sm:text-8xl lg:text-9xl leading-[0.85] text-blancoRoto mb-4 tracking-tighter">
+            D$P!
+          </h1>
+          <p class="text-xl sm:text-2xl text-blancoRoto font-acentos tracking-[0.3em] uppercase mb-8">Reflective V3</p>
+          <div class="flex gap-4">
+            <a href="/tienda?category=camisas" class="btn-outline">Camisas</a>
+            <a href="/tienda?category=jeans" class="btn-outline">Jeans</a>
+          </div>
+        </div>
+
+        <!-- Zona 3: Iconos -->
+        <div class="flex flex-col items-center justify-center gap-4">
+          <a href="/tienda" class="btn-gold inline-flex">Comprar</a>
+          <a href="/nosotros" class="btn-outline inline-flex">Nosotros</a>
         </div>
       </div>
     </div>
