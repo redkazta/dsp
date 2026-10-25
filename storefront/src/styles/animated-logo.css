@@ -1,0 +1,17 @@
+/* Logo animation: spin clockwise, move right, bounce back */
+@keyframes logo-spin-right {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes logo-move-right {
+  0% { transform: translateX(0) rotate(0deg); }
+  40% { transform: translateX(120px) rotate(360deg); }
+  70% { transform: translateX(120px) rotate(360deg); }
+  100% { transform: translateX(0) rotate(360deg); }
+}
+
+.logo-animated {
+  animation: logo-move-right 4s ease-in-out infinite;
+  display: inline-block;
+}

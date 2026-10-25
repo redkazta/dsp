@@ -21,6 +21,8 @@ const { firstName, email, phone } = Astro.locals;
     </div>
   </section>
 
+  <div id="checkout-alert" class="hidden max-w-3xl mx-auto px-5 py-3 mb-4 bg-oro-brillo/10 border-2 border-oro-brillo text-oro-brillo text-sm font-acentos tracking-wide rounded-sm"></div>
+
   <div id="checkout-empty" class="hidden max-w-3xl mx-auto px-5 py-24 sm:py-32 text-center">
     <p class="font-titulos text-3xl text-blancoRoto mb-6">Tu carrito está vacío</p>
     <div class="gold-line mx-auto mb-8"></div>
@@ -326,6 +328,11 @@ const { firstName, email, phone } = Astro.locals;
       color: rgba(255, 255, 255, 0.5);
     }
 
+    .input-dark.invalid {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+    }
+
     .btn-gold {
       background: #ffe28a;
       color: #060606;
@@ -368,6 +375,8 @@ const { firstName, email, phone } = Astro.locals;
     const errorEl = document.getElementById('pay-error')!;
     const summaryError = document.getElementById('checkout-summary-error') as HTMLElement | null;
 
+    let cartReady = false;
+
     function getProfile() {
       return fetch('/api/profile')
         .then((res) => res.json())
@@ -376,6 +385,105 @@ const { firstName, email, phone } = Astro.locals;
 
     function value(field: string): string {
       return (form.elements.namedItem(field) as HTMLInputElement | HTMLTextAreaElement)?.value?.trim() || '';
+    }
+
+    function validateField(field: HTMLInputElement | HTMLTextAreaElement): boolean {
+      const name = field.name;
+      const val = field.value.trim();
+      let isValid = true;
+      let errorMessage = '';
+
+      if (field.hasAttribute('required') && !val) {
+        isValid = false;
+        errorMessage = 'Este campo es obligatorio.';
+      }
+
+      if (name === 'email') {
+        const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+        if (val && !emailRegex.test(val)) {
+          isValid = false;
+          errorMessage = 'Escribe un correo electrónico válido.';
+        }
+      }
+
+      if (name === 'phone') {
+        const phoneRegex = /^\d{10}$/;
+        if (val && !phoneRegex.test(val)) {
+          isValid = false;
+          errorMessage = 'El teléfono debe tener exactamente 10 dígitos.';
+        }
+      }
+
+      if (name === 'postalCode') {
+        const stateVal = value('state');
+        const isUS = ['California', 'Texas', 'Florida', 'New York', 'Arizona', 'Nevada'].includes(stateVal);
+        const regex = isUS ? /^\d{5}(-\d{4})?$/ : /^\d{5}$/;
+        if (val && !regex.test(val)) {
+          isValid = false;
+          errorMessage = isUS ? 'Código postal US: 5 dígitos (ej: 90210)' : 'Código postal MX: 5 dígitos';
+        }
+      }
+
+      if (name === 'cardNumber') {
+        const digits = val.replace(/\D/g, '');
+        if (val && digits.length !== 16) {
+          isValid = false;
+          errorMessage = 'El número de tarjeta debe tener 16 dígitos.';
+        }
+      }
+
+      if (name === 'cardExpiry') {
+        const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+        if (val && !expiryRegex.test(val)) {
+          isValid = false;
+          errorMessage = 'La vigencia debe tener formato MM/AA.';
+        }
+      }
+
+      if (name === 'cardCvv') {
+        const cvvRegex = /^\d{3,4}$/;
+        if (val && !cvvRegex.test(val)) {
+          isValid = false;
+          errorMessage = 'El CVV debe tener 3 o 4 dígitos.';
+        }
+      }
+
+      const parent = field.closest('.input-wrapper') || field.parentElement;
+
+      if (!isValid) {
+        field.classList.add('invalid');
+        if (parent) {
+          let errorDiv = parent.querySelector('.error-message');
+          if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message mt-1 text-xs text-red-400';
+            parent.appendChild(errorDiv);
+          }
+          errorDiv.textContent = errorMessage;
+        }
+        return false;
+      } else {
+        field.classList.remove('invalid');
+        const errorDiv = parent?.querySelector('.error-message');
+        if (errorDiv) {
+          errorDiv.remove();
+        }
+      }
+
+      return true;
+    }
+
+    function validateAllFields(): boolean {
+      const inputs = form.querySelectorAll('input[required], textarea[required]');
+      let isValid = true;
+
+      inputs.forEach((input) => {
+        if (!validateField(input as HTMLInputElement | HTMLTextAreaElement)) {
+          isValid = false;
+        }
+      });
+
+      return isValid;
     }
 
     function renderSummary() {
@@ -415,9 +523,12 @@ const { firstName, email, phone } = Astro.locals;
     }
 
     function showError(message: string) {
+      const alertDiv = document.getElementById('checkout-alert')!;
+      alertDiv.textContent = message;
+      alertDiv.classList.remove('hidden');
+      alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       errorEl.textContent = message;
       errorEl.classList.remove('hidden');
-      errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     // Formato amable de la tarjeta
@@ -437,31 +548,24 @@ const { firstName, email, phone } = Astro.locals;
       e.preventDefault();
       errorEl.classList.add('hidden');
 
+      if (!cartReady) {
+        showError('Espera mientras verificamos tu carrito...');
+        return;
+      }
+
       const items = getCart();
-      if (items.length === 0) return;
+      if (items.length === 0) {
+        showError('Tu carrito está vacío. Agrega productos antes de continuar.');
+        return;
+      }
 
-      const required = [
-        ['firstName', 'Escribe tu nombre.'],
-        ['lastName', 'Escribe tus apellidos.'],
-        ['email', 'Escribe tu correo electrónico.'],
-        ['phone', 'Escribe tu teléfono.'],
-        ['street', 'Escribe tu calle y número.'],
-        ['colonia', 'Escribe tu colonia.'],
-        ['postalCode', 'Escribe tu código postal.'],
-        ['city', 'Escribe tu ciudad.'],
-        ['state', 'Escribe tu estado.'],
-      ];
-
-      for (const [field, message] of required) {
-        if (!value(field)) {
-          showError(message);
-          (form.elements.namedItem(field) as HTMLInputElement)?.focus();
-          return;
-        }
+      if (!validateAllFields()) {
+        showError('Por favor corrige los errores en el formulario.');
+        return;
       }
 
       const card = validateSimulatedCard({
-        number: value('cardNumber'),
+        number: value('cardNumber').replace(/\s/g, ''),
         name: value('cardName'),
         expiry: value('cardExpiry'),
         cvv: value('cardCvv'),
@@ -476,7 +580,6 @@ const { firstName, email, phone } = Astro.locals;
       payBtn.textContent = 'Procesando pago…';
 
       try {
-        // El servidor decide el precio, el comprador y si el pago pasa.
         const res = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -496,7 +599,7 @@ const { firstName, email, phone } = Astro.locals;
               notes: value('notes'),
             },
             card: {
-              number: value('cardNumber'),
+              number: value('cardNumber').replace(/\s/g, ''),
               name: value('cardName'),
               expiry: value('cardExpiry'),
               cvv: value('cardCvv'),
@@ -532,9 +635,9 @@ const { firstName, email, phone } = Astro.locals;
     getProfile()
       .then((profile) => {
         if (!profile) return;
-        const set = (name: string, value: string | null | undefined) => {
+        const set = (name: string, val: string | null | undefined) => {
           const el = form.elements.namedItem(name) as HTMLInputElement | null;
-          if (el && !el.value && value) el.value = value;
+          if (el && !el.value && val) el.value = val;
         };
         set('firstName', profile.first_name);
         set('lastName', profile.last_name);

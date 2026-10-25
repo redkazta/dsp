@@ -91,16 +91,35 @@ export async function priceItems(
 
   const rows = data ?? [];
   if (rows.length !== quantities.size) {
-    throw new PricingError('Una pieza de tu carrito ya no está disponible.');
+    // Filtrar los items que sí existen
+    const validVariantIds = new Set(rows.map((r: any) => r.id));
+    const removed: string[] = [];
+    const filteredRequests: RawRequestedItem[] = [];
+    for (const raw of requested) {
+      const variantId = typeof raw?.variantId === 'string' ? raw.variantId.trim() : '';
+      if (validVariantIds.has(variantId)) {
+        filteredRequests.push(raw);
+      } else {
+        removed.push(variantId);
+      }
+    }
+    
+    if (filteredRequests.length === 0) {
+      throw new PricingError(`Retiramos ${removed.length} ${removed.length === 1 ? 'pieza' : 'piezas'} que ya no están disponibles.`);
+    }
+
+    if (rows.length !== filteredRequests.length) {
+      throw new PricingError('Una pieza de tu carrito ya no está disponible.');
+    }
   }
 
   return rows.map((row: any) => {
     const product = Array.isArray(row.products) ? row.products[0] : row.products;
     if (!product || product.is_deleted || !product.is_active || product.tenant_id !== TENANT_ID) {
-      throw new PricingError(`“${product?.name ?? 'Una pieza'}” ya no está disponible.`);
+      throw new PricingError(`"${product?.name ?? 'Una pieza'}" ya no está disponible.`);
     }
     if (row.is_deleted) {
-      throw new PricingError(`“${product.name}” ya no está disponible.`);
+      throw new PricingError(`"${product.name}" ya no está disponible.`);
     }
 
     const images = [...(product.product_images ?? [])].sort(
