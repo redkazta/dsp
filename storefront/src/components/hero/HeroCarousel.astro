@@ -2,10 +2,9 @@
 /**
  * HeroCarousel.astro
  *
- * Carrusel de fondo para el hero: muestra 3 fotos de las playeras
- * separadas, con opacidad al 40 %, efecto de mostrador (3 imágenes
- * visibles, la central completa y las laterales a la mitad) y cambio
- * automático cada 5 segundos.
+ * Carrusel de fondo: 3 fotos separadas, opacidad 40 %, cambio automático
+ * cada 5 s. En desktop: 3 visibles (centro completa, laterales a la mitad).
+ * En móvil: diseño separado (1 imagen centrada, más simple).
  */
 interface Props {
   images: string[];
@@ -15,7 +14,7 @@ const { images = [] } = Astro.props;
 
 const fallback = '/img/camisas/camisa-dsp-2-01-frente.jpg';
 const slides = images.length > 0 ? images : [fallback];
-const duplicated = [...slides, ...slides]; // loop infinito
+const duplicated = [...slides, ...slides];
 ---
 
 <div class="hero-carousel">
@@ -36,11 +35,12 @@ const duplicated = [...slides, ...slides]; // loop infinito
     width: 100%;
     height: 100%;
     overflow: hidden;
+    background: #fff;
   }
 
   .hero-carousel-track {
     display: flex;
-    width: 300%; /* 3 imágenes */
+    width: 300%;
     transition: transform 0.8s ease-in-out;
     will-change: transform;
   }
@@ -48,51 +48,53 @@ const duplicated = [...slides, ...slides]; // loop infinito
   .hero-slide {
     width: 33.33%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .hero-slide img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     opacity: 0.4;
-    filter: grayscale(20%);
   }
 
-  /* Móvil: 2 imágenes visibles, la central completa y la de la derecha a la mitad */
+  /* Móvil: diseño separado, 1 imagen centrada, más simple */
   @media (max-width: 640px) {
     .hero-carousel-track {
-      width: 200%;
+      width: 100%;
+      justify-content: center;
     }
     .hero-slide {
-      width: 50%;
+      width: 100%;
+      flex: 0 0 100%;
+    }
+    .hero-slide img {
+      object-fit: cover;
+      opacity: 0.35;
     }
   }
 </style>
 
 <script>
   const track = document.querySelector('[data-hero-track]');
-  if (!track) {
-    console.warn('HeroCarousel: no se encontró el track');
-  } else {
-    const total = track.children.length / 2; // mitad porque duplicamos
+  if (track) {
+    const total = track.children.length / 2;
     let current = 0;
 
     function next() {
       current++;
       track.style.transform = `translateX(-${current * (100 / total)}%)`;
-
       if (current >= total) {
         setTimeout(() => {
           track.style.transition = 'none';
           current = 0;
           track.style.transform = 'translateX(0)';
-          setTimeout(() => {
-            track.style.transition = 'transform 0.8s ease-in-out';
-          }, 50);
+          setTimeout(() => track.style.transition = 'transform 0.8s ease-in-out', 50);
         }, 800);
       }
     }
-
     setInterval(next, 5000);
   }
 </script>

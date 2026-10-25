@@ -1,17 +1,20 @@
-/* Animated logo for D$P! - giro constante, sin desplazamiento horizontal */
+/* Animated logo for D$P! - giro constante + desplazamiento de lado a lado en desktop */
 .logo-animated {
   display: inline-block;
-  animation: spin-right 3s linear infinite;
+  animation: maroma 4s linear infinite;
   animation-iteration-count: infinite;
   transform-origin: center center;
   max-height: 75%;
   max-width: 75%;
 }
 
-/* Giro constante de izquierda a derecha (360°) */
-@keyframes spin-right {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Giro constante + desplazamiento de lado a lado (maroma) */
+@keyframes maroma {
+  0%   { transform: translateX(0) rotate(0deg); }
+  25%  { transform: translateX(40px) rotate(90deg); }
+  50%  { transform: translateX(0) rotate(180deg); }
+  75%  { transform: translateX(-40px) rotate(270deg); }
+  100% { transform: translateX(0) rotate(360deg); }
 }
 
 /* Móvil: solo gira sobre su propio eje hacia la derecha */
@@ -20,4 +23,9 @@
     animation: spin-right 2s linear infinite;
     animation-iteration-count: infinite;
   }
+}
+
+@keyframes spin-right {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
