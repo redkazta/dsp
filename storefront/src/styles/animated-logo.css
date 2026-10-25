@@ -1,38 +1,30 @@
-/* Animated logo for D$P! - varias maromas constantes */
+/* Animated logo for D$P! - varias maromas constantes en un ciclo */
 .logo-animated {
   display: inline-block;
-  animation:
-    spin-right 3s linear infinite,
-    bounce-up 2s ease-in-out infinite,
-    scale-pulse 2.5s ease-in-out infinite;
-  animation-delay: 0s, 0.5s, 1s;
+  animation: maroma-completa 4s ease-in-out infinite;
   animation-iteration-count: infinite;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: center center;
+}
+
+/* Giro + desplazamiento + regreso constante */
+@keyframes maroma-completa {
+  0%   { transform: translateX(0) rotate(0deg); }
+  20%  { transform: translateX(60px) rotate(72deg); }
+  40%  { transform: translateX(60px) rotate(144deg); }
+  60%  { transform: translateX(0) rotate(216deg); }
+  80%  { transform: translateX(0) rotate(288deg); }
+  100% { transform: translateX(0) rotate(360deg); }
+}
+
+/* Móvil: solo gira sobre su propio eje hacia la derecha */
+@media (max-width: 640px) {
+  .logo-animated {
+    animation: spin-right 2s linear infinite;
+    animation-iteration-count: infinite;
+  }
 }
 
 @keyframes spin-right {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-@keyframes bounce-up {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-12px) rotate(5deg); }
-}
-
-@keyframes scale-pulse {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  50% { transform: scale(1.15) rotate(-5deg); }
-}
-
-/* Móvil: solo gira sobre sí mismo hacia la derecha, sin moverse de lado */
-@media (max-width: 640px) {
-  .logo-animated {
-    animation:
-      spin-right 2.5s linear infinite;
-    animation-delay: 0s;
-    animation-iteration-count: infinite;
-    animation-timing-function: linear;
-  }
 }

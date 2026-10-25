@@ -2,7 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ProductCarousel from '../components/product/ProductCarousel.astro';
+import ProductCard from '../components/product/ProductCard.astro';
 import { getProducts, TENANT_SLUG } from '../lib/supabase';
 
 const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
@@ -25,10 +25,10 @@ try {
 ---
 
 <BaseLayout>
-  <!-- HERO DIRECTO: producto primero -->
+  <!-- HERO: imagen del logo como fondo -->
   <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-negro-profundo">
     <div class="absolute inset-0">
-      <img src="/img/camisas/camisa-dsp-2-01-frente.jpg" alt="" class="w-full h-full object-cover opacity-30 grayscale" loading="eager" />
+      <img src="/img/logo/DSP.jpg" alt="" class="w-full h-full object-cover opacity-30" loading="eager" />
       <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-negro-profundo/60 to-transparent"></div>
     </div>
 
@@ -47,15 +47,38 @@ try {
     </div>
   </section>
 
-  <!-- CARRUSELES DIRECTOS -->
-  <div class="bg-negro-carbono border-y-2 border-white/25 py-6">
-    <ProductCarousel title="Camisas" subtitle="Reflective V3" products={camisas} href="/tienda?category=camisas" hrefLabel="Ver todo" />
-    <div class="page-container"><div class="gold-line mx-0"></div></div>
-    <ProductCarousel title="Jeans" subtitle="Jeep! Reflectivo" products={jeans} href="/tienda?category=jeans" hrefLabel="Ver todo" />
-  </div>
+  <!-- APARTADO: CAMISAS -->
+  <section class="bg-negro-carbono py-16">
+    <div class="page-container">
+      <div class="mb-10">
+        <p class="section-label mb-2">Camisas</p>
+        <h2 class="font-titulos text-4xl sm:text-5xl text-blancoRoto">Reflective V3</h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {camisas.map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+    </div>
+  </section>
 
-  <!-- CTA SIMPLE -->
-  <section class="bg-negro-profundo py-16 sm:py-24 text-center">
+  <!-- APARTADO: JEANS -->
+  <section class="bg-negro-profundo py-16">
+    <div class="page-container">
+      <div class="mb-10">
+        <p class="section-label mb-2">Jeans</p>
+        <h2 class="font-titulos text-4xl sm:text-5xl text-blancoRoto">Jeep! Reflectivo</h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {jeans.map((product) => (
+          <ProductCard product={product} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="bg-negro-carbono py-16 sm:py-24 text-center">
     <h2 class="font-titulos text-4xl sm:text-6xl text-blancoRoto mb-4">Sin miedo</h2>
     <a href="/tienda" class="btn-gold inline-flex">Comprar ahora</a>
   </section>
