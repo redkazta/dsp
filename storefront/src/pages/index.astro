@@ -22,12 +22,16 @@ const camisasImages = camisas.flatMap(
 ---
 
 <BaseLayout>
-  <section class="relative min-h-[95vh] flex items-center overflow-hidden bg-negro-profundo">
+  <!-- HERO: solo el carrusel de fondo (define el alto), el logo centrado y "Ver drop" abajo -->
+  <section class="relative h-[85vh] lg:h-[90vh] overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="relative z-10 page-container w-full flex flex-col items-center justify-center h-full py-16">
-      <a href="/tienda" class="btn-gold inline-flex mb-6">Ver drop</a>
-      <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-32 h-32 lg:w-48 lg:h-48 object-contain mb-6" />
+    <div class="absolute inset-0 z-10 flex flex-col items-center justify-center px-5 pb-16">
+      <img src="/img/logo/DSP.jpg" alt="¡D$P!" class="logo-animated w-32 h-32 lg:w-48 lg:h-48 object-contain" />
+    </div>
+
+    <div class="absolute inset-x-0 bottom-0 z-10 pb-8 sm:pb-10 flex justify-center">
+      <a href="/tienda" class="btn-gold inline-flex">Ver drop</a>
     </div>
   </section>
 </BaseLayout>
