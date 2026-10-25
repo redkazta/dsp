@@ -10,13 +10,14 @@ export default {
     extend: {
       colors: {
         negro: {
-          profundo: '#060606',
-          carbono: '#0E0E0E',
-          elevado: '#161616',
+          profundo: '#000000',
+          carbono: '#050505',
+          elevado: '#0B0B0B',
         },
         oro: {
           elegante: '#F2C94C',
           brillo: '#FFE28A', // amarillo más claro para títulos y acentos
+          claro: '#F7DFA5', // dorado claro: detalles, bordes y micro-acentos
           crema: '#FFF4C9', // hover: casi blanco dorado
           oscuro: '#C9A227',
         },

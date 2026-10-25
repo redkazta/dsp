@@ -30,13 +30,14 @@ const camisasImages = camisas
 
 <BaseLayout>
   <!--
-    HERO: solo el carrusel de fondo (define el alto) y "Ver drop" pegado abajo.
-    El alto es 30% mayor que antes (85vh → 110vh en móvil, 90vh → 117vh en desktop).
+    HERO: el carrusel de fondo con el boton pegado al borde inferior.
+    Alto: 88vh en movil / 94vh en desktop, para que "Ver drop" se vea sin
+    desplazarse (es la primera impresion al entrar).
   -->
-  <section class="relative h-[110vh] lg:h-[117vh] overflow-hidden bg-negro-profundo">
+  <section class="hero-section relative h-[88vh] lg:h-[94vh] overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-6 sm:pb-8">
+    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 sm:pb-7">
       <a href="/tienda" class="btn-drop">Ver drop</a>
     </div>
   </section>
@@ -52,7 +53,7 @@ const camisasImages = camisas
     min-height: 44px;
     padding: 0.7rem 2.5rem;
     background: #ffe28a;
-    color: #060606;
+    color: #000000;
     font-family: 'Space Grotesk', Inter, sans-serif;
     font-weight: 600;
     font-size: 0.8125rem;
@@ -73,6 +74,14 @@ const camisasImages = camisas
     .btn-drop {
       min-height: 42px;
       padding: 0.65rem 2rem;
+    }
+  }
+
+  /* Pantallas bajas (laptops 13", iPhone apaisado): el hero no debe empujar
+     el boton fuera de vista. */
+  @media (max-height: 700px) {
+    .hero-section {
+      height: 80vh;
     }
   }
 </style>

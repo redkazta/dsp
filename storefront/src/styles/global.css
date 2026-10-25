@@ -10,11 +10,12 @@
 
 @layer base {
   :root {
-    --color-negro-profundo: #060606;
-    --color-negro-carbono: #0e0e0e;
-    --color-negro-elevado: #161616;
+    --color-negro-profundo: #000000;
+    --color-negro-carbono: #050505;
+    --color-negro-elevado: #0b0b0b;
     --color-oro-elegante: #f2c94c;
     --color-oro-brillo: #ffe28a;
+    --color-oro-claro: #f7dfa5;
     --color-oro-crema: #fff4c9;
     --color-blanco: #ffffff;
     --color-blanco-suave: #f2f2f2;
@@ -84,7 +85,7 @@
   /* Botón outline con contraste alto */
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2
-      border-2 border-blancoRoto text-blancoRoto font-acentos font-semibold
+      border-2 border-oro-claro/70 text-blancoRoto font-acentos font-semibold
       text-sm uppercase tracking-[0.18em] px-7 sm:px-9 py-4 min-h-[52px]
       transition-[border-color,color,background-color] duration-300
       hover:border-oro-brillo hover:text-oro-brillo
@@ -105,14 +106,14 @@
   /* Card de producto */
   .product-card {
     @apply relative block overflow-hidden bg-negro-carbono
-      border-2 border-blancoRoto/25
+      border-2 border-oro-claro/30
       transition-colors duration-300
-      hover:border-oro-brillo;
+      hover:border-oro-claro;
   }
 
   /* Input oscuro — 16px en móvil evita zoom de iOS */
   .input-dark {
-    @apply w-full bg-negro-elevado border-2 border-blancoRoto/45
+    @apply w-full bg-negro-elevado border-2 border-oro-claro/40
       px-4 py-3.5 min-h-[52px] text-base sm:text-base
       text-blancoRoto placeholder:text-blancoRoto/65
       outline-none transition-colors duration-300
@@ -132,9 +133,9 @@
     @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-10;
   }
 
-  /* Card oscura con borde visible */
+  /* Card oscura con borde visible (detalle dorado claro del tenant) */
   .card {
-    @apply bg-negro-carbono border-2 border-blancoRoto/20;
+    @apply bg-negro-carbono border-2 border-oro-claro/25;
   }
 
   /* ============================================

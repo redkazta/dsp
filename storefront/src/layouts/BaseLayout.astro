@@ -87,7 +87,7 @@ const jsonLd = {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0A0A0A" />
+    <meta name="theme-color" content="#000000" />
     <meta name="generator" content={Astro.generator} />
     <meta name="google-site-verification" content="9vg0e3aFgw6r_ZeKvXzVRruULlWTkwhMjmQQHIguAM4" />
 
@@ -143,13 +143,12 @@ const jsonLd = {
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
       <div class="page-container">
-        <!-- Alto fijo: izquierda = logo de marca, centro = logo giratorio
-             (intercambiado con el menú), derecha = acciones. -->
+        <!-- Alto fijo: izquierda = logo giratorio (único), derecha = menú + acciones. -->
         <div class="relative flex items-center h-24 sm:h-28">
           <!-- Mobile menu -->
           <button
             id="menu-toggle"
-            class="lg:hidden -ml-3 p-2.5 min-w-[44px] min-h-[44px] text-blancoRoto hover:text-oro-brillo transition-colors"
+            class="lg:hidden -ml-3 mr-1 p-2.5 min-w-[44px] min-h-[44px] text-blancoRoto hover:text-oro-brillo transition-colors"
             aria-label="Abrir menú"
             aria-expanded="false"
             aria-controls="mobile-menu"
@@ -159,34 +158,21 @@ const jsonLd = {
             </svg>
           </button>
 
-          <!-- Logo fijo (izquierda) -->
+          <!-- Logo giratorio (único), a la izquierda. En móvil solo gira sobre su
+               eje; en desktop gira y se mece de lado a lado. -->
           <a
             href="/"
-            class="header-logo flex items-center justify-center shrink-0 ml-1 sm:ml-2 lg:ml-0"
+            class="header-spinner"
             aria-label="Dinero Sobre Problemas — inicio"
           >
             <img
               src="/img/logo/DSP.jpg"
               alt="¡D$P!"
-              class="header-logo-img w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain"
-            />
-          </a>
-
-          <!-- Logo giratorio (centro del header, antes iba el menú) -->
-          <a
-            href="/tienda"
-            class="header-spinner"
-            aria-label="Ver el drop"
-          >
-            <img
-              src="/img/logo/DSP.jpg"
-              alt=""
-              aria-hidden="true"
               class="logo-animated header-spinner-img"
             />
           </a>
 
-          <!-- Nav desktop (Tienda / Nosotros), ahora a la derecha del logo giratorio -->
+          <!-- Nav desktop (Tienda / Nosotros), donde antes iba el logo -->
           <nav class="hidden lg:flex items-center gap-8 xl:gap-10 ml-auto">
             {
               navLinks.map((link) => (
@@ -698,40 +684,31 @@ const jsonLd = {
 </html>
 
 <style>
-  /* ---------- Header: logo de marca (izquierda) + logo giratorio (centro) ---------- */
-  .header-logo-img {
-    display: block;
-  }
-
-  /* En móvil el giratorio va junto al menú (centrarlo lo haría chocar con el
-     logo fijo y los iconos). En desktop recupera el centro exacto del header. */
+  /* ---------- Header: logo giratorio a la izquierda ---------- */
+  /* No se puede centrar con left-1/2: la animación usa `transform` y lo
+     pisaría. Va en el flujo y el vaivén de desktop cabe en el header. */
   .header-spinner {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 3.5rem;
-    height: 3.5rem;
-    margin-left: 0.25rem;
+    width: 4rem;
+    height: 4rem;
+    margin-left: 0.5rem;
   }
 
   .header-spinner-img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* El giro necesita aire: deja que el logo se salga de su caja */
-    overflow: visible;
+    border-radius: 0.25rem;
   }
 
   @media (min-width: 1024px) {
     .header-spinner {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      margin-left: 0;
       width: 5rem;
       height: 5rem;
+      margin-left: 1rem;
     }
   }
 
@@ -741,7 +718,7 @@ const jsonLd = {
     gap: 0.65rem;
     min-height: 46px;
     padding: 0.35rem 1rem 0.35rem 0.35rem;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(247, 223, 165, 0.28);
     background: rgba(255, 255, 255, 0.04);
     transition:
       border-color 0.25s ease,
@@ -772,7 +749,7 @@ const jsonLd = {
     flex: 0 0 36px;
     border-radius: 999px;
     background: #ffe28a;
-    color: #060606;
+    color: #000000;
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 1rem;
     font-weight: 700;
@@ -815,7 +792,7 @@ const jsonLd = {
     justify-content: center;
     border-radius: 999px;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    background: #121212;
+    background: #0b0b0b;
     color: #ffffff;
     box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.9);
     transition:
@@ -841,12 +818,12 @@ const jsonLd = {
     padding: 0 5px;
     border-radius: 999px;
     background: #ffe28a;
-    color: #060606;
+    color: #000000;
     font-size: 10px;
     font-weight: 700;
     line-height: 20px;
     text-align: center;
-    border: 2px solid #060606;
+    border: 2px solid #000000;
   }
 
   .header-badge.\!static {
@@ -876,8 +853,8 @@ const jsonLd = {
     top: calc(100% + 8px);
     right: 0;
     min-width: 200px;
-    background: #0e0e0e;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: #050505;
+    border: 2px solid rgba(247, 223, 165, 0.22);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.9);
@@ -938,8 +915,8 @@ const jsonLd = {
     position: relative;
     margin: 10vh auto 0;
     width: min(640px, calc(100% - 2rem));
-    background: #0e0e0e;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: #050505;
+    border: 2px solid rgba(247, 223, 165, 0.28);
     box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 1);
   }
 
@@ -948,7 +925,7 @@ const jsonLd = {
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 2px solid rgba(247, 223, 165, 0.22);
     color: #ffe28a;
   }
 
