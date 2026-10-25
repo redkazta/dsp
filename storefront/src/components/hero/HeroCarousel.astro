@@ -2,10 +2,10 @@
 /**
  * HeroCarousel.astro
  *
- * Carrusel de fondo para el hero: muestra las fotos de las playeras
- * con opacidad al 40 %, efecto de mostrador (3 imágenes visibles, la
- * central completa y las laterales a la mitad) y cambio automático
- * cada 5 segundos.
+ * Carrusel de fondo para el hero: muestra 3 fotos de las playeras
+ * separadas, con opacidad al 40 %, efecto de mostrador (3 imágenes
+ * visibles, la central completa y las laterales a la mitad) y cambio
+ * automático cada 5 segundos.
  */
 interface Props {
   images: string[];
@@ -30,7 +30,9 @@ const duplicated = [...slides, ...slides]; // loop infinito
 
 <style>
   .hero-carousel {
-    position: relative;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
