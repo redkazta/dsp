@@ -3,6 +3,7 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCard from '../components/product/ProductCard.astro';
+import HeroCarousel from '../components/hero/HeroCarousel.astro';
 import { getProducts, TENANT_SLUG } from '../lib/supabase';
 
 const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
@@ -22,15 +23,17 @@ try {
   camisas = [];
   jeans = [];
 }
+
+// Todas las fotos de las camisas para el hero (mostrador)
+const camisasImages = camisas.flatMap(
+  (p: any) => (p.product_images ?? []).map((img: any) => img.url)
+);
 ---
 
 <BaseLayout>
-  <!-- HERO: imagen del logo como fondo -->
+  <!-- HERO: galería de playeras como fondo -->
   <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-negro-profundo">
-    <div class="absolute inset-0">
-      <img src="/img/logo/DSP.jpg" alt="" class="w-full h-full object-cover opacity-30" loading="eager" />
-      <div class="absolute inset-0 bg-gradient-to-r from-negro-profundo via-negro-profundo/60 to-transparent"></div>
-    </div>
+    <HeroCarousel images={camisasImages} />
 
     <div class="relative z-10 page-container w-full py-16">
       <div class="max-w-2xl">
