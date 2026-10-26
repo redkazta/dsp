@@ -4,6 +4,10 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroCarousel from '../components/hero/HeroCarousel.astro';
 import { getProducts, TENANT_SLUG } from '../lib/supabase';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
 
@@ -34,22 +38,32 @@ const camisasImages = [
 
 <BaseLayout>
   <!--
-    HERO: el carrusel de fondo con el boton pegado al borde inferior.
-
-    El alto se mide en vh pero con un TOPE en px: en un monitor grande, 46vh
-    seguia ocupando media pantalla. Con max-h, el carrusel mide como mucho
-    30rem (480px) y el primer scroll ya muestra el contenido.
+    HERO a pantalla completa: ocupa exactamente lo que queda de viewport debajo
+    de la barra de anuncios (36px) y del header (96/112px). Así "Ver drop" se ve
+    al entrar, sin scroll, en móvil y en desktop.
   -->
-  <section class="hero-section relative h-[26vh] lg:h-[40vh] max-h-[480px] overflow-hidden bg-negro-profundo">
+  <section class="hero-section relative overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-4 sm:pb-6">
-      <a href="/tienda" class="btn-drop">Ver drop</a>
+    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 sm:pb-7">
+      <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
     </div>
   </section>
 </BaseLayout>
 
 <style>
+  .hero-section {
+    /* dvh: alto real en móvil (descuenta la barra del navegador). */
+    height: calc(100dvh - 36px - 6rem);
+    min-height: 22rem;
+  }
+
+  @media (min-width: 640px) {
+    .hero-section {
+      height: calc(100dvh - 36px - 7rem);
+    }
+  }
+
   /* Botón apaisado y a nivel del borde inferior: menos alto que el btn-gold
      genérico para que no "flote" sobre la última foto. */
   .btn-drop {
@@ -80,14 +94,6 @@ const camisasImages = [
     .btn-drop {
       min-height: 42px;
       padding: 0.65rem 2rem;
-    }
-  }
-
-  /* Pantallas muy bajas (ventana reducida o laptop antigua): el carrusel se
-     achica solo para no comerse la primera pantalla. */
-  @media (max-height: 600px) {
-    .hero-section {
-      height: 34vh;
     }
   }
 </style>

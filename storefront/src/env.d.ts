@@ -30,6 +30,8 @@ declare namespace App {
     email: string | null;
     role: string | null;
     isStaff: boolean;
+    /** Idioma de la tienda (cookie `dsp_lang` o Accept-Language). */
+    lang: import('./lib/i18n').Lang;
   }
 }
 

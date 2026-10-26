@@ -11,6 +11,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase-server';
 import { STAFF_ROLES, NOT_FOUND_HEADERS } from './lib/constants';
+import { LANG_COOKIE, langFromAcceptHeader, normalizeLang } from './lib/i18n';
 
 /** Rutas que no necesitan sesión ni consultas a Supabase. */
 const PUBLIC_ASSET = /^\/(_astro|_image|fonts|images|icons)\/|^\/(favicon|og-image|robots|sitemap)\./i;
@@ -120,6 +121,13 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   context.locals.email = user?.email ?? null;
   context.locals.role = role;
   context.locals.isStaff = isStaff;
+
+  // ---------- Idioma (cookie propia o Accept-Language) ----------
+  // Se resuelve en servidor: el HTML sale ya traducido, sin parpadeo.
+  const cookieLang = context.cookies.get(LANG_COOKIE)?.value;
+  context.locals.lang = cookieLang
+    ? normalizeLang(cookieLang)
+    : langFromAcceptHeader(context.request.headers.get('accept-language'));
 
   const response = await next();
 

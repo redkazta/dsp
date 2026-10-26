@@ -6,6 +6,7 @@
 import '../styles/global.css';
 import '../styles/animated-logo.css';
 import StoreDrawer from '../components/store/StoreDrawer.astro';
+import { getCopy, LANG_TOGGLE_LABEL, LOCALE, type Lang } from '../lib/i18n';
 
 export interface Props {
   title?: string;
@@ -13,17 +14,25 @@ export interface Props {
   image?: string;
 }
 
+// Idioma resuelto en el middleware (cookie dsp_lang o Accept-Language).
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+
 const {
-  title = 'Dinero Sobre Problemas | Streetwear Reflective Premium',
-  description = 'Camisas reflectivas, hoodies y piezas atemporales. Diseño callejero con energía de lujo.',
+  title = t.meta.home.title,
+  description = t.meta.home.description,
   image = '/og-image.jpg',
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
+// Para el formulario del idioma: volver a la misma página (query incluida).
+const langReturnTo = Astro.url.pathname + Astro.url.search;
+const langToggleLabel = LANG_TOGGLE_LABEL[lang];
+
 const navLinks = [
-  { href: '/tienda', label: 'Tienda' },
-  { href: '/nosotros', label: 'Nosotros' },
+  { href: '/tienda', label: t.nav.tienda },
+  { href: '/nosotros', label: t.nav.nosotros },
 ];
 
 const isAuth = Astro.locals.isAuthenticated;
@@ -66,24 +75,21 @@ if (isAuth && Astro.locals.user) {
   }
 }
 
-const announcements = [
-  'Envío gratis en pedidos superiores a $150 USD',
-  'Drop Reflective disponible por tiempo limitado',
-];
+const announcements = [...t.announcements];
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'ClothingStore',
-  name: 'Dinero Sobre Problemas',
+  name: t.brand,
   url: Astro.site,
   logo: new URL('/img/logo/DSP.jpg', Astro.site ?? Astro.url.origin).toString(),
   currenciesAccepted: 'USD',
-  paymentAccepted: 'Tarjeta de crédito, débito',
+  paymentAccepted: t.trust.secureText,
 };
 ---
 
 <!doctype html>
-<html lang="es-MX" class="dark" data-auth={isAuth ? '1' : '0'}>
+<html lang={lang} class="dark" data-auth={isAuth ? '1' : '0'} data-lang={lang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -101,8 +107,8 @@ const jsonLd = {
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Dinero Sobre Problemas" />
-    <meta property="og:locale" content="es_MX" />
+    <meta property="og:site_name" content={t.brand} />
+    <meta property="og:locale" content={lang === 'es' ? 'es_MX' : 'en_US'} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -122,6 +128,12 @@ const jsonLd = {
     />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <script is:inline define:vars={{ locale: LOCALE[lang], lang }}>
+      // Fechas y números en el idioma activo desde el primer render.
+      window.__DSP_LOCALE__ = locale;
+      window.__DSP_LANG__ = lang;
+    </script>
   </head>
 
   <body class="min-h-screen flex flex-col bg-negro-profundo">
@@ -153,7 +165,7 @@ const jsonLd = {
             <button
               id="menu-toggle"
               class="lg:hidden -ml-3 p-2.5 min-w-[44px] min-h-[44px] text-blancoRoto hover:text-oro-brillo transition-colors"
-              aria-label="Abrir menú"
+              aria-label={t.nav.menu}
               aria-expanded="false"
               aria-controls="mobile-menu"
             >
@@ -167,7 +179,7 @@ const jsonLd = {
             <a
               href="/"
               class="header-spinner"
-              aria-label="Dinero Sobre Problemas — inicio"
+              aria-label={`${t.brand} — ${t.header.home}`}
             >
               <img
                 src="/img/logo/DSP.jpg"
@@ -175,6 +187,21 @@ const jsonLd = {
                 class="logo-animated header-spinner-img"
               />
             </a>
+
+            <!-- Toggle de idioma: discreto, junto al logo. Es un POST (sin JS)
+                 que guarda la cookie y vuelve a la misma página. -->
+            <form method="POST" action="/api/lang" class="lang-toggle-form">
+              <input type="hidden" name="lang" value={lang === 'es' ? 'en' : 'es'} />
+              <input type="hidden" name="next" value={langReturnTo} />
+              <button
+                type="submit"
+                class="lang-toggle"
+                aria-label={t.header.language}
+                title={t.header.language}
+              >
+                {langToggleLabel}
+              </button>
+            </form>
           </div>
 
           <!-- Nav desktop (Tienda / Nosotros), centrado -->
@@ -197,7 +224,7 @@ const jsonLd = {
             <button
               type="button"
               id="search-open"
-              aria-label="Buscar piezas"
+              aria-label={t.header.search}
               aria-haspopup="dialog"
               aria-controls="search-dialog"
               aria-expanded="false"
@@ -217,7 +244,7 @@ const jsonLd = {
                     type="button"
                     id="profile-trigger"
                     class="profile-pill"
-                    aria-label={`Opciones de cuenta de ${firstName ?? 'cliente'}`}
+                    aria-label={`${t.header.accountMenu}: ${firstName ?? ''}`}
                     aria-expanded="false"
                     aria-haspopup="menu"
                   >
@@ -225,8 +252,8 @@ const jsonLd = {
                       {firstName?.charAt(0).toUpperCase() ?? 'D'}
                     </span>
                     <span class="profile-text">
-                      <span class="profile-hello">Admin, {firstName ?? 'cliente'}</span>
-                      <span class="profile-action">Ver mi cuenta</span>
+                      <span class="profile-hello">{t.header.welcome}, {firstName ?? ''}</span>
+                      <span class="profile-action">{t.header.viewAccount}</span>
                     </span>
                     <svg
                       width="16"
@@ -245,22 +272,22 @@ const jsonLd = {
                   </button>
 
                   <div id="profile-menu" class="profile-menu hidden" role="menu">
-                    <a href="/cuenta" class="profile-menu-item" role="menuitem">Mi cuenta</a>
-                    <a href="/cuenta#pedidos" class="profile-menu-item" role="menuitem">Mis pedidos</a>
-                    <a href="/favoritos" class="profile-menu-item" role="menuitem">Favoritos</a>
-                    <a href="/carrito" class="profile-menu-item" role="menuitem">Carrito</a>
-                    <a href="/checkout" class="profile-menu-item" role="menuitem">Finalizar compra</a>
+                    <a href="/cuenta" class="profile-menu-item" role="menuitem">{t.header.myAccount}</a>
+                    <a href="/cuenta#pedidos" class="profile-menu-item" role="menuitem">{t.header.myOrders}</a>
+                    <a href="/favoritos" class="profile-menu-item" role="menuitem">{t.nav.favoritos}</a>
+                    <a href="/carrito" class="profile-menu-item" role="menuitem">{t.nav.carrito}</a>
+                    <a href="/checkout" class="profile-menu-item" role="menuitem">{t.header.checkout}</a>
                     {isStaff && (
-                      <a href="/admin" class="profile-menu-item" role="menuitem">Panel de administración</a>
+                      <a href="/admin" class="profile-menu-item" role="menuitem">{t.header.admin}</a>
                     )}
                     <span class="profile-menu-divider" aria-hidden="true"></span>
                     <button type="button" id="btn-signout" class="profile-menu-item" role="menuitem">
-                      Cerrar sesión
+                      {t.header.logout}
                     </button>
                   </div>
                 </div>
               ) : (
-                <a href={accountHref} aria-label="Iniciar sesión" class="header-icon sm:hidden">
+                <a href={accountHref} aria-label={t.header.login} class="header-icon sm:hidden">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
                   </svg>
@@ -281,7 +308,7 @@ const jsonLd = {
             <span class="profile-avatar sm:hidden" aria-hidden="true">
               {isAuth ? firstName?.charAt(0).toUpperCase() : 'D'}
             </span>
-            {isAuth ? `Bienvenido, ${firstName ?? 'cliente'}` : 'Iniciar sesión'}
+            {isAuth ? `${t.header.welcome}, ${firstName ?? ''}` : t.header.login}
           </a>
           {
             navLinks.map((link) => (
@@ -298,7 +325,7 @@ const jsonLd = {
             data-open-drawer="wishlist"
             class="py-4 min-h-[52px] flex items-center justify-between gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
           >
-            <span>Favoritos</span>
+            <span>{t.nav.favoritos}</span>
             <span id="mobile-wish-count" class="header-badge !static !border-0 hidden"></span>
           </button>
           <button
@@ -306,7 +333,7 @@ const jsonLd = {
             data-open-drawer="cart"
             class="py-4 min-h-[52px] flex items-center justify-between gap-3 font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors border-b border-white/15"
           >
-            <span>Carrito</span>
+            <span>{t.nav.carrito}</span>
             <span id="mobile-cart-count" class="header-badge !static !border-0 hidden"></span>
           </button>
           <button
@@ -314,7 +341,7 @@ const jsonLd = {
             id="mobile-search-open"
             class="py-4 min-h-[52px] flex items-center font-acentos text-sm uppercase tracking-[0.22em] text-blancoRoto hover:text-oro-brillo transition-colors"
           >
-            Buscar
+            {t.nav.buscar}
           </button>
         </div>
       </nav>
@@ -326,8 +353,8 @@ const jsonLd = {
     </main>
 
     <!-- Buscador global (⌘K / Ctrl+K) -->
-    <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label="Buscar piezas">
-      <button type="button" id="search-backdrop" class="search-backdrop" aria-label="Cerrar buscador"></button>
+    <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label={t.header.search}>
+      <button type="button" id="search-backdrop" class="search-backdrop" aria-label={t.header.close}></button>
       <div class="search-panel">
         <div class="search-field">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -336,15 +363,15 @@ const jsonLd = {
           <input
             id="search-input"
             type="search"
-            placeholder="Buscar piezas…"
+            placeholder={t.search.placeholder}
             autocomplete="off"
             aria-controls="search-results"
-            aria-label="Buscar piezas"
+            aria-label={t.header.search}
           />
           <kbd class="search-kbd">esc</kbd>
         </div>
         <div id="search-results" class="search-results" role="listbox" aria-live="polite"></div>
-        <p id="search-hint" class="search-hint">Escribe al menos 2 letras.</p>
+        <p id="search-hint" class="search-hint">{t.search.hint}</p>
       </div>
     </div>
 
@@ -353,10 +380,10 @@ const jsonLd = {
       <div class="page-container py-10 sm:py-12 grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {
           [
-            { t: 'Envío express', d: '24-48h en zona metropolitana', icon: 'M5 12h14M12 5l7 7-7 7' },
-            { t: 'Pago seguro', d: 'Tarjetas de crédito y débito', icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
-            { t: 'Devoluciones', d: '30 días sin preguntas', icon: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5' },
-            { t: 'Atención 1:1', d: 'WhatsApp y DM abiertos', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
+            { t: t.trust.shippingTitle, d: t.trust.shippingText, icon: 'M5 12h14M12 5l7 7-7 7' },
+            { t: t.trust.secureTitle, d: t.trust.secureText, icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
+            { t: t.trust.returnsTitle, d: t.trust.returnsText, icon: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5' },
+            { t: t.trust.supportTitle, d: t.trust.supportText, icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
           ].map((item) => (
             <div class="flex items-start gap-4">
               <div class="shrink-0 w-11 h-11 border-2 border-oro-brillo/70 flex items-center justify-center">
@@ -380,7 +407,7 @@ const jsonLd = {
         <div class="grid gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Marca -->
           <div class="sm:col-span-2">
-            <h3 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-3">Dinero Sobre Problemas</h3>
+            <h3 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-3">{t.brand}</h3>
             <div class="gold-line mb-5" style="margin-left: 0"></div>
             <p class="text-base text-muted leading-relaxed max-w-md mb-6">
               Streetwear artesanal prensado a mano, una pieza a la vez.
@@ -412,14 +439,14 @@ const jsonLd = {
 
           <!-- Tienda -->
           <div>
-            <h4 class="section-label mb-5">Tienda</h4>
+            <h4 class="section-label mb-5">{t.footer.tienda}</h4>
             <ul class="space-y-3">
               {
                 [
-                  { href: '/tienda', label: 'Catálogo' },
-                  { href: '/nosotros', label: 'Nosotros' },
-                  { href: '/contacto', label: 'Contacto' },
-                  { href: '/tallas', label: 'Guía de tallas' },
+                  { href: '/tienda', label: t.footer.catalogue },
+                  { href: '/nosotros', label: t.footer.about },
+                  { href: '/contacto', label: t.footer.contact },
+                  { href: '/tallas', label: t.footer.sizes },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
@@ -433,14 +460,14 @@ const jsonLd = {
 
           <!-- Ayuda -->
           <div>
-            <h4 class="section-label mb-5">Ayuda</h4>
+            <h4 class="section-label mb-5">{t.footer.help}</h4>
             <ul class="space-y-3">
               {
                 [
-                  { href: '/envios', label: 'Envíos' },
-                  { href: '/devoluciones', label: 'Devoluciones' },
-                  { href: '/privacidad', label: 'Privacidad' },
-                  { href: '/terminos', label: 'Términos' },
+                  { href: '/envios', label: t.footer.shipping },
+                  { href: '/devoluciones', label: t.footer.returns },
+                  { href: '/privacidad', label: t.footer.privacy },
+                  { href: '/terminos', label: t.footer.terms },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
@@ -458,13 +485,13 @@ const jsonLd = {
       <div class="border-t-2 border-white/25">
         <div class="page-container py-5 sm:py-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-center">
           <p class="text-[11px] sm:text-xs text-white/80 font-acentos tracking-wider">
-            © {new Date().getFullYear()} DINERO SOBRE PROBLEMAS
+            © {new Date().getFullYear()} {t.brand.toUpperCase()} · {t.footer.rights}
           </p>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/80 font-acentos tracking-wider">
-            <a href="/privacidad" class="py-1 hover:text-oro-brillo transition-colors">Privacidad</a>
-            <a href="/terminos" class="py-1 hover:text-oro-brillo transition-colors">Términos</a>
-            <a href="/envios" class="py-1 hover:text-oro-brillo transition-colors">Envíos</a>
-            <a href="/contacto" class="py-1 hover:text-oro-brillo transition-colors">Contacto</a>
+            <a href="/privacidad" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.privacy}</a>
+            <a href="/terminos" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.terms}</a>
+            <a href="/envios" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.shipping}</a>
+            <a href="/contacto" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.contact}</a>
           </div>
           <!-- Métodos de pago -->
           <div class="flex items-center gap-2">
@@ -715,6 +742,41 @@ const jsonLd = {
       height: 5rem;
       margin-left: 1rem;
     }
+  }
+
+  /* Toggle de idioma: pastilla pequeña y discreta junto al logo. */
+  .lang-toggle-form {
+    display: inline-flex;
+    margin-left: 0.25rem;
+  }
+
+  .lang-toggle {
+    min-height: 28px;
+    padding: 0 0.5rem;
+    border: 1px solid rgba(247, 223, 165, 0.45);
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .lang-toggle:hover {
+    color: #ffe28a;
+    border-color: #ffe28a;
+    background: rgba(255, 226, 138, 0.08);
+  }
+
+  .lang-toggle:focus-visible {
+    outline: 2px solid #ffe28a;
+    outline-offset: 2px;
   }
 
   /* Píldora de perfil a la izquierda del header */
