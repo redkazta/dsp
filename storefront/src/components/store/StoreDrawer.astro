@@ -223,12 +223,24 @@ const ui = {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 320px;
+    width: 348px;
     max-width: calc(100vw - 32px);
     background: #050505;
     border: 2px solid rgba(247, 223, 165, 0.28);
     box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.95);
     z-index: 70;
+  }
+
+  /* Al hacer clic en el icono se navega a /carrito o /favoritos.
+     Este bloqueo evita que el panel parpadee durante la navegación
+     (el hover se re-dispara al pasar por el area del panel). */
+  .store-actions.is-leaving .mini-panel,
+  .store-trigger.is-leaving .mini-panel {
+    display: none !important;
+  }
+
+  .store-actions.is-leaving .store-trigger::after {
+    pointer-events: none !important;
   }
 
   .mini-panel[hidden] {
@@ -272,15 +284,17 @@ const ui = {
   }
 
   .mini-body {
-    max-height: 300px;
+    max-height: 348px;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
+  /* Cada pieza: foto a la izquierda a toda la altura, detalles a la derecha. */
   .mini-item {
     display: flex;
-    gap: 10px;
-    padding: 10px 14px;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
     text-decoration: none;
@@ -296,9 +310,10 @@ const ui = {
   }
 
   .mini-thumb {
-    width: 52px;
-    height: 60px;
-    flex: 0 0 52px;
+    width: 78px;
+    flex: 0 0 78px;
+    align-self: stretch;
+    min-height: 86px;
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
@@ -308,7 +323,8 @@ const ui = {
   .mini-thumb img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    display: block;
   }
 
   .mini-info {
@@ -316,30 +332,38 @@ const ui = {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 2px;
+    justify-content: space-between;
+    gap: 4px;
     text-decoration: none;
     color: inherit;
   }
 
   .mini-name {
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.3;
     color: #ffffff;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .mini-item:hover .mini-name {
+    color: #ffe28a;
   }
 
   .mini-meta {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .mini-price {
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
     color: #ffe28a;
     white-space: nowrap;
   }
@@ -452,7 +476,7 @@ const ui = {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   /* Control de cantidad compacto */
@@ -463,8 +487,8 @@ const ui = {
   }
 
   .mini-qty button {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -483,7 +507,7 @@ const ui = {
   }
 
   .mini-qty span {
-    min-width: 22px;
+    min-width: 20px;
     text-align: center;
     font-family: 'Space Grotesk', Inter, sans-serif;
     font-size: 11px;
@@ -494,25 +518,33 @@ const ui = {
   .mini-chip {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
-    min-height: 24px;
+    min-height: 26px;
     padding: 0 8px;
     border: 1px solid rgba(247, 223, 165, 0.5);
     background: transparent;
     color: #f7dfa5;
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    text-align: center;
     cursor: pointer;
+    white-space: nowrap;
     transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   }
 
-  .mini-chip:hover {
+  .mini-chip:hover:not(:disabled) {
     background: rgba(255, 226, 138, 0.12);
     border-color: #ffe28a;
     color: #ffe28a;
+  }
+
+  .mini-chip:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
   .mini-chip.is-done {
@@ -525,6 +557,7 @@ const ui = {
   .mini-remove {
     width: 24px;
     height: 24px;
+    flex: 0 0 24px;
     margin-left: auto;
     display: flex;
     align-items: center;
@@ -1081,14 +1114,10 @@ const ui = {
     }, 320);
   }
 
-  openCartBtn?.addEventListener('click', () => {
-    hideMini(true);
-    open('cart');
-  });
-  openWishBtn?.addEventListener('click', () => {
-    hideMini(true);
-    open('wishlist');
-  });
+  /*
+   * El panel grande (`#drawer`) queda en el DOM por compatibilidad, pero los
+   * iconos del header ya no lo abren: navegan a /carrito y /favoritos.
+   */
   closeBtn?.addEventListener('click', close);
   backdrop?.addEventListener('click', close);
   tabCart.addEventListener('click', () => {
@@ -1194,7 +1223,7 @@ const ui = {
     }
 
     miniCartBody.innerHTML = items
-      .slice(0, 4)
+      .slice(0, 3)
       .map((i) => {
         const img = safeUrl(i.image);
         const href = `/producto/${encodeURIComponent(i.productId)}`;
@@ -1205,6 +1234,7 @@ const ui = {
           <div class="mini-info">
             <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
             <span class="mini-meta">${escapeHtml(i.variantName)}</span>
+            <span class="mini-price">$${formatMXN(i.price * i.qty)}</span>
             <div class="mini-row-actions">
               <div class="mini-qty">
                 <button type="button" data-mini-qty="cart:${escapeHtml(i.variantId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
@@ -1223,7 +1253,6 @@ const ui = {
               </button>
             </div>
           </div>
-          <span class="mini-price">$${formatMXN(i.price)}</span>
         </div>`;
       })
       .join('');
@@ -1317,7 +1346,7 @@ const ui = {
         variantId: variant.id,
         productId: item.productId,
         name: item.name,
-        variantName: variant.name,
+        variantName: [variant.size, variant.color].filter(Boolean).join(' · ') || variant.name,
         price: variant.price || item.price,
         qty: 1,
         image: item.image ?? undefined,
@@ -1353,7 +1382,7 @@ const ui = {
       variantId: variant.id,
       productId,
       name: item.name,
-      variantName: variant.name,
+      variantName: [variant.size, variant.color].filter(Boolean).join(' · ') || variant.name,
       price: variant.price || item.price,
       qty: 1,
       image: item.image ?? undefined,
@@ -1384,7 +1413,7 @@ const ui = {
     }
 
     miniWishBody.innerHTML = currentWish
-      .slice(0, 4)
+      .slice(0, 3)
       .map((i) => {
         const img = safeUrl(i.image);
         const href = `/producto/${encodeURIComponent(i.slug ?? i.productId)}`;
@@ -1395,7 +1424,7 @@ const ui = {
           <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
           <div class="mini-info">
             <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
-            <span class="mini-meta">$${formatMXN(i.price)}</span>
+            <span class="mini-price">$${formatMXN(i.price)}</span>
             <div class="mini-row-actions">
               ${
                 inCart
@@ -1455,7 +1484,26 @@ const ui = {
     else closeTimer = window.setTimeout(apply, 220);
   }
 
+  /**
+   * Al hacer clic en un icono se navega a /carrito o /favoritos.
+   * Se marca el contenedor como "saliendo" para que el mini panel no
+   * vuelva a abrirse con el hover mientras el navegador cambia de página.
+   */
+  function leaveFor(href: string) {
+    const actions = document.querySelector('.store-actions');
+    actions?.classList.add('is-leaving');
+    triggers.forEach((t) => t.classList.add('is-leaving'));
+    hideMini(true);
+
+    // Small delay para que el clic se registre antes de la navegación.
+    window.setTimeout(() => {
+      window.location.href = href;
+    }, 60);
+  }
+
   function showMini(tab: Tab) {
+    // Nunca se abre si el usuario ya hizo clic para irse a /carrito o /favoritos.
+    if (document.querySelector('.store-actions.is-leaving')) return;
     window.clearTimeout(closeTimer);
 
     if (tab === 'cart') renderMiniCart();
@@ -1480,13 +1528,14 @@ const ui = {
       t.addEventListener('mouseenter', () => showMini(tab));
       t.addEventListener('mouseleave', () => hideMini());
 
-      // Si el puntero entra en el panel (aunque sea por el borde), se mantiene.
-      const panel = t.querySelector<HTMLElement>('.mini-panel');
-      panel?.addEventListener('mouseenter', () => window.clearTimeout(closeTimer));
-      panel?.addEventListener('mouseleave', () => hideMini());
-
-      // Teclado: el foco mantiene el panel abierto
-      t.addEventListener('focusin', () => showMini(tab));
+      // Teclado: el foco mantiene el panel abierto, pero solo si el foco entra
+      // en el propio icono. Así al volver el foco al botón (p. ej. al cerrar
+      // el panel grande) no se despliega nada por sorpresa.
+      t.addEventListener('focusin', (e) => {
+        if (t.classList.contains('is-leaving')) return;
+        if (!(e.target instanceof Element) || !e.target.closest('.header-icon')) return;
+        showMini(tab);
+      });
       t.addEventListener('focusout', (e) => {
         if (!t.contains((e as FocusEvent).relatedTarget as Node | null)) hideMini();
       });
@@ -1495,8 +1544,14 @@ const ui = {
 
   // Clic en los iconos: navegan a /carrito o /favoritos (ya no abren drawer)
   // El mini panel sigue funcionando con hover
-  openCartBtn?.addEventListener('click', () => hideMini(true));
-  openWishBtn?.addEventListener('click', () => hideMini(true));
+  openCartBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    leaveFor('/carrito');
+  });
+  openWishBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    leaveFor('/favoritos');
+  });
 
   // "Ver carrito completo" desde el mini panel
   document.querySelectorAll<HTMLElement>('[data-drawer]').forEach((b) =>
@@ -1539,6 +1594,13 @@ const ui = {
 
   // Al abrir el panel grande, los mini se ocultan
   window.addEventListener('store:open', () => hideMini(true));
+
+  // Si el navegador restaura la página desde el bfcache (botón "atrás"),
+  // se limpia el bloqueo de navegación para que el hover vuelva a funcionar.
+  window.addEventListener('pageshow', () => {
+    document.querySelector('.store-actions')?.classList.remove('is-leaving');
+    triggers.forEach((t) => t.classList.remove('is-leaving'));
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideMini(true);
