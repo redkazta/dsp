@@ -35,10 +35,12 @@ const camisasImages = [
 <BaseLayout>
   <!--
     HERO: el carrusel de fondo con el boton pegado al borde inferior.
-    Alto: 26vh movil / 46vh desktop (30% menos que la version anterior), para
-    que "Ver drop" quede a la vista desde que se entra.
+
+    El alto se mide en vh pero con un TOPE en px: en un monitor grande, 46vh
+    seguia ocupando media pantalla. Con max-h, el carrusel mide como mucho
+    30rem (480px) y el primer scroll ya muestra el contenido.
   -->
-  <section class="hero-section relative h-[26vh] lg:h-[46vh] overflow-hidden bg-negro-profundo">
+  <section class="hero-section relative h-[26vh] lg:h-[40vh] max-h-[480px] overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
     <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-4 sm:pb-6">
@@ -78,6 +80,14 @@ const camisasImages = [
     .btn-drop {
       min-height: 42px;
       padding: 0.65rem 2rem;
+    }
+  }
+
+  /* Pantallas muy bajas (ventana reducida o laptop antigua): el carrusel se
+     achica solo para no comerse la primera pantalla. */
+  @media (max-height: 600px) {
+    .hero-section {
+      height: 34vh;
     }
   }
 </style>
