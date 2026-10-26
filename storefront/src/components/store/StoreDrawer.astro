@@ -42,6 +42,13 @@ const ui = {
     lang === 'en' ? 'away from free shipping.' : 'para envío gratis.',
   savedToWish: lang === 'en' ? 'Saved to wishlist' : 'Guardado en favoritos',
   removedFromWish: lang === 'en' ? 'Removed from wishlist' : 'Quitado de favoritos',
+  wishLoginPrompt:
+    lang === 'en'
+      ? 'Sign in to keep your favourites on every device.'
+      : 'Inicia sesión para no perder tus favoritos al cambiar de dispositivo.',
+  wishLoginCta: lang === 'en' ? 'Sign in' : 'Iniciar sesión',
+  openPiece: lang === 'en' ? 'Open piece' : 'Abrir pieza',
+  removeWish: lang === 'en' ? 'Remove' : 'Quitar',
 };
 ---
 
@@ -68,7 +75,11 @@ const ui = {
       </div>
       <div id="mini-wish-body" class="mini-body"></div>
       <div class="mini-foot">
-        <a href="/favoritos" class="btn-outline w-full !min-h-[44px] !px-4 !py-2 !text-xs">{ui.seeAll}</a>
+        <p id="mini-wish-hint" class="mini-hint" hidden>
+          {ui.wishLoginPrompt}
+          <a href="/entrar" class="mini-hint-link">{ui.wishLoginCta}</a>
+        </p>
+        <a href="/favoritos" class="mini-cta">{ui.seeAll}</a>
       </div>
     </div>
   </div>
@@ -233,6 +244,13 @@ const ui = {
     gap: 10px;
     padding: 10px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    text-decoration: none;
+    transition: background-color 0.18s ease;
+  }
+
+  a.mini-item:hover {
+    background: rgba(255, 226, 138, 0.07);
   }
 
   .mini-item:last-child {
@@ -246,6 +264,7 @@ const ui = {
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
+    display: block;
   }
 
   .mini-thumb img {
@@ -261,6 +280,8 @@ const ui = {
     flex-direction: column;
     justify-content: center;
     gap: 2px;
+    text-decoration: none;
+    color: inherit;
   }
 
   .mini-name {
@@ -295,6 +316,74 @@ const ui = {
   .mini-foot {
     padding: 12px 14px;
     border-top: 2px solid rgba(255, 255, 255, 0.18);
+  }
+
+  /* Aviso para el visitante: sus favoritos solo viven en este navegador. */
+  .mini-hint {
+    margin-bottom: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .mini-hint-link {
+    display: inline-block;
+    margin-top: 4px;
+    color: #ffe28a;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* Botón "ver todos" del mini panel */
+  .mini-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 40px;
+    border: 2px solid rgba(247, 223, 165, 0.55);
+    color: #f7dfa5;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mini-cta:hover {
+    background: rgba(255, 226, 138, 0.1);
+    border-color: #ffe28a;
+    color: #ffe28a;
+  }
+
+  /* Botón de quitar dentro del mini panel */
+  .mini-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .mini-item:hover .mini-remove,
+  .mini-remove:focus-visible {
+    display: flex;
+  }
+
+  .mini-remove:hover {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.15);
   }
 
   .mini-link {
@@ -961,6 +1050,12 @@ const ui = {
   function renderMiniWish() {
     miniWishCount.textContent = String(currentWish.length);
 
+    const hint = document.getElementById('mini-wish-hint') as HTMLElement | null;
+    const isGuest = document.documentElement.dataset.auth !== '1';
+
+    // El aviso solo tiene sentido si hay algo guardado y no hay cuenta.
+    if (hint) hint.hidden = !(isGuest && currentWish.length > 0);
+
     if (currentWish.length === 0) {
       miniWishBody.innerHTML = `<div class="mini-empty">${escapeHtml(uiText('emptyWish'))}</div>`;
       return;
@@ -970,17 +1065,47 @@ const ui = {
       .slice(0, 4)
       .map((i) => {
         const img = safeUrl(i.image);
+        const href = `/producto/${encodeURIComponent(i.slug ?? i.productId)}`;
+
         return `
-        <a class="mini-item" href="/producto/${encodeURIComponent(i.slug ?? i.productId)}">
-          <div class="mini-thumb">${img ? `<img src="${img}" alt="">` : ''}</div>
-          <div class="mini-info">
+        <div class="mini-item">
+          <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
+          <a class="mini-info" href="${href}">
             <span class="mini-name">${escapeHtml(i.name)}</span>
-            <span class="mini-meta">${escapeHtml(uiText('viewPieces'))}</span>
-          </div>
+            <span class="mini-meta">${escapeHtml(uiText('openPiece'))}</span>
+          </a>
           <span class="mini-price">$${formatMXN(i.price)}</span>
-        </a>`;
+          <button
+            type="button"
+            class="mini-remove"
+            data-mini-wish-remove="${escapeHtml(i.productId)}"
+            aria-label="${escapeHtml(uiText('removeWish'))}"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>`;
       })
       .join('');
+
+    // Quitar desde el flotante sin abrir el panel completo.
+    miniWishBody.querySelectorAll<HTMLElement>('[data-mini-wish-remove]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const box = btn.closest('.mini-item') as HTMLElement | null;
+        box?.style.setProperty('opacity', '0.35');
+        btn.setAttribute('disabled', 'true');
+
+        try {
+          await removeFromWishlist(btn.dataset.miniWishRemove!);
+        } catch {
+          box?.style.removeProperty('opacity');
+        }
+      });
+    });
   }
 
   function hideMini(immediate = false) {
