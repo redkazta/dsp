@@ -42,6 +42,38 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   returned: 'Devuelto',
 };
 
+/** Mismas claves, en inglés (la usan las pantallas del cliente). */
+export const STATUS_LABEL_EN: Record<OrderStatus, string> = {
+  pending: 'Payment pending',
+  confirmed: 'Payment confirmed',
+  design: 'In design',
+  preparing: 'In production',
+  ready: 'Ready to ship',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+  returned: 'Returned',
+};
+
+export const STATUS_HINT_EN: Record<OrderStatus, string> = {
+  pending: 'Waiting for Stripe to confirm the payment.',
+  confirmed: 'Payment approved. We have it.',
+  design: 'We review the design of your piece with you.',
+  preparing: 'Pressed and sewn by hand.',
+  ready: 'Finished and packed, ready for the courier.',
+  shipped: 'On the way. Check your tracking number.',
+  delivered: 'Delivered. Thanks for trusting us.',
+  cancelled: 'The order was not produced.',
+  returned: 'The piece was returned.',
+};
+
+/** Elige el diccionario de estatus según el idioma. */
+export function orderLabels(lang: 'es' | 'en') {
+  return lang === 'en'
+    ? { status: STATUS_LABEL_EN, hint: STATUS_HINT_EN }
+    : { status: STATUS_LABEL, hint: STATUS_HINT };
+}
+
 export const STATUS_HINT: Record<OrderStatus, string> = {
   pending: 'Esperando la confirmación del pago en Stripe.',
   confirmed: 'Pago aprobado. Ya lo tenemos.',

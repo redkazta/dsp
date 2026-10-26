@@ -160,7 +160,7 @@ const ui = {
     <footer id="drawer-footer" class="drawer-foot">
       <div id="drawer-cart-totals">
         <div class="flex items-center justify-between mb-3">
-          <span class="font-acentos text-sm uppercase tracking-[0.18em] text-blancoRoto">Total</span>
+          <span class="font-acentos text-sm uppercase tracking-[0.18em] text-blancoRoto">{t.cart.total}</span>
           <span id="drawer-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
         </div>
         <p id="drawer-shipping-hint" class="text-xs text-white/80 mb-4"></p>
@@ -217,6 +217,28 @@ const ui = {
 
   .mini-panel[hidden] {
     display: none;
+  }
+
+  /* Entrada suave al aparecer con hover (no interfiere con `hidden`). */
+  .store-trigger.is-open .mini-panel:not([hidden]) {
+    animation: mini-in 0.18s ease-out both;
+  }
+
+  @keyframes mini-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .store-trigger.is-open .mini-panel:not([hidden]) {
+      animation: none;
+    }
   }
 
   .mini-head {
@@ -1101,8 +1123,11 @@ const ui = {
 
         try {
           await removeFromWishlist(btn.dataset.miniWishRemove!);
+          // El panel se repinta solo con `wishlist:updated`; aquí solo se
+          // conserva el foco para seguir quitando con el teclado.
         } catch {
           box?.style.removeProperty('opacity');
+          btn.removeAttribute('disabled');
         }
       });
     });
@@ -1121,7 +1146,7 @@ const ui = {
     };
 
     if (immediate) apply();
-    else closeTimer = window.setTimeout(apply, 160);
+    else closeTimer = window.setTimeout(apply, 220);
   }
 
   function showMini(tab: Tab) {
@@ -1143,8 +1168,16 @@ const ui = {
     triggers.forEach((t) => {
       const tab = (t.dataset.panel as Tab) ?? 'cart';
 
+      // Área de hover generosa: el icono mide 46px y el hueco hasta el panel
+      // otros 14px. Sin esto hay que apuntar con precisión para que no se
+      // cierre al bajar el mouse.
       t.addEventListener('mouseenter', () => showMini(tab));
       t.addEventListener('mouseleave', () => hideMini());
+
+      // Si el puntero entra en el panel (aunque sea por el borde), se mantiene.
+      const panel = t.querySelector<HTMLElement>('.mini-panel');
+      panel?.addEventListener('mouseenter', () => window.clearTimeout(closeTimer));
+      panel?.addEventListener('mouseleave', () => hideMini());
 
       // Teclado: el foco mantiene el panel abierto
       t.addEventListener('focusin', () => showMini(tab));

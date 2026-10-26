@@ -309,12 +309,13 @@ const ui = {
                   href="/carrito"
                   id="open-cart-drawer"
                   class="min-h-[56px] px-6 py-5 border-2 border-white/50 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
-                  aria-label={t.shop.viewCart}
+                  aria-label={t.product.goCheckout}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
                     <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
                   </svg>
+                  <span class="whitespace-nowrap">{t.product.goCheckout}</span>
                 </a>
               </div>
 
@@ -497,6 +498,13 @@ const ui = {
     import { openStoreDrawer } from '../../lib/store-drawer';
     import { sanitizeVariants } from '../../lib/product-variants';
     import { toggleWishlist, isInWishlist, SESSION_ENDED_EVENT } from '../../lib/wishlist';
+
+    // El botón secundario de la ficha lleva directo al pago con el carrito
+    // abierto, en vez de a una página intermedia sin acción clara.
+    document.getElementById('open-cart-drawer')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/checkout';
+    });
 
     /** Textos resueltos en servidor. */
     const ui = JSON.parse(document.getElementById('pdp-ui')?.textContent || '{}') as Record<string, string>;

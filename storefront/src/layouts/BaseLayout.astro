@@ -413,8 +413,7 @@ const jsonLd = {
             <h3 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-3">{t.brand}</h3>
             <div class="gold-line mb-5" style="margin-left: 0"></div>
             <p class="text-base text-muted leading-relaxed max-w-md mb-6">
-              Streetwear artesanal prensado a mano, una pieza a la vez.
-              Diseño callejero con energía de lujo.
+              {t.brandTagline}<br />{t.brandTagline2}
             </p>
             <!-- Redes -->
             <div class="flex gap-3">
@@ -651,7 +650,7 @@ const jsonLd = {
 
         if (items.length === 0) {
           searchResults.innerHTML = '';
-          searchHint.textContent = 'Sin resultados.';
+          searchHint.textContent = t.common.noResults;
           return;
         }
 

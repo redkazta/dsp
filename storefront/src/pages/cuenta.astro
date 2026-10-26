@@ -6,8 +6,7 @@ import { createSupabaseServerClient } from '../lib/supabase-server';
 import { listCustomerOrders, type CustomerOrder } from '../lib/customer-orders';
 import {
   STATUS_FLOW,
-  STATUS_LABEL,
-  STATUS_HINT,
+  orderLabels,
   formatOrderMoney,
   formatOrderDate,
   trackingUrl,
@@ -17,6 +16,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const { status: STATUS_LABEL, hint: STATUS_HINT } = orderLabels(lang);
 
 const user = Astro.locals.user!;
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
@@ -64,6 +64,15 @@ const ordersView = orders.map((o) => ({
 ---
 
 <BaseLayout title={t.account.metaTitle} description={t.account.profileSection}>
+  <script
+    type="application/json"
+    id="account-ui"
+    set:html={JSON.stringify({
+      noSavedWish: t.common.noSavedWish,
+      view: t.common.view,
+      remove: t.common.remove,
+    })}
+  />
   <div id="account">
     <!-- Encabezado -->
     <section class="border-b-2 border-white/25 bg-noise">
@@ -95,9 +104,9 @@ const ordersView = orders.map((o) => ({
           {
             ordersView.length === 0 ? (
               <div class="card p-8 sm:p-10 text-center">
-                <p class="text-muted mb-5">Aún no tienes pedidos.</p>
+                <p class="text-muted mb-5">{t.common.noOrders}</p>
                 <a href="/tienda" class="btn-outline inline-flex">
-                  Ver catálogo
+                  {t.about.closingCta}
                 </a>
               </div>
             ) : (
@@ -113,7 +122,8 @@ const ordersView = orders.map((o) => ({
                             {o.order_number ?? o.id.slice(0, 8)}
                           </p>
                           <p class="text-sm text-muted mt-1">
-                            {formatOrderDate(o.created_at)} · {(o.order_items ?? []).length} pieza(s)
+                            {formatOrderDate(o.created_at)} · {(o.order_items ?? []).length}{' '}
+                            {t.checkout.pieceMany}
                           </p>
                         </div>
                         <div class="sm:text-right shrink-0">
@@ -127,9 +137,9 @@ const ordersView = orders.map((o) => ({
                       <p class="mt-3 text-sm text-muted">{STATUS_HINT[status] ?? ''}</p>
 
                       {isClosed ? (
-                        <p class="mt-3 text-sm text-blancoRoto">Este pedido se cerró como {STATUS_LABEL[status]}.</p>
+                        <p class="mt-3 text-sm text-blancoRoto">{t.account.orderClosed} {STATUS_LABEL[status]}.</p>
                       ) : (
-                        <ol class="mt-4 flex items-center gap-1" aria-label="Progreso del pedido">
+                        <ol class="mt-4 flex items-center gap-1" aria-label={t.account.orderProgress}>
                           {o.steps.map((s) => (
                             <li
                               class="flex-1 h-1.5"
@@ -142,21 +152,21 @@ const ordersView = orders.map((o) => ({
 
                       {o.trackUrl && (
                         <p class="mt-3 text-sm text-blancoRoto">
-                          Guía: {o.carrier ?? 'Paquetería'} {o.tracking_number} ·{' '}
+                          {t.account.tracking}: {o.carrier ?? t.account.carrier} {o.tracking_number} ·{' '}
                           <a
                             href={o.trackUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             class="text-oro-brillo underline underline-offset-2"
                           >
-                            Rastrear
+                            {t.account.track}
                           </a>
                         </p>
                       )}
 
                       <details class="mt-4 border-t-2 border-white/15 pt-3">
                         <summary class="cursor-pointer text-xs uppercase tracking-[0.16em] text-white/80">
-                          Ver detalle
+                          {t.common.viewDetail}
                         </summary>
 
                         <ul class="mt-3 space-y-2">
@@ -192,7 +202,7 @@ const ordersView = orders.map((o) => ({
 
           <h2 class="section-label mt-10 mb-4">{t.account.myWishlist}</h2>
           <div id="wish-list" class="space-y-3">
-            <p class="text-sm text-muted">Sin favoritos guardados.</p>
+            <p class="text-sm text-muted">{t.common.noSavedWish}</p>
           </div>
 
           <h2 class="section-label mt-10 mb-4">{t.account.myAddresses}</h2>
@@ -289,7 +299,7 @@ const ordersView = orders.map((o) => ({
             id="change-password"
             class="mt-4 w-full text-sm text-white/70 hover:text-oro-brillo py-2 transition-colors"
           >
-            Cambiar contraseña
+            {t.common.changePassword}
           </button>
         </aside>
       </div>
@@ -313,6 +323,13 @@ const ordersView = orders.map((o) => ({
     import { signOut, updateProfile } from '../lib/auth';
     import { endWishlistSession, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
     import { escapeHtml, safeUrl } from '../lib/html';
+
+    /** Textos para el HTML generado en el navegador. */
+    const labels = JSON.parse(document.getElementById('account-ui')?.textContent || '{}') as Record<
+      string,
+      string
+    >;
+    const wishEmpty = labels.noSavedWish ?? '';
 
     const form = document.getElementById('profile-form') as HTMLFormElement;
     const saveOk = document.getElementById('save-ok')!;
@@ -370,7 +387,7 @@ const ordersView = orders.map((o) => ({
 
     function renderWish(items: WishlistItem[]) {
       if (items.length === 0) {
-        wishList.innerHTML = '<p class="text-sm text-muted">Sin favoritos guardados.</p>';
+        wishList.innerHTML = `<p class="text-sm text-muted">${escapeHtml(wishEmpty)}</p>`;
         return;
       }
 
@@ -386,10 +403,10 @@ const ordersView = orders.map((o) => ({
             <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">Ver</a>
+            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">${escapeHtml(labels.view)}</a>
             <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
               class="min-h-[40px] px-3 text-xs uppercase tracking-wider text-muted hover:text-red-400">
-              Quitar
+              ${escapeHtml(labels.remove)}
             </button>
           </div>
         </div>`

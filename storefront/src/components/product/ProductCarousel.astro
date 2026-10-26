@@ -7,6 +7,7 @@
  * No usa librerías: cero peso extra y funciona sin JS (solo scroll).
  */
 import ProductCard from './ProductCard.astro';
+import { getCopy, type Lang } from '../../lib/i18n';
 
 export interface Props {
   title: string;
@@ -15,6 +16,9 @@ export interface Props {
   href?: string;
   hrefLabel?: string;
 }
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const {
   title,
@@ -69,7 +73,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
 
     {
       uniqueProducts.length === 0 ? (
-        <p class="text-base text-white/80 py-10">Aún no hay piezas en {title.toLowerCase()}.</p>
+        <p class="text-base text-white/80 py-10">{t.shop.emptyCollection}</p>
       ) : (
         <div
           id={trackId}
