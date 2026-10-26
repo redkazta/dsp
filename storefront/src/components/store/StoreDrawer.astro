@@ -49,6 +49,14 @@ const ui = {
   wishLoginCta: lang === 'en' ? 'Sign in' : 'Iniciar sesión',
   openPiece: lang === 'en' ? 'Open piece' : 'Abrir pieza',
   removeWish: lang === 'en' ? 'Remove' : 'Quitar',
+  addAllToCart: lang === 'en' ? 'Add all to cart' : 'Añadir todo al carrito',
+  addOneToCart: lang === 'en' ? 'Add to cart' : 'Añadir al carrito',
+  inCart: lang === 'en' ? 'In cart' : 'En el carrito',
+  qty: lang === 'en' ? 'Qty' : 'Cant.',
+  addedN: lang === 'en' ? 'Added' : 'Añadidas',
+  newCartFromWish: lang === 'en' ? 'New cart with these' : 'Carrito nuevo con estos',
+  working: lang === 'en' ? 'Adding…' : 'Añadiendo…',
+  nothingAdded: lang === 'en' ? 'Nothing available' : 'Nada disponible',
 };
 ---
 
@@ -79,6 +87,14 @@ const ui = {
           {ui.wishLoginPrompt}
           <a href="/entrar" class="mini-hint-link">{ui.wishLoginCta}</a>
         </p>
+        <div class="mini-actions">
+          <button type="button" id="mini-wish-add-all" class="mini-action mini-action--gold">
+            {ui.addAllToCart}
+          </button>
+          <button type="button" id="mini-wish-new-cart" class="mini-action">
+            {ui.newCartFromWish}
+          </button>
+        </div>
         <a href="/favoritos" class="mini-cta">{ui.seeAll}</a>
       </div>
     </div>
@@ -271,8 +287,8 @@ const ui = {
     transition: background-color 0.18s ease;
   }
 
-  a.mini-item:hover {
-    background: rgba(255, 226, 138, 0.07);
+  .mini-item:hover {
+    background: rgba(255, 226, 138, 0.05);
   }
 
   .mini-item:last-child {
@@ -280,9 +296,9 @@ const ui = {
   }
 
   .mini-thumb {
-    width: 46px;
-    height: 46px;
-    flex: 0 0 46px;
+    width: 52px;
+    height: 60px;
+    flex: 0 0 52px;
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
@@ -381,31 +397,147 @@ const ui = {
     color: #ffe28a;
   }
 
-  /* Botón de quitar dentro del mini panel */
-  .mini-remove {
-    position: absolute;
-    top: 6px;
-    right: 6px;
+  /* Acciones del pie del mini panel */
+  .mini-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .mini-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 38px;
+    border: 2px solid rgba(247, 223, 165, 0.55);
+    background: transparent;
+    color: #f7dfa5;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mini-action:hover:not(:disabled) {
+    background: rgba(255, 226, 138, 0.12);
+    border-color: #ffe28a;
+    color: #ffe28a;
+  }
+
+  .mini-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .mini-action--gold {
+    background: #ffe28a;
+    border-color: #ffe28a;
+    color: #000000;
+  }
+
+  .mini-action--gold:hover:not(:disabled) {
+    background: #ffed9f;
+    border-color: #ffed9f;
+    color: #000000;
+  }
+
+  /* Fila de acciones dentro de un artículo del mini panel */
+  .mini-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  /* Control de cantidad compacto */
+  .mini-qty {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+  }
+
+  .mini-qty button {
     width: 24px;
     height: 24px;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     border: 0;
-    background: rgba(0, 0, 0, 0.6);
-    color: rgba(255, 255, 255, 0.7);
+    background: transparent;
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 1;
     cursor: pointer;
     transition: color 0.15s ease, background-color 0.15s ease;
   }
 
-  .mini-item:hover .mini-remove,
-  .mini-remove:focus-visible {
+  .mini-qty button:hover {
+    color: #ffe28a;
+    background: rgba(255, 226, 138, 0.12);
+  }
+
+  .mini-qty span {
+    min-width: 22px;
+    text-align: center;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 11px;
+    color: #ffffff;
+  }
+
+  /* Botón pequeño "añadir" / "quitar" de un artículo */
+  .mini-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid rgba(247, 223, 165, 0.5);
+    background: transparent;
+    color: #f7dfa5;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+
+  .mini-chip:hover {
+    background: rgba(255, 226, 138, 0.12);
+    border-color: #ffe28a;
+    color: #ffe28a;
+  }
+
+  .mini-chip.is-done {
+    border-color: rgba(255, 226, 138, 0.35);
+    color: rgba(255, 226, 138, 0.75);
+    cursor: default;
+  }
+
+  /* Botón de quitar (carrito y favoritos). */
+  .mini-remove {
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    transition: color 0.15s ease;
   }
 
   .mini-remove:hover {
     color: #f87171;
-    background: rgba(248, 113, 113, 0.15);
   }
 
   .mini-link {
@@ -707,13 +839,16 @@ const ui = {
 
 <script>
   import {
+    addToCart,
     getCart,
     updateQty,
     removeFromCart,
     cartCount,
     cartSubtotal,
     formatMXN,
+    type CartItem,
   } from '../../lib/cart';
+  import type { VariantOption } from '../../lib/product-variants';
   import {
     SESSION_ENDED_EVENT,
     initWishlistView,
@@ -1025,6 +1160,12 @@ const ui = {
 
   updateBadges();
 
+  /** Reemplaza el carrito completo ("carrito nuevo con estos"). */
+  function replaceCart(items: CartItem[]) {
+    window.localStorage.setItem('dsp_cart', JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('cart:updated', { detail: items }));
+  }
+
   // ============================================
   // Mini paneles: aparecen al pasar el mouse.
   // El clic en el icono abre el panel completo.
@@ -1053,20 +1194,173 @@ const ui = {
     }
 
     miniCartBody.innerHTML = items
-      .slice(0, 3)
+      .slice(0, 4)
       .map((i) => {
         const img = safeUrl(i.image);
+        const href = `/producto/${encodeURIComponent(i.productId)}`;
+
         return `
         <div class="mini-item">
-          <div class="mini-thumb">${img ? `<img src="${img}" alt="">` : ''}</div>
+          <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
           <div class="mini-info">
-            <span class="mini-name">${escapeHtml(i.name)}</span>
-            <span class="mini-meta">${escapeHtml(i.variantName)} · ${i.qty} pza</span>
+            <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
+            <span class="mini-meta">${escapeHtml(i.variantName)}</span>
+            <div class="mini-row-actions">
+              <div class="mini-qty">
+                <button type="button" data-mini-qty="cart:${escapeHtml(i.variantId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
+                <span>${i.qty}</span>
+                <button type="button" data-mini-qty="cart:${escapeHtml(i.variantId)}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
+              </div>
+              <button
+                type="button"
+                class="mini-remove"
+                data-mini-remove="cart:${escapeHtml(i.variantId)}"
+                aria-label="${escapeHtml(uiText('removeWish'))}"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <span class="mini-price">$${formatMXN(i.price * i.qty)}</span>
+          <span class="mini-price">$${formatMXN(i.price)}</span>
         </div>`;
       })
       .join('');
+
+    bindMiniQuantityControls(miniCartBody);
+  }
+
+  /**
+   * Botones +/− y quitar dentro de un mini panel.
+   * El `action` de cada botón se guarda como String y se resuelve aquí:
+   * `cart:<variantId>` o `wish:<productId>`.
+   */
+  function bindMiniQuantityControls(root: HTMLElement) {
+    const resolve = (action: string) => {
+      const [scope, id] = action.split(':');
+      return { scope, id };
+    };
+
+    root.querySelectorAll<HTMLElement>('[data-mini-qty]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const { scope, id } = resolve(btn.dataset.miniQty!);
+        const dir = Number(btn.dataset.dir ?? 1);
+        const item = getCart().find((i) =>
+          scope === 'cart' ? i.variantId === id : i.productId === id
+        );
+
+        if (!item) return;
+        if (item.qty + dir <= 0) removeFromCart(item.variantId);
+        else updateQty(item.variantId, item.qty + dir);
+      });
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-mini-remove]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const { scope, id } = resolve(btn.dataset.miniRemove!);
+
+        if (scope === 'cart') {
+          removeFromCart(id);
+          return;
+        }
+
+        const box = btn.closest('.mini-item') as HTMLElement | null;
+        box?.style.setProperty('opacity', '0.35');
+        btn.setAttribute('disabled', 'true');
+
+        try {
+          await removeFromWishlist(id);
+          // El panel se repinta solo con `wishlist:updated`.
+        } catch {
+          box?.style.removeProperty('opacity');
+          btn.removeAttribute('disabled');
+        }
+      });
+    });
+  }
+
+  /**
+   * Variante que se asigna a cada favorito al llevarlo al carrito.
+   * Se pide una sola vez por producto y se guarda en memoria.
+   */
+  const variantCache: Record<string, VariantOption> = {};
+
+  async function variantFor(productId: string): Promise<VariantOption | null> {
+    if (variantCache[productId]) return variantCache[productId];
+
+    try {
+      const res = await fetch(`/api/variant?product=${encodeURIComponent(productId)}`);
+      if (!res.ok) return null;
+      const data = (await res.json()) as { variant?: VariantOption };
+      if (!data.variant) return null;
+      variantCache[productId] = data.variant;
+      return data.variant;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Lleva favoritos al carrito.
+   * @param replace true = carrito nuevo con solo estos favoritos.
+   * @returns cuántas piezas se añadieron.
+   */
+  async function wishItemsToCart(replace: boolean): Promise<number> {
+    const added: CartItem[] = [];
+
+    for (const item of currentWish) {
+      const variant = await variantFor(item.productId);
+      if (!variant || variant.stock <= 0) continue;
+
+      added.push({
+        variantId: variant.id,
+        productId: item.productId,
+        name: item.name,
+        variantName: variant.name,
+        price: variant.price || item.price,
+        qty: 1,
+        image: item.image ?? undefined,
+        size: variant.size,
+        color: variant.color,
+      });
+    }
+
+    if (added.length === 0) return 0;
+
+    if (replace) {
+      replaceCart(added);
+      return added.length;
+    }
+
+    // Sin duplicar: si la variante ya está, solo sube la cantidad.
+    added.forEach((piece) => addToCart(piece));
+    return added.length;
+  }
+
+  /**
+   * Añade una sola pieza de favoritos al carrito actual.
+   * Devuelve false si no tiene variante con stock.
+   */
+  async function addWishItemToCart(productId: string): Promise<boolean> {
+    const item = currentWish.find((w) => w.productId === productId);
+    if (!item) return false;
+
+    const variant = await variantFor(productId);
+    if (!variant || variant.stock <= 0) return false;
+
+    addToCart({
+      variantId: variant.id,
+      productId,
+      name: item.name,
+      variantName: variant.name,
+      price: variant.price || item.price,
+      qty: 1,
+      image: item.image ?? undefined,
+      size: variant.size,
+      color: variant.color,
+    });
+    return true;
   }
 
   function renderMiniWish() {
@@ -1078,7 +1372,13 @@ const ui = {
     // El aviso solo tiene sentido si hay algo guardado y no hay cuenta.
     if (hint) hint.hidden = !(isGuest && currentWish.length > 0);
 
-    if (currentWish.length === 0) {
+    const addAll = document.getElementById('mini-wish-add-all') as HTMLButtonElement | null;
+    const newCart = document.getElementById('mini-wish-new-cart') as HTMLButtonElement | null;
+    const empty = currentWish.length === 0;
+    if (addAll) addAll.disabled = empty;
+    if (newCart) newCart.disabled = empty;
+
+    if (empty) {
       miniWishBody.innerHTML = `<div class="mini-empty">${escapeHtml(uiText('emptyWish'))}</div>`;
       return;
     }
@@ -1088,49 +1388,55 @@ const ui = {
       .map((i) => {
         const img = safeUrl(i.image);
         const href = `/producto/${encodeURIComponent(i.slug ?? i.productId)}`;
+        const inCart = getCart().find((c) => c.productId === i.productId);
 
         return `
         <div class="mini-item">
           <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
-          <a class="mini-info" href="${href}">
-            <span class="mini-name">${escapeHtml(i.name)}</span>
-            <span class="mini-meta">${escapeHtml(uiText('openPiece'))}</span>
-          </a>
-          <span class="mini-price">$${formatMXN(i.price)}</span>
-          <button
-            type="button"
-            class="mini-remove"
-            data-mini-wish-remove="${escapeHtml(i.productId)}"
-            aria-label="${escapeHtml(uiText('removeWish'))}"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div class="mini-info">
+            <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
+            <span class="mini-meta">$${formatMXN(i.price)}</span>
+            <div class="mini-row-actions">
+              ${
+                inCart
+                  ? `<div class="mini-qty">
+                       <button type="button" data-mini-qty="wish:${escapeHtml(i.productId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
+                       <span>${inCart.qty}</span>
+                       <button type="button" data-mini-qty="wish:${escapeHtml(i.productId)}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
+                     </div>`
+                  : `<button type="button" class="mini-chip" data-mini-add-wish="${escapeHtml(i.productId)}">${escapeHtml(uiText('addOneToCart'))}</button>`
+              }
+              <button
+                type="button"
+                class="mini-remove"
+                data-mini-remove="wish:${escapeHtml(i.productId)}"
+                aria-label="${escapeHtml(uiText('removeWish'))}"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>`;
       })
       .join('');
 
-    // Quitar desde el flotante sin abrir el panel completo.
-    miniWishBody.querySelectorAll<HTMLElement>('[data-mini-wish-remove]').forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const box = btn.closest('.mini-item') as HTMLElement | null;
-        box?.style.setProperty('opacity', '0.35');
+    // Añadir una pieza suelta al carrito actual.
+    miniWishBody.querySelectorAll<HTMLElement>('[data-mini-add-wish]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
         btn.setAttribute('disabled', 'true');
+        const ok = await addWishItemToCart(btn.dataset.miniAddWish!);
 
-        try {
-          await removeFromWishlist(btn.dataset.miniWishRemove!);
-          // El panel se repinta solo con `wishlist:updated`; aquí solo se
-          // conserva el foco para seguir quitando con el teclado.
-        } catch {
-          box?.style.removeProperty('opacity');
+        if (!ok) {
           btn.removeAttribute('disabled');
+          btn.textContent = uiText('nothingAdded');
         }
+        // Si funcionó, `cart:updated` repinta y el botón pasa a −/+ qty.
       });
     });
+
+    bindMiniQuantityControls(miniWishBody);
   }
 
   function hideMini(immediate = false) {
@@ -1203,6 +1509,33 @@ const ui = {
   // Los mini se refrescan con cada cambio aunque no estén visibles
   window.addEventListener('cart:updated', () => renderMiniCart());
   window.addEventListener('wishlist:updated', () => renderMiniWish());
+
+  // "Añadir todo al carrito" y "carrito nuevo con estos"
+  document.getElementById('mini-wish-add-all')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = uiText('working');
+
+    const n = await wishItemsToCart(false);
+    btn.textContent = n > 0 ? `${uiText('addedN')} ${n}` : uiText('nothingAdded');
+    window.setTimeout(() => {
+      btn.textContent = uiText('addAllToCart');
+      btn.disabled = currentWish.length === 0;
+    }, 1600);
+  });
+
+  document.getElementById('mini-wish-new-cart')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = uiText('working');
+
+    const n = await wishItemsToCart(true);
+    btn.textContent = n > 0 ? `${uiText('addedN')} ${n}` : uiText('nothingAdded');
+    window.setTimeout(() => {
+      btn.textContent = uiText('newCartFromWish');
+      btn.disabled = currentWish.length === 0;
+    }, 1600);
+  });
 
   // Al abrir el panel grande, los mini se ocultan
   window.addEventListener('store:open', () => hideMini(true));

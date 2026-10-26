@@ -244,34 +244,67 @@ const jsonLd = {
                     <span class="profile-text">
                       <span class="profile-hello">{t.header.welcome}, {firstName ?? ''}</span>
                       <span class="profile-action">{t.header.viewAccount}</span>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="profile-chevron"
+                        aria-hidden="true"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </span>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="profile-chevron"
-                      aria-hidden="true"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
                   </button>
 
                   <div id="profile-menu" class="profile-menu hidden" role="menu">
-                    <a href="/cuenta" class="profile-menu-item" role="menuitem">{t.header.myAccount}</a>
-                    <a href="/cuenta#pedidos" class="profile-menu-item" role="menuitem">{t.header.myOrders}</a>
-                    <a href="/favoritos" class="profile-menu-item" role="menuitem">{t.nav.favoritos}</a>
-                    <a href="/carrito" class="profile-menu-item" role="menuitem">{t.nav.carrito}</a>
-                    <a href="/checkout" class="profile-menu-item" role="menuitem">{t.header.checkout}</a>
+                    <a href="/cuenta" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+                      </svg>
+                      {t.header.myAccount}
+                    </a>
+                    <a href="/cuenta#pedidos" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+                      </svg>
+                      {t.header.myOrders}
+                    </a>
+                    <a href="/favoritos" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+                      </svg>
+                      {t.nav.favoritos}
+                    </a>
+                    <a href="/carrito" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+                      </svg>
+                      {t.nav.carrito}
+                    </a>
+                    <a href="/checkout" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
+                      </svg>
+                      {t.header.checkout}
+                    </a>
                     {isStaff && (
-                      <a href="/admin" class="profile-menu-item" role="menuitem">{t.header.admin}</a>
+                      <a href="/admin" class="profile-menu-item" role="menuitem">
+                        <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M12 2 4 6v6c0 5 3.4 9.3 8 10 4.6-.7 8-5 8-10V6l-8-4Z" />
+                        </svg>
+                        {t.header.admin}
+                      </a>
                     )}
                     <span class="profile-menu-divider" aria-hidden="true"></span>
                     <button type="button" id="btn-signout" class="profile-menu-item" role="menuitem">
+                      <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" />
+                      </svg>
                       {t.header.logout}
                     </button>
                   </div>
@@ -793,18 +826,24 @@ const jsonLd = {
     outline-offset: 2px;
   }
 
-  /* Píldora de perfil a la izquierda del header */
+  /* Píldora de perfil:
+       ┌────┬───────────────────────┐
+       │    │  Hi Angel           ▼ │
+       │Foto│  View my account      │
+       └────┴───────────────────────┘ */
   .profile-pill {
+    display: flex;
     align-items: center;
-    gap: 0.65rem;
-    min-height: 46px;
-    padding: 0.35rem 1rem 0.35rem 0.35rem;
+    gap: 0.7rem;
+    min-height: 52px;
+    padding: 0.4rem 0.6rem 0.4rem 0.4rem;
     border: 2px solid rgba(247, 223, 165, 0.28);
     background: rgba(255, 255, 255, 0.04);
     transition:
       border-color 0.25s ease,
       background-color 0.25s ease;
     position: relative;
+    text-align: left;
   }
 
   .profile-pill:hover {
@@ -813,21 +852,27 @@ const jsonLd = {
   }
 
   .profile-pill .profile-chevron {
-    margin-left: 0.25rem;
-    transition: transform 0.25s ease;
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.7);
+    transition: transform 0.25s ease, color 0.25s ease;
+  }
+
+  .profile-pill:hover .profile-chevron {
+    color: #ffe28a;
   }
 
   .profile-pill[aria-expanded='true'] .profile-chevron {
-    transform: rotate(180deg);
+    rotate: 180deg;
   }
 
+  /* La foto va primero, a la izquierda del bloque de texto. */
   .profile-avatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
     border-radius: 999px;
     background: #ffe28a;
     color: #000000;
@@ -837,14 +882,19 @@ const jsonLd = {
     text-transform: uppercase;
   }
 
+  /* "Hi Angel" + "View my account" con la flecha abajo a la derecha. */
   .profile-text {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    column-gap: 0.3rem;
+    row-gap: 1px;
     line-height: 1.15;
   }
 
   .profile-hello {
+    grid-column: 1;
+    grid-row: 1;
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 0.875rem;
     font-weight: 600;
@@ -853,14 +903,23 @@ const jsonLd = {
   }
 
   .profile-action {
+    grid-column: 1;
+    grid-row: 2;
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #ffe28a;
-    margin-left: 0.5rem;
     white-space: nowrap;
+  }
+
+  /* La flecha se coloca en la rejilla de `.profile-text` (fila de abajo,
+     extremo derecho). Las propiedades base ya están arriba. */
+  .profile-text .profile-chevron {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
   }
 
   /* Etiquetas pequeñas reutilizables (logo, badge de perfil). */
@@ -954,7 +1013,9 @@ const jsonLd = {
   }
 
   .profile-menu-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
     width: 100%;
     text-align: left;
     padding: 0.75rem 1rem;
@@ -971,6 +1032,18 @@ const jsonLd = {
 
   .profile-menu-item:hover {
     background: rgba(255, 226, 138, 0.12);
+    color: #ffe28a;
+  }
+
+  /* Íconos de cada entrada del menú de cuenta */
+  .profile-menu-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    color: rgba(247, 223, 165, 0.85);
+  }
+
+  .profile-menu-item:hover .profile-menu-icon {
     color: #ffe28a;
   }
 
