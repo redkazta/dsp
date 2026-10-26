@@ -34,21 +34,13 @@ const camisasImages = [
       .filter((url): url is string => Boolean(url))
   ),
 ];
-
-// Destinos del botón: primero la colección, y una salida directa al catálogo
-// para que la primera pantalla no sea un callejón sin scroll.
-const categories = [
-  { href: '/tienda?category=camisas', label: lang === 'es' ? 'Camisas' : 'Shirts' },
-  { href: '/tienda?category=jeans', label: lang === 'es' ? 'Jeans' : 'Jeans' },
-];
 ---
 
 <BaseLayout homeScreen>
   <!--
     HOME A PANTALLA COMPLETA (sin scroll).
     La página mide exactamente el viewport: el hero toma el alto sobrante
-    (100dvh − barra de anuncios − header) y el área que queda debajo del botón
-    muestra las categorías, así siempre hay un siguiente paso visible.
+    (100dvh − barra de anuncios − header) y el botón queda al pie.
   -->
   <div class="home-screen">
     <section class="hero-section relative overflow-hidden bg-negro-profundo">
@@ -56,13 +48,6 @@ const categories = [
 
       <div class="hero-actions">
         <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
-
-        <nav class="hero-links" aria-label={t.nav.tienda}>
-          {categories.map((c) => (
-            <a href={c.href} class="hero-link">{c.label}</a>
-          ))}
-          <a href="/nosotros" class="hero-link">{t.nav.nosotros}</a>
-        </nav>
       </div>
     </section>
   </div>
@@ -91,17 +76,15 @@ const categories = [
     min-height: 0;
   }
 
-  /* Botón y enlaces pegados al borde inferior del hero */
+  /* Botón pegado al borde inferior del hero */
   .hero-actions {
     position: absolute;
     inset-inline: 0;
     bottom: 0;
     z-index: 10;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0 1rem 1.25rem;
+    justify-content: center;
+    padding: 0 1rem 1.5rem;
   }
 
   .btn-drop {
@@ -128,39 +111,13 @@ const categories = [
     box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.45);
   }
 
-  /* Enlaces secundarios: texto dorado claro, discretos */
-  .hero-links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.25rem 1.5rem;
-  }
-
-  .hero-link {
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #f7dfa5;
-    text-decoration: none;
-    padding: 0.35rem 0.25rem;
-    border-bottom: 1px solid transparent;
-    transition: color 0.2s ease, border-color 0.2s ease;
-  }
-
-  .hero-link:hover {
-    color: #fff4c9;
-    border-bottom-color: #ffe28a;
-  }
-
   @media (max-width: 640px) {
     .btn-drop {
       min-height: 44px;
       padding: 0.7rem 2rem;
     }
     .hero-actions {
-      padding-bottom: 1rem;
+      padding-bottom: 1.25rem;
     }
   }
 </style>

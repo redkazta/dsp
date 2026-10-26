@@ -211,18 +211,6 @@ const jsonLd = {
 
           <!-- Acciones (derecha) -->
           <div class="flex items-center justify-end gap-1.5 sm:gap-2.5">
-            <!-- Toggle de idioma: discreto, al extremo derecho. Es un enlace (GET)
-                 porque Astro bloquea POST cross-site tras el rewrite de Vercel. -->
-            <a
-              href={langToggleHref}
-              class="lang-toggle"
-              aria-label={t.header.language}
-              title={t.header.language}
-              hreflang={lang === 'es' ? 'en' : 'es'}
-            >
-              {langToggleLabel}
-            </a>
-
             <button
               type="button"
               id="search-open"
@@ -296,6 +284,19 @@ const jsonLd = {
                 </a>
               )
             }
+
+            <!-- Toggle de idioma: ÚLTIMO elemento del header, al extremo derecho.
+                 Es un enlace (GET) porque Astro bloquea POST cross-site tras el
+                 rewrite de Vercel. -->
+            <a
+              href={langToggleHref}
+              class="lang-toggle"
+              aria-label={t.header.language}
+              title={t.header.language}
+              hreflang={lang === 'es' ? 'en' : 'es'}
+            >
+              {langToggleLabel}
+            </a>
           </div>
         </div>
       </div>
