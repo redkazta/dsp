@@ -7,18 +7,20 @@ const { images = [] } = Astro.props;
 
 const fallback = '/img/camisas/camisa-dsp-2-01-frente.jpg';
 
-// Slide a slide, no imagen a imagen: si un producto tiene 3 fotos y otro 1,
-// no se ve la misma playera tres veces seguidas.
-const slides = images.length > 0 ? images : [fallback];
-const duplicated = [...slides, ...slides];
+// Solo fotos distintas: si una pieza repite la misma URL, no se muestra dos veces.
+const slides = [...new Set(images.filter(Boolean))];
+const list = slides.length > 0 ? slides : [fallback];
+
+// Se recorre la lista DOS veces para poder volver al inicio sin que se note.
+const doubled = [...list, ...list];
 ---
 
 <div class="hero-carousel">
-  <div class="hero-carousel-track" data-hero-track>
+  <div class="hero-carousel-track" data-hero-track style={`--count: ${list.length}`}>
     {
-      duplicated.map((src) => (
+      doubled.map((src, i) => (
         <div class="hero-slide">
-          <img src={src} alt="" loading="lazy" decoding="async" />
+          <img src={src} alt="" loading={i < 3 ? 'eager' : 'lazy'} decoding="async" />
         </div>
       ))
     }
@@ -34,16 +36,27 @@ const duplicated = [...slides, ...slides];
     background: #000;
   }
 
+  /*
+    Por qué antes se veía "bugueado":
+    el track no tenía ancho propio, así que se estiraba con sus hijos, pero el
+    JS lo movía en % de ese ancho ya estirado. Cada salto equivalía a varias
+    pantallas: la misma playera se repetía y había huecos en blanco.
+
+    Ahora el desplazamiento es de una tanda completa, no de una slide:
+      - cada slide ocupa 1/3 del contenedor (1 en móvil),
+      - el track contiene la lista DOS veces,
+      - avanzar una tanda = mover 100% del ancho del track (mitad de su ancho),
+      - al llegar a la copia se salta sin animación al inicio.
+    La velocidad cambia un poco según cuántas fotos haya, pero nunca se
+    repite ni se queda en blanco.
+  */
   .hero-carousel-track {
     display: flex;
     height: 100%;
-    transition: transform 0.8s ease-in-out;
+    transition: transform 0.9s ease-in-out;
     will-change: transform;
   }
 
-  /* Cada slide mide 1/3 del contenedor. El track NO puede tener un ancho fijo
-     en % (con las slides en flex acababa desplazando de más y mostrando
-     huecos negros entre fotos). */
   .hero-slide {
     flex: 0 0 33.3333%;
     height: 100%;
@@ -63,7 +76,7 @@ const duplicated = [...slides, ...slides];
 
   @media (max-width: 640px) {
     .hero-slide {
-      flex: 0 0 100%;
+      flex-basis: 100%;
     }
     .hero-slide img {
       object-fit: cover;
@@ -81,38 +94,25 @@ const duplicated = [...slides, ...slides];
   const track = document.querySelector<HTMLElement>('[data-hero-track]');
 
   if (track) {
-    let index = 0;
+    const total = track.children.length / 2;
     let timer: number | undefined;
 
-    /** Cuántas slides caben a la vez (3 en desktop, 1 en móvil). */
-    const perView = () => (window.matchMedia('(max-width: 640px)').matches ? 1 : 3);
+    /**
+     * Avanza una tanda completa (mover 100% del track = su mitad, que es una
+     * copia exacta de la lista). Así el carrusel nunca se queda corto ni
+     * muestra huecos, tenga 1 foto o 7.
+     */
+    function next() {
+      track!.style.transition = '';
+      track!.style.transform = 'translateX(-50%)';
 
-    /** Posición en % del propio track, que mide N slides de ancho. */
-    function move(animate = true) {
-      if (!animate) track!.style.transition = 'none';
-      track!.style.transform = `translateX(-${index * (100 / perView())}%)`;
-      if (!animate) {
-        // Fuerza un reflow para que el salto no se anime.
+      window.setTimeout(() => {
+        // Se está viendo la copia idéntica: se salta al original sin animar.
+        track!.style.transition = 'none';
+        track!.style.transform = 'translateX(0)';
         void track!.offsetWidth;
         track!.style.transition = '';
-      }
-    }
-
-    function next() {
-      const total = track!.children.length / 2;
-      index++;
-
-      // Se pasó de la copia original: salto invisible al primer slide.
-      if (index > total - perView()) {
-        move(true);
-        window.setTimeout(() => {
-          index = 0;
-          move(false);
-        }, 850);
-        return;
-      }
-
-      move(true);
+      }, 950);
     }
 
     function start() {
@@ -120,24 +120,18 @@ const duplicated = [...slides, ...slides];
       timer = window.setInterval(next, 5000);
     }
 
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    function stop() {
+      window.clearInterval(timer);
+      timer = undefined;
+    }
+
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && total > 1) {
       start();
 
-      // Al cambiar de tamaño, el desplazamiento en % cambia de base: recolocamos.
-      window.addEventListener('resize', () => move(false));
-
-      // No animar en pestañas ocultas (ahorra batería y evita saltos al volver).
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          window.clearInterval(timer);
-          timer = undefined;
-        } else {
-          move(false);
-          start();
-        }
+        if (document.hidden) stop();
+        else start();
       });
-    } else {
-      move(false);
     }
   }
 </script>

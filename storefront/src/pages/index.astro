@@ -16,28 +16,32 @@ try {
   camisas = [];
 }
 
-// Un slide por pieza (su foto principal): el carrusel se ve variado en vez de
-// repetir la misma playera en varias tomas.
-const camisasImages = camisas
-  .map((p: any) => {
-    const images = [...(p.product_images ?? [])].sort(
-      (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
-    );
-    return images[0]?.url;
-  })
-  .filter(Boolean) as string[];
+// Una foto por pieza, y sin repetir URL: el carrusel se ve variado y no
+// parece que "se atora" en la misma playera.
+const camisasImages = [
+  ...new Set<string>(
+    camisas
+      .map((p: any) => {
+        const images = [...(p.product_images ?? [])].sort(
+          (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+        );
+        return images[0]?.url as string | undefined;
+      })
+      .filter((url): url is string => Boolean(url))
+  ),
+];
 ---
 
 <BaseLayout>
   <!--
     HERO: el carrusel de fondo con el boton pegado al borde inferior.
-    Alto: 88vh en movil / 94vh en desktop, para que "Ver drop" se vea sin
-    desplazarse (es la primera impresion al entrar).
+    Alto: 26vh movil / 46vh desktop (30% menos que la version anterior), para
+    que "Ver drop" quede a la vista desde que se entra.
   -->
-  <section class="hero-section relative h-[88vh] lg:h-[94vh] overflow-hidden bg-negro-profundo">
+  <section class="hero-section relative h-[26vh] lg:h-[46vh] overflow-hidden bg-negro-profundo">
     <HeroCarousel images={camisasImages} />
 
-    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 sm:pb-7">
+    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-4 sm:pb-6">
       <a href="/tienda" class="btn-drop">Ver drop</a>
     </div>
   </section>
@@ -74,14 +78,6 @@ const camisasImages = camisas
     .btn-drop {
       min-height: 42px;
       padding: 0.65rem 2rem;
-    }
-  }
-
-  /* Pantallas bajas (laptops 13", iPhone apaisado): el hero no debe empujar
-     el boton fuera de vista. */
-  @media (max-height: 700px) {
-    .hero-section {
-      height: 80vh;
     }
   }
 </style>
