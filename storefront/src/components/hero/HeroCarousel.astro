@@ -1,30 +1,109 @@
 ---
+/**
+ * HeroCarousel.astro — carrusel de productos de la portada.
+ *
+ * Cada slide es una pieza real: foto, nombre, precio y enlace a su detalle.
+ * Se incluyen dos formas de navegarlo:
+ *   - flechas + miniaturas (fotos de la misma pieza) dentro de cada slide,
+ *   - avance automático del carrusel y arrastre horizontal en móvil.
+ *
+ * El desplazamiento es de UNA tanda completa (el track contiene la lista dos
+ * veces), así nunca se repite una playera ni aparecen huecos.
+ */
+import type { HomeSlide } from '../../lib/home-products';
+import type { Copy } from '../../lib/i18n';
+
 interface Props {
-  images: string[];
+  slides: HomeSlide[];
+  t: Copy;
+  currency?: string;
 }
 
-const { images = [] } = Astro.props;
+const { slides, t, currency = 'USD' } = Astro.props;
 
-const fallback = '/img/camisas/camisa-dsp-2-01-frente.jpg';
+const fallback: HomeSlide = {
+  id: 'fallback',
+  slug: '',
+  name: '¡D$P!',
+  price: 0,
+  category: null,
+  images: ['/img/camisas/camisa-dsp-2-01-frente.jpg'],
+};
 
-// Solo fotos distintas: si una pieza repite la misma URL, no se muestra dos veces.
-const slides = [...new Set(images.filter(Boolean))];
 const list = slides.length > 0 ? slides : [fallback];
 
-// Se recorre la lista DOS veces para poder volver al inicio sin que se note.
-const doubled = [...list, ...list];
+// Con 1 o 2 piezas no hay "tanda" que duplicar sin que se repitan a la vista
+// (3 visibles en desktop, 1 en móvil). En ese caso se muestra solo la lista.
+const loop = list.length > 2;
+const rendered = loop ? [...list, ...list] : list;
+
+const money = (n: number) =>
+  `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 ---
 
-<div class="hero-carousel">
-  <div class="hero-carousel-track" data-hero-track style={`--count: ${list.length}`}>
+<div class="hero-carousel" data-hero-carousel data-hero-loop={loop ? '1' : '0'}>
+  <div class="hero-track" data-hero-track>
     {
-      doubled.map((src, i) => (
-        <div class="hero-slide">
-          <img src={src} alt="" loading={i < 3 ? 'eager' : 'lazy'} decoding="async" />
-        </div>
+      rendered.map((item, index) => (
+        <article class="hero-slide" data-hero-slide>
+          <a
+            href={item.slug ? `/producto/${item.slug}` : '/tienda'}
+            class="hero-link"
+            aria-label={`${item.name} — ${t.hero.ctaFull}`}
+          >
+            <div class="hero-media">
+              {item.images.map((src, i) => (
+                <img
+                  src={src}
+                  alt={i === 0 ? item.name : ''}
+                  class:list={['hero-photo', { 'is-active': i === 0 }]}
+                  data-hero-photo={i}
+                  loading={index < 6 ? 'eager' : 'lazy'}
+                  decoding="async"
+                />
+              ))}
+
+              {/* Miniaturas: solo si la pieza tiene más de una foto */}
+              {item.images.length > 1 && (
+                <div class="hero-thumbs" role="group" aria-label={t.product.photos}>
+                  {item.images.map((src, i) => (
+                    <button
+                      type="button"
+                      class:list={['hero-thumb', { 'is-active': i === 0 }]}
+                      data-hero-thumb={i}
+                      aria-label={`${t.product.seeView} ${i + 1}`}
+                      aria-pressed={i === 0 ? 'true' : 'false'}
+                    >
+                      <img src={src} alt="" loading="lazy" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <span class="hero-price">{money(item.price)} <small>{currency}</small></span>
+            </div>
+
+            <div class="hero-caption">
+              {item.category && <span class="hero-category">{item.category}</span>}
+              <span class="hero-name">{item.name}</span>
+            </div>
+          </a>
+        </article>
       ))
     }
   </div>
+
+  <!-- Flechas del carrusel -->
+  <button type="button" class="hero-arrow hero-arrow--prev" data-hero-dir="-1" aria-label={t.product.previousPhoto}>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  </button>
+  <button type="button" class="hero-arrow hero-arrow--next" data-hero-dir="1" aria-label={t.product.nextPhoto}>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  </button>
 </div>
 
 <style>
@@ -36,24 +115,10 @@ const doubled = [...list, ...list];
     background: #000;
   }
 
-  /*
-    Por qué antes se veía "bugueado":
-    el track no tenía ancho propio, así que se estiraba con sus hijos, pero el
-    JS lo movía en % de ese ancho ya estirado. Cada salto equivalía a varias
-    pantallas: la misma playera se repetía y había huecos en blanco.
-
-    Ahora el desplazamiento es de una tanda completa, no de una slide:
-      - cada slide ocupa 1/3 del contenedor (1 en móvil),
-      - el track contiene la lista DOS veces,
-      - avanzar una tanda = mover 100% del ancho del track (mitad de su ancho),
-      - al llegar a la copia se salta sin animación al inicio.
-    La velocidad cambia un poco según cuántas fotos haya, pero nunca se
-    repite ni se queda en blanco.
-  */
-  .hero-carousel-track {
+  .hero-track {
     display: flex;
     height: 100%;
-    transition: transform 0.9s ease-in-out;
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
   }
 
@@ -61,62 +126,250 @@ const doubled = [...list, ...list];
     flex: 0 0 33.3333%;
     height: 100%;
     min-width: 0;
+    padding: 0 0.5rem;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
   }
 
-  .hero-slide img {
+  .hero-link {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    /* Abajo se reserva el espacio del botón "Ver drop" de la portada. */
+    padding: 0.75rem 0 4.25rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .hero-media {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  /* Fotos apiladas: solo la activa se ve. Así las miniaturas cambian la foto
+     dentro del mismo slide, sin recargar ni mover el carrusel. */
+  .hero-photo {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    opacity: 0.95;
+    opacity: 0;
+    transition: opacity 0.35s ease;
   }
 
+  .hero-photo.is-active {
+    opacity: 1;
+  }
+
+  .hero-price {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    padding: 0.35rem 0.6rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffe28a;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(247, 223, 165, 0.45);
+  }
+
+  .hero-price small {
+    font-size: 0.625rem;
+    opacity: 0.8;
+  }
+
+  /* Miniaturas dentro del slide (esquina inferior izquierda) */
+  .hero-thumbs {
+    position: absolute;
+    left: 0.5rem;
+    bottom: 0.75rem;
+    display: flex;
+    gap: 0.375rem;
+    max-width: calc(100% - 8rem);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hero-thumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hero-thumb {
+    width: 34px;
+    height: 42px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    background: #fff;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .hero-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hero-thumb.is-active {
+    border-color: #ffe28a;
+    transform: translateY(-2px);
+  }
+
+  .hero-caption {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-top: 0.6rem;
+    text-align: center;
+  }
+
+  .hero-category {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #f7dfa5;
+  }
+
+  .hero-name {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---------- Flechas ---------- */
+  .hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(247, 223, 165, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffe28a;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .hero-arrow:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: #ffe28a;
+  }
+
+  .hero-arrow--prev {
+    left: 0.75rem;
+  }
+
+  .hero-arrow--next {
+    right: 0.75rem;
+  }
+
+  /* Móvil: una pieza a la vez y sin flechas (se arrastra) */
   @media (max-width: 640px) {
     .hero-slide {
       flex-basis: 100%;
+      padding: 0 0.75rem;
     }
-    .hero-slide img {
-      object-fit: cover;
+
+    .hero-arrow {
+      display: none;
+    }
+
+    .hero-thumb {
+      width: 30px;
+      height: 38px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-carousel-track {
+    .hero-track,
+    .hero-photo {
       transition: none;
     }
   }
 </style>
 
 <script>
-  const track = document.querySelector<HTMLElement>('[data-hero-track]');
+  const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
 
-  if (track) {
-    const total = track.children.length / 2;
+  if (root) {
+    const track = root.querySelector<HTMLElement>('[data-hero-track]')!;
+    const loop = root.dataset.heroLoop === '1';
+    // Con loop el track contiene la lista dos veces; sin él, un solo recorrido.
+    const total = loop ? track.children.length / 2 : track.children.length;
+    const perView = () => (window.matchMedia('(max-width: 640px)').matches ? 1 : 3);
+
+    let index = 0;
     let timer: number | undefined;
 
-    /**
-     * Avanza una tanda completa (mover 100% del track = su mitad, que es una
-     * copia exacta de la lista). Así el carrusel nunca se queda corto ni
-     * muestra huecos, tenga 1 foto o 7.
-     */
-    function next() {
-      track!.style.transition = '';
-      track!.style.transform = 'translateX(-50%)';
+    /** Desplaza `index` slides, en % del ancho del track. */
+    function apply(animate: boolean) {
+      if (!animate) track.style.transition = 'none';
+      track.style.transform = `translateX(-${(index * 100) / perView()}%)`;
+      if (!animate) {
+        void track.offsetWidth;
+        track.style.transition = '';
+      }
+    }
 
-      window.setTimeout(() => {
-        // Se está viendo la copia idéntica: se salta al original sin animar.
-        track!.style.transition = 'none';
-        track!.style.transform = 'translateX(0)';
-        void track!.offsetWidth;
-        track!.style.transition = '';
-      }, 950);
+    function goTo(target: number, animate = true) {
+      const max = Math.max(0, total - perView());
+
+      // Sin ciclo no hay copia: se da la vuelta sin animar.
+      if (!loop) {
+        index = target > max ? 0 : target < 0 ? max : target;
+        apply(animate);
+        return;
+      }
+
+      index = target;
+
+      if (index < 0) {
+        // salta a la copia equivalente y anima hacia la izquierda
+        index = max;
+        apply(false);
+        requestAnimationFrame(() => goTo(index - 1, true));
+        return;
+      }
+
+      if (index > max) {
+        // fin de la copia: se anima al final y se vuelve al inicio sin animar
+        index = max;
+        apply(animate);
+        window.setTimeout(() => {
+          index = 0;
+          apply(false);
+        }, 750);
+        return;
+      }
+
+      apply(animate);
+    }
+
+    function next() {
+      goTo(index + 1);
     }
 
     function start() {
-      if (timer) return;
+      if (timer || total <= perView()) return;
       timer = window.setInterval(next, 5000);
     }
 
@@ -125,12 +378,104 @@ const doubled = [...list, ...list];
       timer = undefined;
     }
 
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && total > 1) {
+    // ---------- Flechas ----------
+    root.querySelectorAll<HTMLElement>('[data-hero-dir]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        stop();
+        const dir = Number(btn.dataset.heroDir);
+        goTo(index + dir);
+        start();
+      });
+    });
+
+    // ---------- Miniaturas (foto dentro del slide) ----------
+    root.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb) => {
+      thumb.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const slide = thumb.closest('[data-hero-slide]');
+        if (!slide) return;
+
+        const target = Number(thumb.dataset.heroThumb);
+
+        slide.querySelectorAll<HTMLElement>('[data-hero-photo]').forEach((photo, i) => {
+          photo.classList.toggle('is-active', i === target);
+        });
+        slide.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((el, i) => {
+          const active = i === target;
+          el.classList.toggle('is-active', active);
+          el.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+      });
+    });
+
+    // ---------- Arrastre (móvil y trackpad) ----------
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+    let swiped = false;
+
+    root.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) return; // las miniaturas no arrastran
+
+      dragging = true;
+      swiped = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      stop();
+    });
+
+    root.addEventListener('pointerup', (e) => {
+      if (!dragging) return;
+      dragging = false;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      // Solo cuenta como swipe si el gesto es claramente horizontal; un toque
+      // o un scroll vertical sigue abriendo el detalle de la pieza.
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        swiped = true;
+        goTo(index + (dx < 0 ? 1 : -1));
+      }
+
+      start();
+    });
+
+    // Si hubo swipe, se cancela el clic para no navegar sin querer.
+    root.addEventListener(
+      'click',
+      (e) => {
+        if (!swiped) return;
+        e.preventDefault();
+        e.stopPropagation();
+        swiped = false;
+      },
+      true
+    );
+
+    root.addEventListener('pointercancel', () => {
+      dragging = false;
+    });
+
+    // ---------- Ciclo de vida ----------
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!reduce) {
       start();
 
+      // Evita saltos al volver de otra pestaña o al redimensionar.
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) stop();
         else start();
+      });
+
+      window.addEventListener('resize', () => {
+        index = Math.min(index, Math.max(0, total - perView()));
+        apply(false);
       });
     }
   }

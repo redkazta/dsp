@@ -3,48 +3,25 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroCarousel from '../components/hero/HeroCarousel.astro';
-import { getProducts, TENANT_SLUG } from '../lib/supabase';
+import { getHomeSlides } from '../lib/home-products';
 import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 
-const CAT_CAMISAS = 'c0000001-0000-4000-8000-000000000001';
-
-let camisas: any[] = [];
-
-try {
-  const res = await getProducts(TENANT_SLUG, { page: 1, limit: 8, categoryId: CAT_CAMISAS, sort: 'newest' });
-  camisas = res.data ?? [];
-} catch {
-  camisas = [];
-}
-
-// Una foto por pieza, y sin repetir URL: el carrusel se ve variado y no
-// parece que "se atora" en la misma playera.
-const camisasImages = [
-  ...new Set<string>(
-    camisas
-      .map((p: any) => {
-        const images = [...(p.product_images ?? [])].sort(
-          (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
-        );
-        return images[0]?.url as string | undefined;
-      })
-      .filter((url): url is string => Boolean(url))
-  ),
-];
+// Playera, jean, playera, jean…: el intercalado se hace en servidor.
+const slides = await getHomeSlides({ perCategory: 8, max: 12 });
 ---
 
 <BaseLayout homeScreen>
   <!--
     HOME A PANTALLA COMPLETA (sin scroll).
-    La página mide exactamente el viewport: el hero toma el alto sobrante
-    (100dvh − barra de anuncios − header) y el botón queda al pie.
+    El carrusel ocupa el alto sobrante del viewport y cada pieza enlaza a su
+    detalle. El botón queda al pie.
   -->
   <div class="home-screen">
     <section class="hero-section relative overflow-hidden bg-negro-profundo">
-      <HeroCarousel images={camisasImages} />
+      <HeroCarousel slides={slides} t={t} currency="USD" />
 
       <div class="hero-actions">
         <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
@@ -76,15 +53,15 @@ const camisasImages = [
     min-height: 0;
   }
 
-  /* Botón pegado al borde inferior del hero */
+  /* Botón pegada al borde inferior del hero. El carrusel reserva ese espacio
+     abajo (padding del slide) para que el botón no tape el nombre ni el precio. */
   .hero-actions {
     position: absolute;
-    inset-inline: 0;
+    left: 50%;
     bottom: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: center;
-    padding: 0 1rem 1.5rem;
+    z-index: 20;
+    transform: translateX(-50%);
+    padding: 0 1rem 0.6rem;
   }
 
   .btn-drop {
@@ -113,11 +90,11 @@ const camisasImages = [
 
   @media (max-width: 640px) {
     .btn-drop {
-      min-height: 44px;
-      padding: 0.7rem 2rem;
+      min-height: 42px;
+      padding: 0.65rem 2rem;
     }
     .hero-actions {
-      padding-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
     }
   }
 </style>

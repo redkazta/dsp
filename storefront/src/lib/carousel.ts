@@ -55,11 +55,14 @@ function paint(carousel: Carousel) {
   const index = currentIndex(carousel);
 
   carousel.dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+
+  // Las miniaturas marcan la activa con su propia clase: la clase dinámica
+  // `border-white/25` no existe en el CSS compilado de Tailwind y el estado
+  // se perdía.
   carousel.scope.querySelectorAll<HTMLElement>('[data-carousel-thumb]').forEach((thumb, i) => {
     const active = i === index;
     thumb.setAttribute('aria-pressed', String(active));
-    thumb.classList.toggle('border-oro-brillo', active);
-    thumb.classList.toggle('border-white/25', !active);
+    thumb.classList.toggle('is-active', active);
   });
 
   carousel.scope.querySelectorAll<HTMLElement>('[data-carousel-dir]').forEach((arrow) => {

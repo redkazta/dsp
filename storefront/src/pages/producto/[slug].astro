@@ -132,7 +132,8 @@ const ui = {
 
         <div class="page-container py-10 sm:py-16 lg:py-20">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
-            {/* Galería */}
+            {/* Galería: el scope envuelve pista, flechas Y miniaturas, si no
+                las miniaturas quedan fuera y el JS nunca las registra. */}
             <div>
               {images.length > 1 ? (
                 <div class="pdp-carousel" data-carousel-scope>
@@ -170,6 +171,24 @@ const ui = {
                       ></span>
                     ))}
                   </div>
+
+                  <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3" id="gallery-thumbs">
+                    {images.map((img: any, i: number) => (
+                      <button
+                        type="button"
+                        class:list={[
+                          'pdp-thumb product-frame border-2 transition-colors',
+                          { 'is-active': i === 0 },
+                        ]}
+                        data-carousel-thumb={i}
+                        aria-pressed={i === 0 ? 'true' : 'false'}
+                        aria-label={`${t.product.seeView} ${viewLabel(img.url)}`}
+                      >
+                        <img src={img.url} alt="" loading="lazy" />
+                        <span class="gallery-tag">{viewLabel(img.url)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div class="product-frame border-2 border-white/25">
@@ -182,28 +201,6 @@ const ui = {
                       </span>
                     </div>
                   )}
-                </div>
-              )}
-
-              {images.length > 1 && (
-                <div class="grid grid-cols-4 gap-2 sm:gap-3 mt-3" id="gallery-thumbs">
-                  {images.map((img: any, i: number) => (
-                    <button
-                      type="button"
-                      class:list={[
-                        'product-frame border-2 transition-colors',
-                        i === 0
-                          ? 'border-oro-brillo'
-                          : 'border-white/25 hover:border-oro-brillo',
-                      ]}
-                      data-carousel-thumb={i}
-                      aria-pressed={i === 0 ? 'true' : 'false'}
-                      aria-label={`${t.product.seeView} ${viewLabel(img.url)}`}
-                    >
-                      <img src={img.url} alt="" loading="lazy" />
-                      <span class="gallery-tag">{viewLabel(img.url)}</span>
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
@@ -441,6 +438,20 @@ const ui = {
     /* Etiqueta de vista en la miniatura: Frente / Espalda / · flash */
     [data-carousel-thumb] {
       position: relative;
+    }
+
+    /* Miniatura activa: la marca el JS con `is-active` (no con clases de
+       Tailwind generadas en runtime, que no existen en el CSS compilado). */
+    .pdp-thumb {
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .pdp-thumb:hover {
+      border-color: #ffe28a;
+    }
+
+    .pdp-thumb.is-active {
+      border-color: #ffe28a;
     }
 
     .gallery-tag {
