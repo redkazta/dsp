@@ -3,8 +3,12 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AuthForm from '../components/auth/AuthForm.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 ---
 
-<BaseLayout title="Crear cuenta | Dinero Sobre Problemas" description="Únete a Dinero Sobre Problemas: compra más rápido y sigue tus pedidos.">
+<BaseLayout title={t.account.registerMetaTitle} description={t.account.registerIntro}>
   <AuthForm mode="register" />
 </BaseLayout>

@@ -14,6 +14,10 @@ import {
   trackingUrl,
   type OrderStatus,
 } from '../lib/orders';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const user = Astro.locals.user;
 const orderParam = (Astro.url.searchParams.get('order') ?? '').trim();
@@ -83,8 +87,8 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
               <path d="m5 13 4 4L19 7" />
             </svg>
           </div>
-          <p class="section-label mb-4">Pedido recibido</p>
-          <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">Gracias por tu compra</h1>
+          <p class="section-label mb-4">{t.order.received}</p>
+          <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">{t.order.thanks}</h1>
           <div class="gold-line mx-auto mb-8"></div>
           <p class="text-base text-white/80 leading-relaxed mb-10">
             {user && orderParam
@@ -92,8 +96,8 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
               : 'Entra a tu cuenta para ver el detalle completo de tus pedidos.'}
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/cuenta#pedidos" class="btn-gold">Ver mis pedidos</a>
-            <a href="/tienda" class="btn-outline">Seguir comprando</a>
+            <a href="/cuenta#pedidos" class="btn-gold">{t.account.myOrders}</a>
+            <a href="/tienda" class="btn-outline">{t.cart.continueShopping}</a>
           </div>
         </div>
       </div>
@@ -130,7 +134,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
         <div class="page-container py-10 sm:py-14">
           <div class="grid lg:grid-cols-3 gap-8 lg:gap-10">
             <section class="lg:col-span-2">
-              <h2 class="section-label mb-5">Seguimiento</h2>
+              <h2 class="section-label mb-5">{t.order.tracking}</h2>
               <div class="card p-6 sm:p-8">
                 {isClosed ? (
                   <>
@@ -200,7 +204,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
                 )}
               </div>
 
-              <h2 class="section-label mt-10 mb-5">Piezas</h2>
+              <h2 class="section-label mt-10 mb-5">{t.order.pieces}</h2>
               <div class="card divide-y-2 divide-white/15">
                 {order.order_items.map((i) => (
                   <div class="flex gap-4 p-4 sm:p-5">
@@ -225,20 +229,20 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
 
             <aside class="space-y-6">
               <div class="card p-6">
-                <h2 class="section-label mb-4">Resumen</h2>
+                <h2 class="section-label mb-4">{t.cart.summary}</h2>
                 <div class="space-y-3 text-base">
                   <div class="flex justify-between">
-                    <span class="text-white/80">Subtotal</span>
+                    <span class="text-white/80">{t.cart.subtotal}</span>
                     <span class="text-blancoRoto">{formatOrderMoney(subtotal)}</span>
                   </div>
                   <div class="flex justify-between">
-                    <span class="text-white/80">Envío</span>
+                    <span class="text-white/80">{t.cart.shipping}</span>
                     <span class="text-blancoRoto">
                       {shipping === 0 ? 'Gratis' : formatOrderMoney(shipping)}
                     </span>
                   </div>
                   <div class="flex justify-between pt-3 border-t-2 border-white/25">
-                    <span class="font-acentos uppercase tracking-[0.16em] text-blancoRoto">Total</span>
+                    <span class="font-acentos uppercase tracking-[0.16em] text-blancoRoto">{t.cart.total}</span>
                     <span class="font-acentos text-xl text-oro-brillo">
                       {formatOrderMoney(Number(order.total_amount))}
                     </span>
@@ -247,7 +251,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
               </div>
 
               <div class="card p-6">
-                <h2 class="section-label mb-4">Envío</h2>
+                <h2 class="section-label mb-4">{t.order.shippingSection}</h2>
                 <div class="text-base text-white/80 leading-relaxed">
                   <p class="text-blancoRoto mb-1">{order.contact_name ?? ''}</p>
                   <p>{order.shipping_street ?? ''}</p>
@@ -264,8 +268,8 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
               </div>
 
               <div class="flex flex-col gap-3">
-                <a href="/cuenta#pedidos" class="btn-gold w-full">Ver mis pedidos</a>
-                <a href="/tienda" class="btn-outline w-full">Seguir comprando</a>
+                <a href="/cuenta#pedidos" class="btn-gold w-full">{t.account.myOrders}</a>
+                <a href="/tienda" class="btn-outline w-full">{t.cart.continueShopping}</a>
               </div>
             </aside>
           </div>

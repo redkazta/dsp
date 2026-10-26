@@ -2,6 +2,32 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+
+// Textos y mensajes del script del navegador.
+const ui = {
+  required: t.checkout.required,
+  invalidEmail: t.checkout.invalidEmail,
+  invalidPhone: t.checkout.invalidPhone,
+  invalidPostal: t.checkout.invalidPostal,
+  fixErrors: t.checkout.fixErrors,
+  emptyCartError: t.checkout.emptyCartError,
+  waitCart: t.checkout.waitCart,
+  opening: t.checkout.opening,
+  pay: t.checkout.pay,
+  openFailed: t.checkout.openFailed,
+  connection: t.checkout.connection,
+  unavailable: t.checkout.cardUnavailable,
+  noSession: t.errors.noSession,
+  pieceOne: t.checkout.pieceOne,
+  pieceMany: t.checkout.pieceMany,
+  removedPieces: t.checkout.removedPieces,
+  unavailableNow: t.checkout.unavailableNow,
+  free: t.cart.free,
+};
 
 const { firstName, email, phone } = Astro.locals;
 
@@ -11,18 +37,19 @@ const paymentAvailable = Boolean(
 const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 
-<BaseLayout title="Checkout | Dinero Sobre Problemas" description="Completa tu compra de forma segura.">
+<BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription}>
+  <script type="application/json" id="checkout-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-10 sm:py-12">
       <nav class="mb-6">
         <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
-          <li><a href="/carrito" class="hover:text-oro-brillo transition-colors">Carrito</a></li>
+          <li><a href="/carrito" class="hover:text-oro-brillo transition-colors">{t.cart.title}</a></li>
           <li>/</li>
-          <li class="text-oro-brillo">Checkout</li>
+          <li class="text-oro-brillo">{t.checkout.title}</li>
         </ol>
       </nav>
-      <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">Finalizar compra</h1>
-      <p class="mt-3 text-base text-white/80">Producción bajo pedido · Pago seguro con Stripe</p>
+      <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">{t.checkout.title}</h1>
+      <p class="mt-3 text-base text-white/80">{t.checkout.subtitle}</p>
     </div>
   </section>
 
@@ -33,9 +60,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   ></div>
 
   <div id="checkout-empty" class="hidden max-w-3xl mx-auto px-5 py-24 sm:py-32 text-center">
-    <p class="font-titulos text-3xl text-blancoRoto mb-6">Tu carrito está vacío</p>
+    <p class="font-titulos text-3xl text-blancoRoto mb-6">{t.checkout.emptyTitle}</p>
     <div class="gold-line mx-auto mb-8"></div>
-    <a href="/tienda" class="btn-gold inline-flex">Ir a la tienda</a>
+    <a href="/tienda" class="btn-gold inline-flex">{t.checkout.goShop}</a>
   </div>
 
   <div id="checkout-content" class="page-container py-8 sm:py-12 lg:py-16">
@@ -47,11 +74,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">1</span>
-              Información de contacto
+              {t.checkout.step1}
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2">
-                <label class="field-label" for="firstName">Nombre *</label>
+                <label class="field-label" for="firstName">{t.checkout.firstName} *</label>
                 <input
                   id="firstName"
                   name="firstName"
@@ -62,7 +89,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="lastName">Apellidos *</label>
+                <label class="field-label" for="lastName">{t.checkout.lastName} *</label>
                 <input
                   id="lastName"
                   name="lastName"
@@ -72,7 +99,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="email">Correo electrónico *</label>
+                <label class="field-label" for="email">{t.checkout.email} *</label>
                 <input
                   id="email"
                   name="email"
@@ -85,7 +112,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="phone">Teléfono *</label>
+                <label class="field-label" for="phone">{t.checkout.phone} *</label>
                 <input
                   id="phone"
                   name="phone"
@@ -94,7 +121,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                   class="input-dark"
                   autocomplete="tel"
                   inputmode="tel"
-                  placeholder="10 dígitos"
+                  placeholder={t.checkout.phonePlaceholder}
                   value={phone ?? ''}
                 />
               </div>
@@ -105,11 +132,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">2</span>
-              Dirección de envío
+              {t.checkout.step2}
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="street">Calle y número *</label>
+                <label class="field-label" for="street">{t.checkout.street} *</label>
                 <input
                   id="street"
                   name="street"
@@ -119,11 +146,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="colonia">Colonia *</label>
+                <label class="field-label" for="colonia">{t.checkout.colonia} *</label>
                 <input id="colonia" name="colonia" required class="input-dark" />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="postalCode">Código postal *</label>
+                <label class="field-label" for="postalCode">{t.checkout.postalCode} *</label>
                 <input
                   id="postalCode"
                   name="postalCode"
@@ -135,7 +162,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="city">Ciudad *</label>
+                <label class="field-label" for="city">{t.checkout.city} *</label>
                 <input
                   id="city"
                   name="city"
@@ -145,7 +172,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="state">Estado *</label>
+                <label class="field-label" for="state">{t.checkout.state} *</label>
                 <input
                   id="state"
                   name="state"
@@ -155,22 +182,22 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="references">Referencias</label>
+                <label class="field-label" for="references">{t.checkout.references}</label>
                 <input
                   id="references"
                   name="references"
                   class="input-dark"
-                  placeholder="Entre calles, número de casa…"
+                  placeholder={t.checkout.referencesPlaceholder}
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="notes">Notas del pedido</label>
+                <label class="field-label" for="notes">{t.checkout.notes}</label>
                 <textarea
                   id="notes"
                   name="notes"
                   rows="3"
                   class="input-dark !min-h-[96px] py-3"
-                  placeholder="Diseño, color, talla especial o cualquier indicación."
+                  placeholder={t.checkout.notesPlaceholder}
                 ></textarea>
               </div>
             </div>
@@ -180,7 +207,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">3</span>
-              Pago
+              {t.checkout.step3}
             </h2>
 
             <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
@@ -189,11 +216,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                   <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
                 </svg>
                 <div>
-                  <p class="text-base text-blancoRoto font-semibold">Tarjeta de crédito o débito</p>
+                  <p class="text-base text-blancoRoto font-semibold">{t.checkout.cardTitle}</p>
                   <p class="text-sm text-white/80 leading-relaxed mt-1">
-                    {paymentAvailable
-                      ? 'Al continuar te llevamos a la pantalla segura de Stripe para capturar tu tarjeta. Tus datos nunca pasan por esta tienda.'
-                      : 'El pago con tarjeta no está disponible en este momento. Escríbenos para completar tu pedido.'}
+                    {paymentAvailable ? t.checkout.cardText : t.checkout.cardUnavailable}
                   </p>
                 </div>
               </div>
@@ -205,7 +230,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       <!-- Resumen del pedido -->
       <aside class="lg:col-span-1 order-1 lg:order-2">
         <div class="lg:sticky lg:top-28 bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
-          <h2 class="font-titulos text-2xl text-blancoRoto mb-6">Tu pedido</h2>
+          <h2 class="font-titulos text-2xl text-blancoRoto mb-6">{t.checkout.orderTitle}</h2>
           <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6">
             <!-- Los items se renderizan aquí -->
           </div>
@@ -218,17 +243,17 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
           <div class="space-y-3 pb-4 border-b-2 border-white/25 text-base">
             <div class="flex justify-between">
-              <span class="text-white/80">Subtotal</span>
+              <span class="text-white/80">{t.cart.subtotal}</span>
               <span id="co-subtotal" class="text-blancoRoto">$0.00</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-white/80">Envío</span>
+              <span class="text-white/80">{t.cart.shipping}</span>
               <span id="co-shipping" class="text-blancoRoto">—</span>
             </div>
           </div>
 
           <div class="flex justify-between items-center py-5">
-            <span class="font-acentos text-base uppercase tracking-[0.18em] text-blancoRoto">Total</span>
+            <span class="font-acentos text-base uppercase tracking-[0.18em] text-blancoRoto">{t.checkout.total}</span>
             <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
@@ -240,7 +265,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             disabled={!paymentAvailable}
             data-available={paymentAvailable ? 'true' : 'false'}
           >
-            Pagar y confirmar
+            {t.checkout.pay}
           </button>
 
           <p
@@ -250,10 +275,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           ></p>
 
           <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
-            Al confirmar aceptas nuestros
-            <a href="/terminos" class="text-oro-brillo underline underline-offset-2">términos</a>,
-            la <a href="/privacidad" class="text-oro-brillo underline underline-offset-2">política de privacidad</a>
-            y la <a href="/devoluciones" class="text-oro-brillo underline underline-offset-2">política de devoluciones</a>.
+            {t.checkout.terms}
+            <a href="/terminos" class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
+            {t.checkout.and} <a href="/privacidad" class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
+            {t.checkout.and} <a href="/devoluciones" class="text-oro-brillo underline underline-offset-2">{t.checkout.returnsLink}</a>.
           </p>
         </div>
       </aside>
@@ -339,6 +364,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     import { shippingCostFor, STANDARD_SHIPPING } from '../lib/pricing';
     import { escapeHtml, friendlyError } from '../lib/html';
 
+    const ui = JSON.parse(document.getElementById('checkout-ui')?.textContent || '{}') as Record<string, string>;
+    const uiText = (key: string) => ui[key] ?? '';
+
     const form = document.getElementById('checkout-form') as HTMLFormElement;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
     const errorEl = document.getElementById('pay-error')!;
@@ -366,14 +394,14 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       if (field.hasAttribute('required') && !val) {
         isValid = false;
-        errorMessage = 'Este campo es obligatorio.';
+        errorMessage = uiText('required');
       }
 
       if (name === 'email' && val) {
         const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
         if (!emailRegex.test(val)) {
           isValid = false;
-          errorMessage = 'Escribe un correo electrónico válido.';
+          errorMessage = uiText('invalidEmail');
         }
       }
 
@@ -381,13 +409,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         const digits = val.replace(/\D/g, '');
         if (digits.length < 10 || digits.length > 15) {
           isValid = false;
-          errorMessage = 'El teléfono debe tener 10 dígitos (o incluir lada).';
+          errorMessage = uiText('invalidPhone');
         }
       }
 
       if (name === 'postalCode' && val && !/^\d{4,6}$/.test(val)) {
         isValid = false;
-        errorMessage = 'Código postal de 5 dígitos (o 4-6 si es de otro país).';
+        errorMessage = uiText('invalidPostal');
       }
 
       const parent = field.closest('.space-y-2') || field.parentElement;
@@ -455,7 +483,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       document.getElementById('co-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
       document.getElementById('co-shipping')!.textContent =
-        shipping === 0 ? 'Gratis' : `$${formatMXN(STANDARD_SHIPPING)}`;
+        shipping === 0 ? uiText('free') : `$${formatMXN(STANDARD_SHIPPING)}`;
       document.getElementById('co-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
     }
 
@@ -469,7 +497,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     function restoreButton() {
       payBtn.disabled = false;
-      payBtn.textContent = 'Pagar y confirmar';
+      payBtn.textContent = uiText('pay');
     }
 
     form?.addEventListener('submit', async (e) => {
@@ -478,28 +506,28 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       alertDiv.classList.add('hidden');
 
       if (!paymentAvailable) {
-        showError('El pago con tarjeta no está disponible en este momento.');
+        showError(uiText('unavailable'));
         return;
       }
 
       if (!cartReady) {
-        showError('Espera mientras verificamos tu carrito...');
+        showError(uiText('waitCart'));
         return;
       }
 
       const items = getCart();
       if (items.length === 0) {
-        showError('Tu carrito está vacío. Agrega productos antes de continuar.');
+        showError(uiText('emptyCartError'));
         return;
       }
 
       if (!validateAllFields()) {
-        showError('Por favor corrige los errores en el formulario.');
+        showError(uiText('fixErrors'));
         return;
       }
 
       payBtn.disabled = true;
-      payBtn.textContent = 'Abriendo pago seguro…';
+      payBtn.textContent = uiText('opening');
 
       try {
         const res = await fetch('/api/checkout', {
@@ -527,12 +555,12 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
         if (!res.ok) {
           if (data?.code === 'NO_SESSION') {
-            sessionStorage.setItem('dsp_checkout_error', friendlyError('NO_SESSION', ''));
+            sessionStorage.setItem('dsp_checkout_error', uiText('noSession'));
             window.location.href = '/entrar?next=/checkout';
             return;
           }
 
-          showError(friendlyError(data?.code, data?.error ?? 'No pudimos iniciar el pago.'));
+          showError(friendlyError(data?.code, data?.error ?? uiText('openFailed')));
           restoreButton();
           return;
         }
@@ -543,10 +571,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           return;
         }
 
-        showError('No pudimos abrir la pantalla de pago. Intenta de nuevo.');
+        showError(uiText('openFailed'));
         restoreButton();
       } catch {
-        showError('No pudimos conectar con la tienda. Revisa tu conexión e intenta de nuevo.');
+        showError(uiText('connection'));
         restoreButton();
       }
     });
@@ -580,9 +608,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       .then(({ removed }) => {
         cartReady = true;
         if (removed.length > 0 && summaryError) {
-          summaryError.textContent = `Retiramos ${removed.length} ${
-            removed.length === 1 ? 'pieza' : 'piezas'
-          } que ya no están disponibles.`;
+          summaryError.textContent = `${uiText('removedPieces')} ${removed.length} ${
+            removed.length === 1 ? uiText('pieceOne') : uiText('pieceMany')
+          } ${uiText('unavailableNow')}`;
           summaryError.classList.remove('hidden');
         }
         renderSummary();
@@ -595,7 +623,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     renderSummary();
 
     if (!paymentAvailable) {
-      showError('El pago con tarjeta no está disponible en este momento. Escríbenos para completar tu pedido.');
+      showError(uiText('unavailable'));
     }
   </script>
 </BaseLayout>

@@ -6,6 +6,8 @@
  * flechas al hacer hover (desktop) o swipe (móvil) + puntos de posición.
  * El clic en una flecha no navega al producto.
  */
+import { getCopy, type Lang } from '../../lib/i18n';
+
 export interface Props {
   product: {
     id: string;
@@ -18,6 +20,9 @@ export interface Props {
 }
 
 const { product } = Astro.props;
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 const href = `/producto/${product.slug || product.id}`;
 const price = product.product_variants?.[0]?.price ?? product.base_price;
 
@@ -87,7 +92,7 @@ void trackId;
                 type="button"
                 class="card-arrow card-arrow--prev"
                 data-carousel-dir="-1"
-                aria-label="Foto anterior"
+                aria-label={t.product.previousPhoto}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="m15 18-6-6 6-6" />
@@ -97,7 +102,7 @@ void trackId;
                 type="button"
                 class="card-arrow card-arrow--next"
                 data-carousel-dir="1"
-                aria-label="Foto siguiente"
+                aria-label={t.product.nextPhoto}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="m9 18 6-6-6-6" />
@@ -135,7 +140,7 @@ void trackId;
       {isSoldOut && (
         <span class="absolute top-3 left-3 bg-negro-profundo px-3 py-1 border-2 border-white/50">
           <span class="font-acentos text-[10px] uppercase tracking-[0.2em] text-blancoRoto">
-            Agotado
+            {t.product.soldOut}
           </span>
         </span>
       )}

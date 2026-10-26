@@ -13,6 +13,10 @@ import {
   trackingUrl,
   type OrderStatus,
 } from '../lib/orders';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const user = Astro.locals.user!;
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
@@ -38,7 +42,7 @@ const fullName =
   [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
   profile?.full_name ||
   user.email ||
-  'Cliente';
+  t.common.client;
 
 const initial = fullName.charAt(0).toUpperCase();
 
@@ -59,7 +63,7 @@ const ordersView = orders.map((o) => ({
 }));
 ---
 
-<BaseLayout title="Mi cuenta | Dinero Sobre Problemas" description="Gestiona tu cuenta, tus datos y tus pedidos.">
+<BaseLayout title={t.account.metaTitle} description={t.account.profileSection}>
   <div id="account">
     <!-- Encabezado -->
     <section class="border-b-2 border-white/25 bg-noise">
@@ -73,12 +77,12 @@ const ordersView = orders.map((o) => ({
             )}
           </div>
           <div class="min-w-0">
-            <p class="section-label mb-1">Mi cuenta</p>
+            <p class="section-label mb-1">{t.account.title}</p>
             <h1 class="font-titulos text-2xl lg:text-3xl text-blancoRoto truncate">{fullName}</h1>
             <p class="text-sm text-muted mt-1 truncate">{user.email ?? ''}</p>
           </div>
         </div>
-        <button id="logout-btn" class="btn-outline self-start sm:self-auto">Cerrar sesión</button>
+        <button id="logout-btn" class="btn-outline self-start sm:self-auto">{t.account.logout}</button>
       </div>
     </section>
 
@@ -86,7 +90,7 @@ const ordersView = orders.map((o) => ({
       <div class="grid lg:grid-cols-3 gap-8 lg:gap-10">
         <!-- Pedidos -->
         <section class="lg:col-span-2 order-2 lg:order-1">
-          <h2 id="pedidos" class="section-label mb-6">Mis pedidos</h2>
+          <h2 id="pedidos" class="section-label mb-6">{t.account.orders}</h2>
 
           {
             ordersView.length === 0 ? (
@@ -186,12 +190,12 @@ const ordersView = orders.map((o) => ({
             )
           }
 
-          <h2 class="section-label mt-10 mb-4">Mis favoritos</h2>
+          <h2 class="section-label mt-10 mb-4">{t.account.myWishlist}</h2>
           <div id="wish-list" class="space-y-3">
             <p class="text-sm text-muted">Sin favoritos guardados.</p>
           </div>
 
-          <h2 class="section-label mt-10 mb-4">Mis direcciones</h2>
+          <h2 class="section-label mt-10 mb-4">{t.account.myAddresses}</h2>
           <div id="addresses-list" class="space-y-3">
             {
               addresses.length === 0 ? (
@@ -218,7 +222,7 @@ const ordersView = orders.map((o) => ({
 
         <!-- Datos -->
         <aside class="order-1 lg:order-2">
-          <h2 class="section-label mb-6">Mis datos</h2>
+          <h2 class="section-label mb-6">{t.account.profileSection}</h2>
           <form id="profile-form" class="card p-5 sm:p-6 space-y-4">
             <label class="block">
               <span class="field-label">Nombre *</span>
@@ -275,8 +279,8 @@ const ordersView = orders.map((o) => ({
               </span>
             </label>
 
-            <button type="submit" class="btn-gold w-full">Guardar cambios</button>
-            <p id="save-ok" role="status" class="hidden text-sm text-oro-brillo text-center">Guardado ✓</p>
+            <button type="submit" class="btn-gold w-full">{t.account.saveChanges}</button>
+            <p id="save-ok" role="status" class="hidden text-sm text-oro-brillo text-center">{t.account.saved}</p>
             <p id="save-error" role="alert" class="hidden text-sm text-red-400 text-center"></p>
           </form>
 

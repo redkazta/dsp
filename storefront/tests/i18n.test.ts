@@ -32,6 +32,12 @@ describe('copy', () => {
 
       for (const value of values) {
         if (typeof value === 'string') expect(value.trim().length).toBeGreaterThan(0);
+        // Los pilares de /nosotros son objetos { title, text }: también se revisan.
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          for (const inner of Object.values(value as Record<string, string>)) {
+            if (typeof inner === 'string') expect(inner.trim().length).toBeGreaterThan(0);
+          }
+        }
       }
     }
   });

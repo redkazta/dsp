@@ -2,21 +2,24 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 ---
 
-<BaseLayout title="Página no encontrada | Dinero Sobre Problemas" description="La página que buscas no existe.">
+<BaseLayout title={t.notFound.metaTitle} description={t.notFound.metaDescription}>
   <section class="min-h-[70vh] flex items-center justify-center px-5 sm:px-6 bg-noise">
     <div class="text-center max-w-lg w-full">
-      <p class="section-label mb-6">Error 404</p>
-      <h1 class="font-titulos text-6xl sm:text-7xl lg:text-8xl text-blancoRoto mb-6">Perdido</h1>
+      <p class="section-label mb-6">{t.notFound.label}</p>
+      <h1 class="font-titulos text-6xl sm:text-7xl lg:text-8xl text-blancoRoto mb-6">{t.notFound.title}</h1>
       <div class="gold-line mx-auto mb-8"></div>
       <p class="text-base sm:text-lg text-white/80 mb-10 leading-relaxed">
-        La página que buscas no existe o fue movida.
-        Pero el buen estilo nunca se pierde.
+        {t.notFound.text}
       </p>
       <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-        <a href="/" class="btn-gold">Ir al inicio</a>
-        <a href="/tienda" class="btn-outline">Ver catálogo</a>
+        <a href="/" class="btn-gold">{t.shop.goHome}</a>
+        <a href="/tienda" class="btn-outline">{t.about.closingCta}</a>
       </div>
     </div>
   </section>

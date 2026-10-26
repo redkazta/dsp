@@ -3,8 +3,12 @@
  * AuthForm.astro - Formulario único para login y registro.
  * Mismo layout, mismos campos base y mismas validaciones
  * para email/password y Google.
+ *
+ * Todos los textos salen de `lib/i18n.ts`; los mensajes del script viajan en
+ * el JSON `#auth-ui` para que el navegador no tenga cadenas en español fijas.
  */
 import GoogleButton from './GoogleButton.astro';
+import { getCopy, type Lang } from '../../lib/i18n';
 
 export interface Props {
   mode: 'login' | 'register';
@@ -12,23 +16,35 @@ export interface Props {
 
 const { mode } = Astro.props;
 const isRegister = mode === 'register';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+
+const ui = {
+  processing: t.account.processing,
+  missingName: t.account.missingName,
+  shortPassword: t.account.shortPassword,
+  passwordMismatch: t.account.passwordMismatch,
+  mustAccept: t.account.mustAccept,
+  confirmEmail: t.account.confirmEmail,
+  invalidCredentials: t.account.invalidCredentials,
+  generic: t.common.error,
+};
 ---
 
 <section class="min-h-[calc(100dvh-8rem)] flex items-start sm:items-center justify-center px-5 sm:px-6 py-10 sm:py-16 bg-noise">
+  <script type="application/json" id="auth-ui" set:html={JSON.stringify(ui)} />
+
   <div class="w-full max-w-lg">
     <!-- Encabezado -->
     <div class="text-center mb-8 sm:mb-10">
-      <p class="section-label mb-3">{isRegister ? 'Únete' : 'Cuenta'}</p>
+      <p class="section-label mb-3">{isRegister ? t.account.joinLabel : t.account.accountLabel}</p>
       <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
-        {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
+        {isRegister ? t.account.registerTitle : t.account.loginTitle}
       </h1>
       <div class="gold-line mx-auto"></div>
       <p class="mt-5 text-sm text-muted">
-        {
-          isRegister
-            ? 'Crea tu cuenta para comprar más rápido y seguir tus pedidos.'
-            : 'Entra para ver tus pedidos y guardar tus datos.'
-        }
+        {isRegister ? t.account.registerIntro : t.account.loginIntro}
       </p>
     </div>
 
@@ -38,7 +54,7 @@ const isRegister = mode === 'register';
     <div class="flex items-center gap-4 my-7">
       <div class="flex-1 h-px bg-white/35"></div>
       <span class="font-acentos text-xs uppercase tracking-[0.2em] text-blancoRoto">
-        o
+        {t.account.or}
       </span>
       <div class="flex-1 h-px bg-white/35"></div>
     </div>
@@ -49,22 +65,23 @@ const isRegister = mode === 'register';
         isRegister && (
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block">
-              <span class="field-label">Nombre *</span>
+              <span class="field-label">{t.account.name} *</span>
               <input
                 type="text"
                 name="firstName"
-                placeholder="Nombre"
+                placeholder={t.account.name}
                 required
                 class="input-dark"
                 autocomplete="given-name"
               />
             </label>
+
             <label class="block">
-              <span class="field-label">Apellidos *</span>
+              <span class="field-label">{t.account.lastName} *</span>
               <input
                 type="text"
                 name="lastName"
-                placeholder="Apellidos"
+                placeholder={t.account.lastName}
                 required
                 class="input-dark"
                 autocomplete="family-name"
@@ -75,11 +92,11 @@ const isRegister = mode === 'register';
       }
 
       <label class="block">
-        <span class="field-label">Correo electrónico *</span>
+        <span class="field-label">{t.account.email} *</span>
         <input
           type="email"
           name="email"
-          placeholder="tu@correo.com"
+          placeholder={t.account.emailPlaceholder}
           required
           class="input-dark"
           autocomplete="email"
@@ -89,22 +106,21 @@ const isRegister = mode === 'register';
 
       {
         isRegister && (
-          <>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block">
-              <span class="field-label">Teléfono</span>
+              <span class="field-label">{t.account.phone}</span>
               <input
                 type="tel"
                 name="phone"
-                placeholder="10 dígitos"
+                placeholder={t.checkout.phonePlaceholder}
                 class="input-dark"
                 autocomplete="tel"
                 inputmode="tel"
-                pattern="[0-9]{10}"
               />
             </label>
 
             <label class="block">
-              <span class="field-label">Fecha de nacimiento</span>
+              <span class="field-label">{t.account.birthDate}</span>
               <input
                 type="date"
                 name="birthdate"
@@ -113,49 +129,46 @@ const isRegister = mode === 'register';
                   .toISOString()
                   .slice(0, 10)}
               />
-              <span class="field-hint">Opcional. Solo para promociones de cumpleaños.</span>
+              <span class="field-hint">{t.account.birthDateHint}</span>
             </label>
-          </>
+          </div>
         )
       }
 
       <label class="block">
-        <span class="field-label">Contraseña *</span>
+        <span class="field-label">{t.account.password} *</span>
         <div class="relative">
           <input
             type="password"
             name="password"
-            placeholder={isRegister ? 'Mínimo 8 caracteres' : 'Tu contraseña'}
+            placeholder={isRegister ? t.account.passwordNewPlaceholder : t.account.passwordPlaceholder}
             required
             minlength={isRegister ? 8 : 6}
             class="input-dark pr-16"
             autocomplete={isRegister ? 'new-password' : 'current-password'}
           />
-          <a
+          <button
+            type="button"
             id="toggle-password"
-            role="button"
-            tabindex="0"
             class="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-blancoRoto hover:text-oro-brillo transition-colors"
-            aria-label="Mostrar u ocultar contraseña"
+            aria-label={t.account.togglePassword}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-          </a>
+          </button>
         </div>
         {
           isRegister && (
-            <span class="field-hint">
-              Al menos 8 caracteres. Usa mayúsculas, números o símbolos.
-            </span>
+            <span class="field-hint">{t.account.passwordHint}</span>
           )
         }
         {
           !isRegister && (
             <p class="mt-2 text-right">
               <a href="/recuperar" class="text-sm text-oro-brillo hover:text-white transition-colors">
-                ¿Olvidaste tu contraseña?
+                {t.account.forgot}
               </a>
             </p>
           )
@@ -166,11 +179,11 @@ const isRegister = mode === 'register';
         isRegister && (
           <>
             <label class="block">
-              <span class="field-label">Confirmar contraseña *</span>
+              <span class="field-label">{t.account.confirmPassword} *</span>
               <input
                 type="password"
                 name="confirmPassword"
-                placeholder="Repite tu contraseña"
+                placeholder={t.account.confirmPasswordPlaceholder}
                 required
                 class="input-dark"
                 autocomplete="new-password"
@@ -184,7 +197,7 @@ const isRegister = mode === 'register';
                 class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
               />
               <span class="text-sm text-muted leading-relaxed">
-                Quiero recibir novedades y drops exclusivos por correo.
+                {t.account.marketing}
               </span>
             </label>
 
@@ -196,13 +209,13 @@ const isRegister = mode === 'register';
                 class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
               />
               <span class="text-sm text-muted leading-relaxed">
-                Acepto los
+                {t.account.acceptTerms}
                 <a href="/terminos" class="text-oro-brillo hover:text-white underline underline-offset-2">
-                  términos y condiciones
+                  {t.checkout.termsLink}
                 </a>
-                y la
+                {t.account.andThe}
                 <a href="/privacidad" class="text-oro-brillo hover:text-white underline underline-offset-2">
-                  política de privacidad
+                  {t.checkout.privacyLink}
                 </a>.
               </span>
             </label>
@@ -211,7 +224,7 @@ const isRegister = mode === 'register';
       }
 
       <button type="submit" id="auth-submit" class="btn-gold w-full mt-2">
-        {isRegister ? 'Crear cuenta' : 'Entrar'}
+        {isRegister ? t.account.create : t.account.enter}
       </button>
 
       <p id="auth-error" role="alert" class="hidden text-sm text-red-400 text-center leading-relaxed"></p>
@@ -223,16 +236,16 @@ const isRegister = mode === 'register';
       {
         isRegister ? (
           <>
-            ¿Ya tienes cuenta?{' '}
+            {t.account.hasAccount}{' '}
             <a href="/entrar" class="text-oro-brillo font-semibold hover:text-white transition-colors">
-              Iniciar sesión
+              {t.account.goLogin}
             </a>
           </>
         ) : (
           <>
-            ¿No tienes cuenta?{' '}
+            {t.account.noAccount}{' '}
             <a href="/registro" class="text-oro-brillo font-semibold hover:text-white transition-colors">
-              Crear cuenta
+              {t.account.goRegister}
             </a>
           </>
         )
@@ -258,12 +271,14 @@ const isRegister = mode === 'register';
     margin-top: 0.4rem;
     font-size: 0.8125rem;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.7);
   }
 </style>
 
 <script>
   import { signIn, signUp } from '../../lib/auth';
+
+  const ui = JSON.parse(document.getElementById('auth-ui')?.textContent || '{}') as Record<string, string>;
+  const uiText = (key: string) => ui[key] ?? '';
 
   const form = document.getElementById('auth-form') as HTMLFormElement;
   const submitBtn = document.getElementById('auth-submit') as HTMLButtonElement;
@@ -308,7 +323,7 @@ const isRegister = mode === 'register';
 
     submitBtn.disabled = true;
     const original = submitBtn.textContent;
-    submitBtn.textContent = 'Procesando...';
+    submitBtn.textContent = uiText('processing');
 
     try {
       if (isRegister) {
@@ -319,22 +334,22 @@ const isRegister = mode === 'register';
         const birthdate = String(data.get('birthdate') ?? '');
 
         if (!firstName || !lastName) {
-          show(errorEl, 'Escribe tu nombre y apellidos.');
+          show(errorEl, uiText('missingName'));
           return;
         }
 
         if (password.length < 8) {
-          show(errorEl, 'La contraseña debe tener al menos 8 caracteres.');
+          show(errorEl, uiText('shortPassword'));
           return;
         }
 
         if (password !== confirm) {
-          show(errorEl, 'Las contraseñas no coinciden.');
+          show(errorEl, uiText('passwordMismatch'));
           return;
         }
 
         if (!form.querySelector<HTMLInputElement>('input[name="terms"]')?.checked) {
-          show(errorEl, 'Debes aceptar los términos y la política de privacidad.');
+          show(errorEl, uiText('mustAccept'));
           return;
         }
 
@@ -352,7 +367,7 @@ const isRegister = mode === 'register';
         }
 
         if (result.user && !result.session) {
-          show(infoEl, 'Revisa tu correo para confirmar tu cuenta.');
+          show(infoEl, uiText('confirmEmail'));
           return;
         }
 
@@ -364,7 +379,7 @@ const isRegister = mode === 'register';
           show(
             errorEl,
             error.message === 'Invalid login credentials'
-              ? 'Correo o contraseña incorrectos.'
+              ? uiText('invalidCredentials')
               : error.message
           );
           return;
@@ -375,7 +390,7 @@ const isRegister = mode === 'register';
         window.location.href = safeNext;
       }
     } catch (err: any) {
-      show(errorEl, err?.message ?? 'Algo salió mal. Intenta de nuevo.');
+      show(errorEl, err?.message ?? uiText('generic'));
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = original;

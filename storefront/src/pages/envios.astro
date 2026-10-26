@@ -2,11 +2,15 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 ---
 
 <BaseLayout
-  title="Envíos | Dinero Sobre Problemas"
-  description="Tiempos de producción, envíos y cobertura."
+  title={t.content.shippingMetaTitle}
+  description={t.content.shippingMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
     <p class="section-label mb-4">Ayuda</p>

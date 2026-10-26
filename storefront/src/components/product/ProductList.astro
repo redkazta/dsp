@@ -4,12 +4,16 @@
  * 2 columnas en móvil, 3 en tablet, 4 en desktop.
  */
 import ProductCard from './ProductCard.astro';
+import { getCopy, type Lang } from '../../lib/i18n';
 
 export interface Props {
   products: any[];
 }
 
 const { products: rawProducts } = Astro.props;
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 // Red de seguridad: un producto por id aunque la consulta lo repita
 // (p. ej. por un join con imágenes o variantes).
@@ -19,9 +23,9 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
 {
   products.length === 0 ? (
     <div class="text-center py-20 sm:py-24">
-      <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">Sin resultados</p>
+      <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">{t.shop.emptyTitle}</p>
       <div class="gold-line mx-auto mb-5" />
-      <p class="text-muted">No hay productos disponibles por el momento.</p>
+      <p class="text-muted">{t.shop.noProducts}</p>
     </div>
   ) : (
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16">

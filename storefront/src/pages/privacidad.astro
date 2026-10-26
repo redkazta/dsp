@@ -2,13 +2,17 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const updated = '17 de octubre de 2026';
 ---
 
 <BaseLayout
-  title="Política de Privacidad | Dinero Sobre Problemas"
-  description="Cómo recopilamos, usamos y protegemos tus datos personales."
+  title={t.content.privacyMetaTitle}
+  description={t.content.privacyMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
     <p class="section-label mb-4">Legal</p>

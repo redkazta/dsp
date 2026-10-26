@@ -9,6 +9,10 @@ import {
   getRelatedProducts,
   TENANT_SLUG,
 } from '../../lib/supabase';
+import { getCopy, type Lang } from '../../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const param = Astro.params.slug ?? '';
 
@@ -44,8 +48,8 @@ function viewLabel(url: string) {
   const file = url.toLowerCase();
   const back = file.includes('back');
   const flash = /flash/.test(file.replace(/no_flash/g, ''));
-  if (flash) return back ? 'Espalda · flash' : 'Frente · flash';
-  return back ? 'Espalda' : 'Frente';
+  if (flash) return back ? t.product.backFlash : t.product.frontFlash;
+  return back ? t.product.back : t.product.front;
 }
 
 const variants = product?.product_variants ?? [];
@@ -61,8 +65,8 @@ const breadcrumbLd = product
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Inicio', item: Astro.site },
-        { '@type': 'ListItem', position: 2, name: 'Tienda', item: new URL('/tienda', Astro.site ?? Astro.url.origin).toString() },
+        { '@type': 'ListItem', position: 1, name: t.shop.breadcrumbHome, item: Astro.site },
+        { '@type': 'ListItem', position: 2, name: t.shop.breadcrumb, item: new URL('/tienda', Astro.site ?? Astro.url.origin).toString() },
         { '@type': 'ListItem', position: 3, name: product.name },
       ],
     }
@@ -86,31 +90,41 @@ const productLd = product
       },
     }
   : null;
+
+// Textos para el script del navegador (Astro los serializa con este objeto).
+const ui = {
+  selectSizeError: t.product.selectSizeError,
+  selectColorError: t.product.selectColorError,
+  combinationUnavailable: t.product.combinationUnavailable,
+  wishlistShort: t.product.wishlistShort,
+  wishlistSaved: t.product.wishlistSaved,
+};
 ---
 
 <BaseLayout
-  title={product ? `${product.name} | Dinero Sobre Problemas` : 'Producto no encontrado'}
-  description={product?.description ?? 'Detalle del producto'}
+  title={product ? `${product.name} | Dinero Sobre Problemas` : t.product.notFoundTitle}
+  description={product?.description ?? t.product.notFoundText}
   image={images[0]?.url}
 >
   {breadcrumbLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />}
   {productLd && <script type="application/ld+json" set:html={JSON.stringify(productLd)} />}
+  <script type="application/json" id="pdp-ui" set:html={JSON.stringify(ui)} />
 
   {
     !product ? (
       <div class="max-w-3xl mx-auto py-32 text-center px-6">
-        <p class="section-label mb-4">Error 404</p>
-        <h1 class="font-titulos text-4xl text-blancoRoto mb-6">Producto no encontrado</h1>
-        <a href="/tienda" class="btn-gold inline-block">Volver al catálogo</a>
+        <p class="section-label mb-4">404</p>
+        <h1 class="font-titulos text-4xl text-blancoRoto mb-6">{t.product.notFoundTitle}</h1>
+        <a href="/tienda" class="btn-gold inline-block">{t.product.backToShop}</a>
       </div>
     ) : (
       <>
         {/* Breadcrumb */}
         <div class="page-container py-5 border-b-2 border-white/25">
           <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
-            <li><a href="/" class="hover:text-oro-brillo transition-colors">Inicio</a></li>
+            <li><a href="/" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumbHome}</a></li>
             <li>/</li>
-            <li><a href="/tienda" class="hover:text-oro-brillo transition-colors">Tienda</a></li>
+            <li><a href="/tienda" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumb}</a></li>
             <li>/</li>
             <li class="text-oro-brillo truncate max-w-[200px]">{product.name}</li>
           </ol>
@@ -122,7 +136,7 @@ const productLd = product
             <div>
               {images.length > 1 ? (
                 <div class="pdp-carousel" data-carousel-scope>
-                  <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${product.name}: fotos`}>
+                  <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${product.name}: ${t.product.photos}`}>
                     {images.map((img: any, i: number) => (
                       <div class="pdp-slide" data-carousel-slide>
                         <div class="product-frame border-2 border-white/25">
@@ -136,12 +150,12 @@ const productLd = product
                     ))}
                   </div>
 
-                  <button type="button" class="pdp-arrow pdp-arrow--prev" data-carousel-dir="-1" aria-label="Foto anterior">
+                  <button type="button" class="pdp-arrow pdp-arrow--prev" data-carousel-dir="-1" aria-label={t.product.previousPhoto}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="m15 18-6-6 6-6" />
                     </svg>
                   </button>
-                  <button type="button" class="pdp-arrow pdp-arrow--next" data-carousel-dir="1" aria-label="Foto siguiente">
+                  <button type="button" class="pdp-arrow pdp-arrow--next" data-carousel-dir="1" aria-label={t.product.nextPhoto}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="m9 18 6-6-6-6" />
                     </svg>
@@ -164,7 +178,7 @@ const productLd = product
                   ) : (
                     <div class="absolute inset-0 flex items-center justify-center">
                       <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
-                        Sin imagen
+                        {t.product.noImage}
                       </span>
                     </div>
                   )}
@@ -184,7 +198,7 @@ const productLd = product
                       ]}
                       data-carousel-thumb={i}
                       aria-pressed={i === 0 ? 'true' : 'false'}
-                      aria-label={`Ver ${viewLabel(img.url)}`}
+                      aria-label={`${t.product.seeView} ${viewLabel(img.url)}`}
                     >
                       <img src={img.url} alt="" loading="lazy" />
                       <span class="gallery-tag">{viewLabel(img.url)}</span>
@@ -221,26 +235,26 @@ const productLd = product
                   data-wish-price={price}
                   data-wish-image={images[0]?.url ?? ''}
                   aria-pressed="false"
-                  aria-label="Guardar en favoritos"
+                  aria-label={t.product.wishlistAdd}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
                   </svg>
-                  <span id="wish-label">Favorito</span>
+                  <span id="wish-label">{t.product.wishlistShort}</span>
                 </button>
               </div>
 
               <div class="gold-line mb-8" style="margin-left: 0"></div>
 
               <p class="text-white/80 leading-relaxed mb-8 whitespace-pre-line">
-                {product.description ?? 'Playera oversize de algodón premium. Logo ¡D$P! estampado al frente.'}
+                {product.description ?? t.product.defaultDescription}
               </p>
 
               <!-- Tallas -->
               {sizes.length > 0 && (
                 <div class="mb-6">
                   <h3 class="font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto mb-4">
-                    Talla
+                    {t.product.size}
                   </h3>
                   <div class="flex flex-wrap gap-3" id="size-options">
                     {sizes.map((size: any) => (
@@ -292,13 +306,13 @@ const productLd = product
                   ]}
                   disabled={isSoldOut}
                 >
-                  {isSoldOut ? 'Agotado' : 'Agregar al carrito'}
+                  {isSoldOut ? t.product.soldOut : t.product.addToCart}
                 </button>
                 <a
                   href="/carrito"
                   id="open-cart-drawer"
                   class="min-h-[56px] px-6 py-5 border-2 border-white/50 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
-                  aria-label="Ver carrito"
+                  aria-label={t.shop.viewCart}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
@@ -313,24 +327,23 @@ const productLd = product
               <div class="border-t-2 border-white/25 pt-6 space-y-2">
                 <details class="group">
                   <summary class="flex justify-between items-center cursor-pointer py-3 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-brillo transition-colors">
-                    Detalles del producto
+                    {t.product.detailsTitle}
                     <span class="text-oro-brillo transition-transform group-open:rotate-45">+</span>
                   </summary>
                   <ul class="pt-3 pb-2 space-y-2 text-base text-white/80">
                     <li>SKU: {product.sku ?? '—'}</li>
-                    <li>Stock disponible: {totalStock} piezas</li>
-                    {product.categories?.name && <li>Categoría: {product.categories.name}</li>}
+                    <li>{t.product.stockAvailable}: {totalStock}</li>
+                    {product.categories?.name && <li>{t.product.category}: {product.categories.name}</li>}
                   </ul>
                 </details>
 
                 <details class="group border-t border-white/15">
                   <summary class="flex justify-between items-center cursor-pointer py-4 min-h-[48px] font-acentos text-sm uppercase tracking-[0.2em] text-blancoRoto hover:text-oro-brillo transition-colors">
-                    Envío y devoluciones
+                    {t.product.shippingTitle}
                     <span class="text-oro-brillo transition-transform group-open:rotate-45">+</span>
                   </summary>
                   <p class="pb-4 text-base text-white/80 leading-relaxed">
-                    Envío gratis en pedidos superiores a $150 USD. Devoluciones
-                    aceptadas dentro de 30 días con etiqueta original.
+                    {t.product.shippingText}
                   </p>
                 </details>
               </div>
@@ -474,6 +487,10 @@ const productLd = product
     import { sanitizeVariants } from '../../lib/product-variants';
     import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
 
+    /** Textos resueltos en servidor. */
+    const ui = JSON.parse(document.getElementById('pdp-ui')?.textContent || '{}') as Record<string, string>;
+    const uiText = (key: string) => ui[key] ?? '';
+
     // La galería (flechas, puntos, miniaturas y avance automático) la maneja
     // `lib/carousel.ts`. Aquí solo se guarda la foto visible para el carrito.
     let currentImage =
@@ -546,19 +563,19 @@ const productLd = product
 
       btn.addEventListener('click', () => {
         if (sizes.length > 0 && !selectedSize) {
-          feedback.textContent = 'Selecciona una talla';
+          feedback.textContent = uiText('selectSizeError');
           feedback.classList.remove('hidden');
           return;
         }
         if (colors.length > 0 && !selectedColor) {
-          feedback.textContent = 'Selecciona un color';
+          feedback.textContent = uiText('selectColorError');
           feedback.classList.remove('hidden');
           return;
         }
 
         const variant = findVariant();
         if (!variant) {
-          feedback.textContent = 'Combinación no disponible';
+          feedback.textContent = uiText('combinationUnavailable');
           feedback.classList.remove('hidden');
           return;
         }
@@ -598,7 +615,7 @@ const productLd = product
       if (icon) icon.setAttribute('fill', active ? 'currentColor' : 'none');
 
       const label = document.getElementById('wish-label');
-      if (label) label.textContent = active ? 'Guardado' : 'Favorito';
+      if (label) label.textContent = active ? uiText('wishlistSaved') : uiText('wishlistShort');
     }
 
     if (wishBtn) {
@@ -623,8 +640,8 @@ const productLd = product
       <section class="border-t border-white/30 bg-negro-carbono">
         <div class="page-container py-20">
           <div class="text-center mb-14">
-            <p class="section-label mb-4">También te puede gustar</p>
-            <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto">Completa el look</h2>
+            <p class="section-label mb-4">{t.product.related}</p>
+            <h2 class="font-titulos text-3xl md:text-4xl text-blancoRoto">{t.product.completeLook}</h2>
           </div>
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-8">
             {related.map((p: any) => (

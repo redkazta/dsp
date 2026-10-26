@@ -4,6 +4,24 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+
+// Textos que necesita el script del navegador.
+const ui = {
+  one: t.common.itemOne,
+  many: t.common.itemMany,
+  free: t.cart.free,
+  remove: t.cart.remove,
+  removeOne: t.cart.removeOne,
+  addOne: t.cart.addOne,
+  freeShippingDone: t.cart.freeShippingDone,
+  freeShippingMissing: t.cart.freeShippingMissing,
+  forFree: t.cart.forFree,
+  unavailableRemoved: t.cart.unavailableRemoved,
+};
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
@@ -30,26 +48,27 @@ const suggestions = (featured.data ?? []).map((p: any) => {
 });
 ---
 
-<BaseLayout title="Carrito | Dinero Sobre Problemas" description="Revisa tu selección antes de pagar.">
+<BaseLayout title={t.cart.metaTitle} description={t.cart.metaDescription}>
+  <script type="application/json" id="cart-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-10 sm:py-16">
-      <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">Carrito</h1>
-      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">Cargando…</p>
+      <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">{t.cart.title}</h1>
+      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">{t.common.loading}</p>
     </div>
   </section>
 
   <div class="page-container py-10 sm:py-12 lg:py-16">
     <div id="cart-empty" class="hidden">
       <div class="text-center py-10 sm:py-16">
-        <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">Tu carrito está vacío</p>
-        <p class="text-white/80 mb-10">Descubre el drop reflectivo.</p>
-        <a href="/tienda" class="btn-gold inline-block">Ir a la tienda</a>
+        <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">{t.cart.emptyTitle}</p>
+        <p class="text-white/80 mb-10">{t.cart.emptyText}</p>
+        <a href="/tienda" class="btn-gold inline-block">{t.checkout.goShop}</a>
       </div>
 
       {
         suggestions.length > 0 && (
           <div class="max-w-3xl mx-auto mt-6">
-            <h2 class="section-label mb-5 text-center">Por si te sirve</h2>
+            <h2 class="section-label mb-5 text-center">{t.cart.suggestions}</h2>
             <div class="grid grid-cols-2 gap-4 sm:gap-6">
               {suggestions.map((p) => (
                 <a
@@ -69,7 +88,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
                   <div class="p-4 flex items-start justify-between gap-3">
                     <div class="min-w-0">
                       <p class="font-acentos text-sm text-blancoRoto truncate">{p.name}</p>
-                      <p class="text-xs text-white/70 mt-0.5">{p.category ?? 'Pieza'}</p>
+                      <p class="text-xs text-white/70 mt-0.5">{p.category ?? t.common.piece}</p>
                     </div>
                     <p class="font-acentos text-sm text-oro-brillo whitespace-nowrap">
                       ${p.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -93,16 +112,16 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       <!-- Resumen: primero en móvil, al lado en desktop -->
       <aside class="lg:col-span-1 order-first lg:order-last">
         <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
-          <h2 class="font-titulos text-2xl text-blancoRoto mb-5 sm:mb-6">Resumen</h2>
+          <h2 class="font-titulos text-2xl text-blancoRoto mb-5 sm:mb-6">{t.cart.summary}</h2>
 
           <div class="space-y-4 pb-6 border-b-2 border-white/25">
             <div class="flex justify-between text-base">
-              <span class="text-white/80">Subtotal</span>
+              <span class="text-white/80">{t.cart.subtotal}</span>
               <span id="sum-subtotal" class="text-blancoRoto">$0.00</span>
             </div>
             <div class="flex justify-between gap-3 text-base">
-              <span class="text-white/80">Envío</span>
-              <span id="sum-shipping" class="text-blancoRoto text-right">Calculado al pagar</span>
+              <span class="text-white/80">{t.cart.shipping}</span>
+              <span id="sum-shipping" class="text-blancoRoto text-right">{t.cart.shippingAtPay}</span>
             </div>
             <div id="free-shipping-progress" class="hidden">
               <div class="h-1.5 bg-white/20 mb-2">
@@ -113,17 +132,17 @@ const suggestions = (featured.data ?? []).map((p: any) => {
           </div>
 
           <div class="flex justify-between items-center py-6">
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">Total</span>
+            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">{t.cart.total}</span>
             <span id="sum-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
-          <a href="/checkout" class="btn-gold w-full mb-3">Ir a pagar</a>
-          <a href="/tienda" class="btn-outline w-full mb-3 text-center">Seguir comprando</a>
+          <a href="/checkout" class="btn-gold w-full mb-3">{t.cart.checkout}</a>
+          <a href="/tienda" class="btn-outline w-full mb-3 text-center">{t.cart.continueShopping}</a>
           <a
             href="/favoritos"
             class="block text-center text-sm uppercase tracking-[0.16em] text-white/80 hover:text-oro-brillo py-2"
           >
-            Ver favoritos
+            {t.cart.viewWishlist}
           </a>
 
           <div class="mt-8 pt-6 border-t-2 border-white/25 space-y-2">
@@ -131,9 +150,9 @@ const suggestions = (featured.data ?? []).map((p: any) => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-              Envío gratis desde {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('en-US')} USD`}
+              {t.cart.freeFrom} {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('en-US')} USD`}
             </p>
-            <p class="text-xs text-white/60">Piezas producidas bajo pedido · 2 a 3 semanas</p>
+            <p class="text-xs text-white/60">{t.cart.madeToOrderTime}</p>
           </div>
         </div>
       </aside>
@@ -152,6 +171,9 @@ const suggestions = (featured.data ?? []).map((p: any) => {
     import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from '../lib/pricing';
     import { escapeHtml, safeUrl } from '../lib/html';
 
+    const ui = JSON.parse(document.getElementById('cart-ui')?.textContent || '{}') as Record<string, string>;
+    const uiText = (key: string) => ui[key] ?? '';
+
     const empty = document.getElementById('cart-empty')!;
     const content = document.getElementById('cart-content')!;
     const list = document.getElementById('cart-items')!;
@@ -164,14 +186,14 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       if (items.length === 0) {
         empty.classList.remove('hidden');
         content.classList.add('hidden');
-        summaryText.textContent = '0 productos';
+        summaryText.textContent = `0 ${uiText('many')}`;
         return;
       }
 
       empty.classList.add('hidden');
       content.classList.remove('hidden');
       const count = items.reduce((n, i) => n + i.qty, 0);
-      summaryText.textContent = `${count} ${count === 1 ? 'producto' : 'productos'}`;
+      summaryText.textContent = `${count} ${count === 1 ? uiText('one') : uiText('many')}`;
 
       list.innerHTML = items
         .map((i) => {
@@ -188,13 +210,13 @@ const suggestions = (featured.data ?? []).map((p: any) => {
             </div>
             <div class="flex flex-wrap items-end justify-between gap-3">
               <div class="flex items-center border-2 border-white/30">
-                <button data-dec="${escapeHtml(i.variantId)}" aria-label="Quitar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
+                <button data-dec="${escapeHtml(i.variantId)}" aria-label="${uiText('removeOne')}" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
                 <span class="w-9 text-center text-base text-blancoRoto">${i.qty}</span>
-                <button data-inc="${escapeHtml(i.variantId)}" aria-label="Agregar uno" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
+                <button data-inc="${escapeHtml(i.variantId)}" aria-label="${uiText('addOne')}" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
               </div>
               <div class="text-right">
                 <p class="font-acentos text-lg text-oro-brillo">$${formatMXN(i.price * i.qty)}</p>
-                <button data-remove="${escapeHtml(i.variantId)}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">Eliminar</button>
+                <button data-remove="${escapeHtml(i.variantId)}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">${uiText('remove')}</button>
               </div>
             </div>
           </div>
@@ -208,7 +230,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       document.getElementById('sum-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
       document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
       document.getElementById('sum-shipping')!.textContent =
-        subtotal === 0 ? '—' : shipping === 0 ? 'Gratis' : `$${formatMXN(STANDARD_SHIPPING)}`;
+        subtotal === 0 ? '—' : shipping === 0 ? uiText('free') : `$${formatMXN(STANDARD_SHIPPING)}`;
 
       const progress = document.getElementById('free-shipping-progress')!;
       const bar = document.getElementById('free-shipping-bar')!;
@@ -217,10 +239,10 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       progress.classList.remove('hidden');
       if (subtotal >= FREE_SHIPPING_THRESHOLD) {
         bar.style.width = '100%';
-        text.textContent = 'Ya tienes envío gratis ✓';
+        text.textContent = uiText('freeShippingDone');
       } else {
         bar.style.width = `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%`;
-        text.textContent = `Te faltan $${formatMXN(FREE_SHIPPING_THRESHOLD - subtotal)} para envío gratis`;
+        text.textContent = `${uiText('freeShippingMissing')} $${formatMXN(FREE_SHIPPING_THRESHOLD - subtotal)} ${uiText('forFree')}`;
       }
 
       list.querySelectorAll<HTMLElement>('[data-inc]').forEach((b) =>

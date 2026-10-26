@@ -2,6 +2,10 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCopy, type Lang } from '../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 const rows = [
   { size: 'XS', chest: '86–91', length: '66' },
@@ -15,8 +19,8 @@ const rows = [
 ---
 
 <BaseLayout
-  title="Guía de tallas | Dinero Sobre Problemas"
-  description="Medidas en centímetros para elegir tu talla correcta."
+  title={t.content.sizesMetaTitle}
+  description={t.content.sizesMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
     <p class="section-label mb-4">Ayuda</p>
