@@ -4,6 +4,8 @@
  * Se abre desde el header o desde cualquier página que emita
  * `store:open` con detail { tab: 'cart' | 'wishlist' }.
  */
+import { getCopy, type Lang } from '../../lib/i18n';
+
 export interface Props {
   class?: string;
   /** Favoritos que ya pintó el servidor (sin parpadeo) */
@@ -18,8 +20,8 @@ export interface Props {
 
 const { class: className = '', wishlist: initialWishlist = [] } = Astro.props;
 
-const lang = (Astro.locals.lang ?? 'es') as import('../lib/i18n').Lang;
-const t = (await import('../lib/i18n')).getCopy(lang);
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
 
 // Mini textos del panel (también los usan los scripts de abajo).
 const ui = {
