@@ -1,17 +1,22 @@
 ---
 /**
- * Botón de Google con Google Identity Services (ID Token flow).
+ * Botón de Google — flujo de CÓDIGO con redirección (GIS `initCodeClient`).
  *
- * Por qué no usamos `google.accounts.id.prompt()`:
- *   - Google está apagando ese prompt con FedCM obligatorio
- *     (el warning GSI_LOGGER de la consola) y, en navegadores con cookies de
- *     terceros bloqueadas, ni siquiera se muestra.
- *   - Además Supabase exige que el `nonce` del token coincida con el que se
- *     envía, y el prompt no permite inyectarlo de forma fiable.
+ * Historial de por qué no se usan otras APIs:
+ *   - `google.accounts.id.prompt()` (One Tap): Google lo apaga con FedCM
+ *     obligatorio y el warning GSI_LOGGER de la consola viene de ahí.
+ *   - `initIdTokenClient`/`initTokenClient` (popup): requieren que el navegador
+ *     permita el popup y complican el `nonce` que Supabase exige.
  *
- * Aquí se inicia el flujo con `initialize()` + `renderButton()` oculto no;
- * se usa `google.accounts.oauth2.initIdTokenClient()`, que sí permite pasar un
- * `nonce` y responde con un popup (sin One Tap).
+ * Con `ux_mode: 'redirect'` Google navega a su pantalla y vuelve a esta misma
+ * ruta con `?code=…`. Aquí se canjea ese código por un ID token y se entrega a
+ * Supabase junto con el `nonce` generado antes de salir.
+ *
+ * Requisitos en Google Cloud (Credenciales → OAuth 2.0 Client ID):
+ *   - Authorized JavaScript origins: https://dspstorefront.vercel.app
+ *   - Authorized redirect URIs: la MISMA ruta del botón, p. ej.
+ *     https://dspstorefront.vercel.app/entrar y
+ *     https://dspstorefront.vercel.app/registro
  */
 
 const GOOGLE_CLIENT_ID =
@@ -116,6 +121,11 @@ const scope = 'openid email profile';
 
   const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
+  // Supabase exige que el `nonce` del ID token coincida con el que envía.
+  // Ese nonce viaja entre dos páginas (Google y esta), así que tiene que
+  // sobrevivir al cruce de origen: se guarda en sessionStorage.
+  const NONCE_KEY = 'dsp_google_nonce';
+
   const root = document.getElementById('google-auth');
   const button = document.getElementById('google-btn') as HTMLButtonElement | null;
   const label = document.getElementById('google-btn-label');
@@ -123,7 +133,6 @@ const scope = 'openid email profile';
   const clientId = root?.dataset.clientId ?? '';
   const scope = root?.dataset.scope ?? 'openid email profile';
 
-  let google: any = null;
   let loaded: Promise<void> | null = null;
 
   function setLoading(isLoading: boolean, text = 'Continuar con Google') {
@@ -142,8 +151,9 @@ const scope = 'openid email profile';
     if (loaded) return loaded;
 
     loaded = new Promise<void>((resolve, reject) => {
-      if ((window as any).google?.accounts?.oauth2) {
-        google = (window as any).google;
+      const ready = () => Boolean((window as any).google?.accounts?.oauth2);
+
+      if (ready()) {
         resolve();
         return;
       }
@@ -153,10 +163,7 @@ const scope = 'openid email profile';
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        google = (window as any).google;
-        google?.accounts?.oauth2
-          ? resolve()
-          : reject(new Error('Google Identity no disponible'));
+        ready() ? resolve() : reject(new Error('Google Identity no disponible'));
       };
       script.onerror = () => reject(new Error('No se pudo cargar Google'));
       document.head.appendChild(script);
@@ -172,6 +179,20 @@ const scope = 'openid email profile';
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
+  /** Guarda el nonce para el callback (sobrevive al viaje a Google). */
+  function stashNonce(nonce: string) {
+    try {
+      sessionStorage.setItem(NONCE_KEY, nonce);
+    } catch {
+      // modo privado estricto: el nonce también va en la URL de retorno
+    }
+  }
+
+  /** Dirección a la que Google devuelve al usuario (mismo host y ruta). */
+  function callbackUrl() {
+    return `${window.location.origin}${window.location.pathname}`;
+  }
+
   function nextPath(): string {
     const next = new URLSearchParams(window.location.search).get('next');
     return next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta';
@@ -179,16 +200,10 @@ const scope = 'openid email profile';
 
   /**
    * Decide el destino después de entrar con Google:
-   *   - cuenta YA vinculada a Google  → /cuenta
-   *   - correo existente (otra forma de acceso) → aviso, no se fusciona solo
-   *   - cuenta nueva                 → datos a completar
+   *   - cuenta ya vinculada a Google          → /cuenta
+   *   - cuenta recién creada (alta con Google) → /cuenta/onboarding
    */
-  async function routeAfterSignIn(hadSession: boolean, createdAt: string | undefined) {
-    if (!hadSession) {
-      window.location.href = nextPath();
-      return;
-    }
-
+  async function routeAfterSignIn(createdAt: string | undefined) {
     // Recién creada (< 2 min) ⇒ es un alta, no un login.
     const isNew = createdAt ? Date.now() - new Date(createdAt).getTime() < 120_000 : false;
 
@@ -200,43 +215,125 @@ const scope = 'openid email profile';
     window.location.href = nextPath();
   }
 
-  async function onCredential(response: { credential?: string }) {
-    if (!response?.credential) {
-      showError('Google no devolvió credenciales. Intenta de nuevo.');
-      return;
-    }
+  /**
+   * Google devuelve a esta página con `?code=…`. El código se canjea aquí
+   * mismo (token endpoint con CORS) para obtener el ID token con el nonce
+   * que guardamos antes de salir.
+   */
+  /** SHA-256 en base64url: así espera Google el nonce cuando se usa `hash`.
+      Si se envía en claro, el token trae el valor en claro. */
+  async function sha256Base64Url(value: string): Promise<string> {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+    const bytes = new Uint8Array(digest);
+    let binary = '';
+    bytes.forEach((b) => (binary += String.fromCharCode(b)));
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
 
-    const hadSession = Boolean((await supabase.auth.getSession()).data.session);
-
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: 'google',
-      token: response.credential,
+  async function exchangeCode(code: string): Promise<string | null> {
+    const body = new URLSearchParams({
+      code,
+      client_id: clientId,
+      redirect_uri: window.location.origin + window.location.pathname,
+      grant_type: 'authorization_code',
     });
 
-    if (error) {
-      console.error('[google] signInWithIdToken:', error.message, error.status);
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
 
-      if (/nonce/i.test(error.message)) {
-        showError('No pudimos validar la sesión con Google. Recarga la página e intenta de nuevo.');
-      } else if (error.status === 400) {
-        showError('Google rechazó el acceso. Revisa que el dominio esté autorizado en Google Cloud.');
-      } else {
-        showError('No pudimos iniciar sesión con Google. Intenta de nuevo.');
-      }
-      return;
+    const json: any = await res.json().catch(() => ({}));
+
+    if (!res.ok || !json.id_token) {
+      console.error('[google] token exchange', res.status, json?.error, json?.error_description);
+      return null;
     }
 
-    await routeAfterSignIn(hadSession, data?.user?.created_at);
+    return json.id_token as string;
   }
 
-  // Acelera la carga del SDK mientras el usuario lee el formulario
-  if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => loadSdk().catch(() => {}));
-  } else {
-    setTimeout(() => loadSdk().catch(() => {}), 1200);
+  /**
+   * Si volvemos de Google (`?code=`), se completa el inicio de sesión.
+   * El código se canjea aquí mismo contra el token endpoint de Google.
+   */
+  function cleanUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('code');
+    url.searchParams.delete('scope');
+    url.searchParams.delete('authuser');
+    url.searchParams.delete('prompt');
+    url.searchParams.delete('hd');
+    history.replaceState({}, '', `${url.pathname}${url.search}`);
   }
 
-  button?.addEventListener('click', async () => {
+  async function completeRedirectFlow(): Promise<boolean> {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (!code) return false;
+
+    // El formulario no debe heredar los parámetros de Google.
+    cleanUrl();
+
+    let nonce = '';
+    try {
+      nonce = sessionStorage.getItem(NONCE_KEY) ?? '';
+    } catch {
+      /* modo privado: sin nonce no se puede validar */
+    }
+
+    setLoading(true, 'Verificando…');
+
+    try {
+      const idToken = await exchangeCode(code);
+      if (!idToken) {
+        showError('No pudimos validar el acceso con Google. Intenta de nuevo.');
+        return true;
+      }
+
+      // El ID token trae el `nonce` en claro o su hash (SHA-256 base64url).
+      const candidates = nonce ? [nonce, await sha256Base64Url(nonce)] : [undefined];
+
+      let lastError: any = null;
+
+      for (const candidate of candidates) {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: idToken,
+          ...(candidate ? { nonce: candidate } : {}),
+        });
+
+        if (!error) {
+          try {
+            sessionStorage.removeItem(NONCE_KEY);
+          } catch {
+            /* sin storage */
+          }
+
+          await routeAfterSignIn(data?.user?.created_at);
+          return true;
+        }
+
+        lastError = error;
+      }
+
+      console.error('[google] signInWithIdToken:', lastError?.message, lastError?.status);
+      showError('No pudimos validar la sesión con Google. Recarga la página e intenta de nuevo.');
+      return true;
+    } catch (err: any) {
+      console.error('[google] redirect flow', err?.message);
+      showError('No pudimos completar el inicio de sesión con Google.');
+      return true;
+    }
+  }
+
+  /**
+   * Flujo de CÓDIGO (redirect). Sin One Tap no se puede pedir el ID token
+   * directo desde el navegador; el nonce que Supabase valida va aquí.
+   */
+  async function startGoogleLogin() {
     if (errorEl) errorEl.classList.add('hidden');
     setLoading(true, 'Abriendo Google…');
 
@@ -247,38 +344,64 @@ const scope = 'openid email profile';
       return;
     }
 
-    const oauth2 = google?.accounts?.oauth2;
-    if (!oauth2?.initIdTokenClient) {
-      showError('Google no está disponible en este navegador.');
+    const oauth2 = (window as any).google?.accounts?.oauth2;
+
+    if (!oauth2 || typeof oauth2.initCodeClient !== 'function') {
+      setLoading(false);
+      console.error(
+        '[google] oauth2 no disponible. window.google =',
+        (window as any).google,
+        'se esperaba accounts.oauth2.initCodeClient'
+      );
+      showError(
+        'Google no está disponible en este navegador. Desactiva bloqueadores de scripts y recarga la página.'
+      );
       return;
     }
 
     const nonce = createNonce();
+    stashNonce(nonce);
 
     try {
-      // initIdTokenClient: popup OAuth + nonce propio (sin One Tap/FedCM).
-      const tokenClient = oauth2.initIdTokenClient({
+      const codeClient = oauth2.initCodeClient({
         client_id: clientId,
         scope,
         nonce,
-        callback: (resp: any) => {
-          setLoading(false);
-          void onCredential(resp);
-        },
-        error_callback: (err: any) => {
-          setLoading(false);
-          if (err?.type === 'popup_closed' || err?.type === 'popup_failed_to_open') {
-            return; // el usuario cerró el popup: no es un error que mostrar
-          }
-          showError('Google no completó el inicio de sesión. Intenta de nuevo.');
-        },
+        ux_mode: 'redirect',
+        redirect_uri: callbackUrl(),
+        select_account: true,
       });
 
-      tokenClient.requestAccessToken({ prompt: 'select_account' });
+      codeClient.requestCode();
+    } catch (err: any) {
       setLoading(false);
-    } catch {
-      setLoading(false);
+      console.error('[google] initCodeClient', err);
       showError('No se pudo abrir Google. Recarga la página e intenta de nuevo.');
     }
-  });
+  }
+
+  // Acelera la carga del SDK mientras el usuario lee el formulario
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(() => loadSdk().catch(() => {}));
+  } else {
+    setTimeout(() => loadSdk().catch(() => {}), 1200);
+  }
+
+  // Si venimos de Google, se termina el flujo antes de nada más.
+  void completeRedirectFlow();
+
+  button?.addEventListener('click', () => void startGoogleLogin());
 </script>
+
+<!--
+  Requisitos fuera del código:
+  · Supabase → Authentication → Providers → Google: Client ID y Secret del
+    mismo cliente OAuth (el ID es el de PUBLIC_GOOGLE_CLIENT_ID).
+  · Supabase → Authentication → URL Configuration:
+      Site URL       = https://dspstorefront.vercel.app
+      Redirect URLs  += https://dspstorefront.vercel.app/**
+  · Google Cloud → Credenciales → OAuth 2.0 Client ID (Web application):
+      Authorized JavaScript origins = https://dspstorefront.vercel.app
+      Authorized redirect URIs     = https://dspstorefront.vercel.app/entrar
+                                     https://dspstorefront.vercel.app/registro
+-->
