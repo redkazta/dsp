@@ -311,8 +311,7 @@ const ordersView = orders.map((o) => ({
 
   <script>
     import { signOut, updateProfile } from '../lib/auth';
-    import { removeFromWishlist, type WishlistItem } from '../lib/wishlist';
-    import { getLocalWishlist } from '../lib/wishlist-local';
+    import { endWishlistSession, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
     import { escapeHtml, safeUrl } from '../lib/html';
 
     const form = document.getElementById('profile-form') as HTMLFormElement;
@@ -352,6 +351,8 @@ const ordersView = orders.map((o) => ({
 
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await signOut();
+      // Sin sesión no se copian los favoritos de la cuenta al navegador.
+      endWishlistSession();
       window.location.href = '/';
     });
 
@@ -410,7 +411,7 @@ const ordersView = orders.map((o) => ({
       renderWish((e as CustomEvent<WishlistItem[]>).detail ?? []);
     });
 
-    renderWish(isAuth ? serverWish : getLocalWishlist());
+    renderWish(isAuth ? serverWish : []);
 
     // ---------- Mensaje pendiente de otra pantalla ----------
     const sessionMsg = sessionStorage.getItem('dsp_checkout_error');

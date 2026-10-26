@@ -496,7 +496,7 @@ const ui = {
     import { addToCart } from '../../lib/cart';
     import { openStoreDrawer } from '../../lib/store-drawer';
     import { sanitizeVariants } from '../../lib/product-variants';
-    import { toggleWishlist, isInWishlist } from '../../lib/wishlist';
+    import { toggleWishlist, isInWishlist, SESSION_ENDED_EVENT } from '../../lib/wishlist';
 
     /** Textos resueltos en servidor. */
     const ui = JSON.parse(document.getElementById('pdp-ui')?.textContent || '{}') as Record<string, string>;
@@ -642,6 +642,12 @@ const ui = {
         });
 
         paintWish(active);
+      });
+
+      // Si la sesión termina (cerrar sesión), el botón vuelve a reflejar el
+      // almacenamiento del visitante, que puede estar vacío.
+      window.addEventListener(SESSION_ENDED_EVENT, () => {
+        isInWishlist(wishBtn.dataset.wishId!).then(paintWish);
       });
     }
   </script>

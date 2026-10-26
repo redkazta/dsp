@@ -578,6 +578,12 @@ const jsonLd = {
           try {
             const { supabase } = await import('../lib/supabase');
             await supabase.auth.signOut();
+
+            // La wishlist vuelve a modo visitante SIN copiar la lista de la
+            // cuenta al navegador: si no tenía favoritos propios, ve vacío.
+            const { endWishlistSession } = await import('../lib/wishlist');
+            endWishlistSession();
+
             window.location.href = '/entrar';
           } catch (error) {
             console.error('Error signing out:', error);

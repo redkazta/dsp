@@ -604,6 +604,7 @@ const ui = {
     formatMXN,
   } from '../../lib/cart';
   import {
+    SESSION_ENDED_EVENT,
     initWishlistView,
     removeFromWishlist,
     type WishlistItem,
@@ -902,6 +903,14 @@ const ui = {
       updateBadges();
     })
     .catch(() => updateBadges());
+
+  // Al cerrar sesión se descarta la lista de la cuenta: si el visitante no
+  // tenía favoritos propios en este navegador, el panel queda vacío.
+  window.addEventListener(SESSION_ENDED_EVENT, (e) => {
+    currentWish = ((e as CustomEvent<WishlistItem[]>).detail ?? []).slice();
+    if (!drawer.hidden && currentTab === 'wishlist') renderWishlist();
+    updateBadges();
+  });
 
   updateBadges();
 
