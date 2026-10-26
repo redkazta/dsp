@@ -26,8 +26,10 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
-// Para el formulario del idioma: volver a la misma página (query incluida).
+// Para el enlace del idioma: volver a la misma página (query incluida).
 const langReturnTo = Astro.url.pathname + Astro.url.search;
+const langNext = lang === 'es' ? 'en' : 'es';
+const langToggleHref = `/api/lang?lang=${langNext}&next=${encodeURIComponent(langReturnTo)}`;
 const langToggleLabel = LANG_TOGGLE_LABEL[lang];
 
 const navLinks = [
@@ -187,21 +189,6 @@ const jsonLd = {
                 class="logo-animated header-spinner-img"
               />
             </a>
-
-            <!-- Toggle de idioma: discreto, junto al logo. Es un POST (sin JS)
-                 que guarda la cookie y vuelve a la misma página. -->
-            <form method="POST" action="/api/lang" class="lang-toggle-form">
-              <input type="hidden" name="lang" value={lang === 'es' ? 'en' : 'es'} />
-              <input type="hidden" name="next" value={langReturnTo} />
-              <button
-                type="submit"
-                class="lang-toggle"
-                aria-label={t.header.language}
-                title={t.header.language}
-              >
-                {langToggleLabel}
-              </button>
-            </form>
           </div>
 
           <!-- Nav desktop (Tienda / Nosotros), centrado -->
@@ -221,6 +208,18 @@ const jsonLd = {
 
           <!-- Acciones (derecha) -->
           <div class="flex items-center justify-end gap-1.5 sm:gap-2.5">
+            <!-- Toggle de idioma: discreto, al extremo derecho. Es un enlace (GET)
+                 porque Astro bloquea POST cross-site tras el rewrite de Vercel. -->
+            <a
+              href={langToggleHref}
+              class="lang-toggle"
+              aria-label={t.header.language}
+              title={t.header.language}
+              hreflang={lang === 'es' ? 'en' : 'es'}
+            >
+              {langToggleLabel}
+            </a>
+
             <button
               type="button"
               id="search-open"
@@ -744,13 +743,11 @@ const jsonLd = {
     }
   }
 
-  /* Toggle de idioma: pastilla pequeña y discreta junto al logo. */
-  .lang-toggle-form {
-    display: inline-flex;
-    margin-left: 0.25rem;
-  }
-
+  /* Toggle de idioma: pastilla pequeña y discreta, al extremo derecho. */
   .lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-height: 28px;
     padding: 0 0.5rem;
     border: 1px solid rgba(247, 223, 165, 0.45);
@@ -763,6 +760,7 @@ const jsonLd = {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     line-height: 1;
+    text-decoration: none;
     cursor: pointer;
     transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     white-space: nowrap;
