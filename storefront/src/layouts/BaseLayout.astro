@@ -12,6 +12,8 @@ export interface Props {
   title?: string;
   description?: string;
   image?: string;
+  /** Home: una sola pantalla, sin footer ni badges para no generar scroll. */
+  homeScreen?: boolean;
 }
 
 // Idioma resuelto en el middleware (cookie dsp_lang o Accept-Language).
@@ -22,6 +24,7 @@ const {
   title = t.meta.home.title,
   description = t.meta.home.description,
   image = '/og-image.jpg',
+  homeScreen = false,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
@@ -138,7 +141,7 @@ const jsonLd = {
     </script>
   </head>
 
-  <body class="min-h-screen flex flex-col bg-negro-profundo">
+  <body class="min-h-screen flex flex-col bg-negro-profundo" data-home={homeScreen ? '1' : '0'}>
     <!-- Barra de anuncios rotativa -->
     <div class="bg-oro-brillo text-negro-profundo overflow-hidden" id="announcement-bar">
       <div class="relative h-9 flex items-center justify-center">
@@ -161,7 +164,7 @@ const jsonLd = {
         <!-- Grid de 3 columnas iguales: logo a la izquierda, menú al centro exacto,
              acciones a la derecha. Así el menú queda centrado sin importar si hay
              sesión (la píldora de perfil es ancha). -->
-        <div class="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center h-24 sm:h-28">
+        <div class="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center h-20 sm:h-24">
           <div class="flex items-center gap-1">
             <!-- Mobile menu -->
             <button
@@ -375,7 +378,7 @@ const jsonLd = {
     </div>
 
     <!-- Trust badges -->
-    <section class="border-t-2 border-white/25 bg-negro-carbono">
+    <section class="site-trust border-t-2 border-white/25 bg-negro-carbono">
       <div class="page-container py-10 sm:py-12 grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {
           [
@@ -401,7 +404,7 @@ const jsonLd = {
     </section>
 
     <!-- Footer -->
-    <footer class="border-t-2 border-white/25 bg-negro-profundo">
+    <footer class="site-footer border-t-2 border-white/25 bg-negro-profundo">
       <div class="page-container py-12 sm:py-16 lg:py-20">
         <div class="grid gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Marca -->
@@ -715,6 +718,13 @@ const jsonLd = {
 </html>
 
 <style>
+  /* Home a pantalla completa: el footer y los badges no se muestran para que
+     la página no genere scroll. El resto del sitio los conserva. */
+  [data-home='1'] .site-footer,
+  [data-home='1'] .site-trust {
+    display: none;
+  }
+
   /* ---------- Header: logo giratorio a la izquierda ---------- */
   /* No se puede centrar con left-1/2: la animación usa `transform` y lo
      pisaría. Va en el flujo y el vaivén de desktop cabe en el header. */
@@ -847,7 +857,18 @@ const jsonLd = {
     white-space: nowrap;
   }
 
-  /* Botón flotante del header (carrito, favoritos, buscar) */
+  /* Etiquetas pequeñas reutilizables (logo, badge de perfil). */
+  .header-label {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: #ffe28a;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+  }
   .header-icon {
     position: relative;
     width: 46px;

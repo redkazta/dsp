@@ -34,44 +34,82 @@ const camisasImages = [
       .filter((url): url is string => Boolean(url))
   ),
 ];
+
+// Destinos del botón: primero la colección, y una salida directa al catálogo
+// para que la primera pantalla no sea un callejón sin scroll.
+const categories = [
+  { href: '/tienda?category=camisas', label: lang === 'es' ? 'Camisas' : 'Shirts' },
+  { href: '/tienda?category=jeans', label: lang === 'es' ? 'Jeans' : 'Jeans' },
+];
 ---
 
-<BaseLayout>
+<BaseLayout homeScreen>
   <!--
-    HERO a pantalla completa: ocupa exactamente lo que queda de viewport debajo
-    de la barra de anuncios (36px) y del header (96/112px). Así "Ver drop" se ve
-    al entrar, sin scroll, en móvil y en desktop.
+    HOME A PANTALLA COMPLETA (sin scroll).
+    La página mide exactamente el viewport: el hero toma el alto sobrante
+    (100dvh − barra de anuncios − header) y el área que queda debajo del botón
+    muestra las categorías, así siempre hay un siguiente paso visible.
   -->
-  <section class="hero-section relative overflow-hidden bg-negro-profundo">
-    <HeroCarousel images={camisasImages} />
+  <div class="home-screen">
+    <section class="hero-section relative overflow-hidden bg-negro-profundo">
+      <HeroCarousel images={camisasImages} />
 
-    <div class="absolute inset-x-0 bottom-0 z-10 flex justify-center pb-5 sm:pb-7">
-      <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
-    </div>
-  </section>
+      <div class="hero-actions">
+        <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
+
+        <nav class="hero-links" aria-label={t.nav.tienda}>
+          {categories.map((c) => (
+            <a href={c.href} class="hero-link">{c.label}</a>
+          ))}
+          <a href="/nosotros" class="hero-link">{t.nav.nosotros}</a>
+        </nav>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
 
 <style>
-  .hero-section {
-    /* dvh: alto real en móvil (descuenta la barra del navegador). */
-    height: calc(100dvh - 36px - 6rem);
-    min-height: 22rem;
+  /* Alto exacto de una pantalla: 100dvh descuenta la barra del navegador en
+     móvil. Restamos la barra de anuncios (2.25rem) y el header (5rem / 6rem +
+     borde de 2px). */
+  .home-screen {
+    height: calc(100dvh - 2.25rem - 5rem - 2px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   @media (min-width: 640px) {
-    .hero-section {
-      height: calc(100dvh - 36px - 7rem);
+    .home-screen {
+      height: calc(100dvh - 2.25rem - 6rem - 2px);
     }
   }
 
-  /* Botón apaisado y a nivel del borde inferior: menos alto que el btn-gold
-     genérico para que no "flote" sobre la última foto. */
+  .hero-section {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Botón y enlaces pegados al borde inferior del hero */
+  .hero-actions {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem 1.25rem;
+  }
+
   .btn-drop {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 44px;
-    padding: 0.7rem 2.5rem;
+    min-height: 46px;
+    padding: 0.75rem 2.5rem;
     background: #ffe28a;
     color: #000000;
     font-family: 'Space Grotesk', Inter, sans-serif;
@@ -90,10 +128,39 @@ const camisasImages = [
     box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.45);
   }
 
+  /* Enlaces secundarios: texto dorado claro, discretos */
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.5rem;
+  }
+
+  .hero-link {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #f7dfa5;
+    text-decoration: none;
+    padding: 0.35rem 0.25rem;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .hero-link:hover {
+    color: #fff4c9;
+    border-bottom-color: #ffe28a;
+  }
+
   @media (max-width: 640px) {
     .btn-drop {
-      min-height: 42px;
-      padding: 0.65rem 2rem;
+      min-height: 44px;
+      padding: 0.7rem 2rem;
+    }
+    .hero-actions {
+      padding-bottom: 1rem;
     }
   }
 </style>
