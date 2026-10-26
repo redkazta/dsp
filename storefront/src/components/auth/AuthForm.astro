@@ -28,6 +28,7 @@ const ui = {
   mustAccept: t.account.mustAccept,
   confirmEmail: t.account.confirmEmail,
   invalidCredentials: t.account.invalidCredentials,
+  alreadyRegistered: t.account.alreadyRegistered,
   generic: t.common.error,
 };
 ---
@@ -354,6 +355,7 @@ const ui = {
         }
 
         const { data: result, error } = await signUp(email, password, {
+          const { error } = await signUp(email, password, {
           firstName,
           lastName,
           phone,
@@ -362,6 +364,13 @@ const ui = {
         });
 
         if (error) {
+          // Con "Confirm email" activo Supabase devuelve un usuario falso en
+          // vez de un error; solo se avisa cuando el correo ya está en uso.
+          if (/already registered|already exists/i.test(error.message)) {
+            show(infoEl, uiText('alreadyRegistered'));
+            return;
+          }
+
           show(errorEl, error.message);
           return;
         }

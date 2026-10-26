@@ -1,0 +1,231 @@
+---
+/**
+ * /cuenta/onboarding — datos que Google no trae.
+ *
+ * Al entrar por primera vez con Google, Supabase ya creó la cuenta y el
+ * trigger `handle_new_user()` hizo el perfil. Aquí solo se completan los
+ * campos que Google no puede dar: teléfono, fecha de nacimiento y
+ * consentimientos. Si la cuenta ya existe, el botón de Google va directo a
+ * /cuenta y esta página no se muestra.
+ */
+export const prerender = false;
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createSupabaseServerClient } from '../../lib/supabase-server';
+import { getCopy, type Lang } from '../../lib/i18n';
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+
+const user = Astro.locals.user!;
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
+
+const { data: profile } = await supabase
+  .from('customer_profiles')
+  .select('first_name, last_name, full_name, phone, birthdate, marketing_opt_in')
+  .eq('id', user.id)
+  .maybeSingle();
+
+const meta = user.user_metadata ?? {};
+const fullName =
+  [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
+  profile?.full_name ||
+  (meta.full_name as string) ||
+  (meta.name as string) ||
+  '';
+
+const nextParam = Astro.url.searchParams.get('next') ?? '/cuenta';
+const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/cuenta';
+---
+
+<BaseLayout title={t.onboarding.metaTitle} description={t.onboarding.metaDescription}>
+  <section class="min-h-[calc(100dvh-8rem)] flex items-start sm:items-center justify-center px-5 sm:px-6 py-10 sm:py-16 bg-noise">
+    <div class="w-full max-w-lg">
+      <div class="text-center mb-8 sm:mb-10">
+        <p class="section-label mb-3">{t.onboarding.label}</p>
+        <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
+          {t.onboarding.title}
+        </h1>
+        <div class="gold-line mx-auto"></div>
+        <p class="mt-5 text-sm text-muted">
+          {t.onboarding.subtitle}
+        </p>
+      </div>
+
+      <form id="onboarding-form" class="space-y-4" data-next={next} novalidate>
+        <p class="text-sm text-white/80">
+          {t.onboarding.signedInAs} <span class="text-oro-brillo">{user.email}</span>
+        </p>
+
+        <label class="block">
+          <span class="field-label">{t.onboarding.displayName}</span>
+          <input name="fullName" class="input-dark" value={fullName} autocomplete="name" />
+        </label>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="field-label">{t.account.phone}</span>
+            <input
+              type="tel"
+              name="phone"
+              class="input-dark"
+              placeholder={t.checkout.phonePlaceholder}
+              autocomplete="tel"
+              inputmode="tel"
+              value={profile?.phone ?? ''}
+            />
+          </label>
+
+          <label class="block">
+            <span class="field-label">{t.account.birthDate}</span>
+            <input
+              type="date"
+              name="birthdate"
+              class="input-dark"
+              value={profile?.birthdate ?? ''}
+              max={new Date(Date.now() - 18 * 365 * 24 * 3600 * 1000).toISOString().slice(0, 10)}
+            />
+          </label>
+        </div>
+
+        <label class="flex items-start gap-3 pt-1 cursor-pointer">
+          <input
+            type="checkbox"
+            name="marketing"
+            class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
+            checked={Boolean(profile?.marketing_opt_in)}
+          />
+          <span class="text-sm text-muted leading-relaxed">{t.account.marketing}</span>
+        </label>
+
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="terms"
+            required
+            class="mt-1 w-5 h-5 accent-[#ffe28a] shrink-0"
+          />
+          <span class="text-sm text-muted leading-relaxed">
+            {t.account.acceptTerms}
+            <a href="/terminos" class="text-oro-brillo hover:text-white underline underline-offset-2">
+              {t.checkout.termsLink}
+            </a>
+            {t.account.andThe}
+            <a href="/privacidad" class="text-oro-brillo hover:text-white underline underline-offset-2">
+              {t.checkout.privacyLink}
+            </a>.
+          </span>
+        </label>
+
+        <button type="submit" id="onboarding-submit" class="btn-gold w-full mt-2">
+          {t.onboarding.save}
+        </button>
+
+        <p id="onboarding-error" role="alert" class="hidden text-sm text-red-400 text-center leading-relaxed"></p>
+
+        <p class="text-center pt-2">
+          <a href={next} class="text-sm text-white/70 hover:text-oro-brillo transition-colors">
+            {t.onboarding.skip}
+          </a>
+        </p>
+      </form>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .field-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffe28a;
+  }
+
+  .input-dark {
+    width: 100%;
+    background: #050505;
+    border: 2px solid rgba(247, 223, 165, 0.28);
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    color: #ffffff;
+    font-size: 1rem;
+  }
+
+  .input-dark:focus {
+    outline: none;
+    border-color: #ffe28a;
+    box-shadow: 0 0 0 3px rgba(255, 226, 138, 0.12);
+  }
+</style>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const form = document.getElementById('onboarding-form') as HTMLFormElement;
+  const submit = document.getElementById('onboarding-submit') as HTMLButtonElement;
+  const errorEl = document.getElementById('onboarding-error')!;
+  const next = form?.dataset.next || '/cuenta';
+
+  function show(message: string) {
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.classList.add('hidden');
+
+    const data = new FormData(form);
+
+    if (!form.querySelector<HTMLInputElement>('input[name="terms"]')?.checked) {
+      show('Debes aceptar los términos y la política de privacidad.');
+      return;
+    }
+
+    const fullName = String(data.get('fullName') ?? '').trim();
+    const phone = String(data.get('phone') ?? '').trim();
+    const birthdate = String(data.get('birthdate') ?? '').trim();
+    const marketing = Boolean(data.get('marketing'));
+
+    const [firstName, ...rest] = fullName.split(' ');
+
+    submit.disabled = true;
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
+      if (!userId) {
+        window.location.href = '/entrar';
+        return;
+      }
+
+      // El perfil ya existe (lo creó el trigger); aquí solo se completa.
+      const { error } = await supabase
+        .from('customer_profiles')
+        .update({
+          first_name: firstName || null,
+          last_name: rest.join(' ') || null,
+          full_name: fullName || null,
+          phone: phone || null,
+          birthdate: birthdate || null,
+          marketing_opt_in: marketing,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        show(error.message);
+        submit.disabled = false;
+        return;
+      }
+
+      window.location.href = next;
+    } catch {
+      show('No pudimos guardar tus datos. Intenta de nuevo.');
+      submit.disabled = false;
+    }
+  });
+</script>

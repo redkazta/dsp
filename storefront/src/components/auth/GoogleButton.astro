@@ -2,18 +2,27 @@
 /**
  * Botón de Google con Google Identity Services (ID Token flow).
  *
- * El botón es nuestro (mismo estilo que .btn-outline) para que siempre quede
- * centrado e igual al resto de la UI. GIS solo se usa para el popup OAuth,
- * así que no hay iframe, no hay desfases y no hay íconos que se "desordenan".
+ * Por qué no usamos `google.accounts.id.prompt()`:
+ *   - Google está apagando ese prompt con FedCM obligatorio
+ *     (el warning GSI_LOGGER de la consola) y, en navegadores con cookies de
+ *     terceros bloqueadas, ni siquiera se muestra.
+ *   - Además Supabase exige que el `nonce` del token coincida con el que se
+ *     envía, y el prompt no permite inyectarlo de forma fiable.
+ *
+ * Aquí se inicia el flujo con `initialize()` + `renderButton()` oculto no;
+ * se usa `google.accounts.oauth2.initIdTokenClient()`, que sí permite pasar un
+ * `nonce` y responde con un popup (sin One Tap).
  */
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.PUBLIC_GOOGLE_CLIENT_ID ||
   '487574117831-d497l5eneq6sn1rm0ouigimaet76frb9.apps.googleusercontent.com';
+
+const scope = 'openid email profile';
 ---
 
-<div id="google-auth" class="w-full" data-client-id={GOOGLE_CLIENT_ID}>
-  <button type="button" id="google-btn" class="google-btn" aria-label="Continuar con Google">
+<div id="google-auth" class="w-full" data-client-id={GOOGLE_CLIENT_ID} data-scope={scope}>
+  <button type="button" id="google-btn" class="google-btn">
     <span class="google-icon" aria-hidden="true">
       <svg width="20" height="20" viewBox="0 0 48 48">
         <path
@@ -82,7 +91,6 @@ const GOOGLE_CLIENT_ID =
     cursor: wait;
   }
 
-  /* El ícono nunca se deforma ni se "desparrama" */
   .google-icon {
     display: inline-flex;
     align-items: center;
@@ -113,9 +121,10 @@ const GOOGLE_CLIENT_ID =
   const label = document.getElementById('google-btn-label');
   const errorEl = document.getElementById('google-error');
   const clientId = root?.dataset.clientId ?? '';
+  const scope = root?.dataset.scope ?? 'openid email profile';
 
   let google: any = null;
-  let sdkReady: Promise<void> | null = null;
+  let loaded: Promise<void> | null = null;
 
   function setLoading(isLoading: boolean, text = 'Continuar con Google') {
     if (button) button.disabled = isLoading;
@@ -130,11 +139,10 @@ const GOOGLE_CLIENT_ID =
   }
 
   function loadSdk(): Promise<void> {
-    if (sdkReady) return sdkReady;
+    if (loaded) return loaded;
 
-    sdkReady = new Promise<void>((resolve, reject) => {
-      const existing = (window as any).google?.accounts?.id;
-      if (existing) {
+    loaded = new Promise<void>((resolve, reject) => {
+      if ((window as any).google?.accounts?.oauth2) {
         google = (window as any).google;
         resolve();
         return;
@@ -146,7 +154,7 @@ const GOOGLE_CLIENT_ID =
       script.defer = true;
       script.onload = () => {
         google = (window as any).google;
-        google?.accounts?.id
+        google?.accounts?.oauth2
           ? resolve()
           : reject(new Error('Google Identity no disponible'));
       };
@@ -154,26 +162,74 @@ const GOOGLE_CLIENT_ID =
       document.head.appendChild(script);
     });
 
-    return sdkReady;
+    return loaded;
   }
 
-  async function handleCredential(response: { credential: string }) {
-    const { error } = await supabase.auth.signInWithIdToken({
+  /** Supabase compara este nonce con el claim `nonce` del ID token. */
+  function createNonce(): string {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function nextPath(): string {
+    const next = new URLSearchParams(window.location.search).get('next');
+    return next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta';
+  }
+
+  /**
+   * Decide el destino después de entrar con Google:
+   *   - cuenta YA vinculada a Google  → /cuenta
+   *   - correo existente (otra forma de acceso) → aviso, no se fusciona solo
+   *   - cuenta nueva                 → datos a completar
+   */
+  async function routeAfterSignIn(hadSession: boolean, createdAt: string | undefined) {
+    if (!hadSession) {
+      window.location.href = nextPath();
+      return;
+    }
+
+    // Recién creada (< 2 min) ⇒ es un alta, no un login.
+    const isNew = createdAt ? Date.now() - new Date(createdAt).getTime() < 120_000 : false;
+
+    if (isNew) {
+      window.location.href = `/cuenta/onboarding?nuevo=1&next=${encodeURIComponent(nextPath())}`;
+      return;
+    }
+
+    window.location.href = nextPath();
+  }
+
+  async function onCredential(response: { credential?: string }) {
+    if (!response?.credential) {
+      showError('Google no devolvió credenciales. Intenta de nuevo.');
+      return;
+    }
+
+    const hadSession = Boolean((await supabase.auth.getSession()).data.session);
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: response.credential,
     });
 
     if (error) {
-      console.error('[google] signInWithIdToken:', error.message);
-      showError('No pudimos iniciar sesión con Google. Intenta de nuevo.');
+      console.error('[google] signInWithIdToken:', error.message, error.status);
+
+      if (/nonce/i.test(error.message)) {
+        showError('No pudimos validar la sesión con Google. Recarga la página e intenta de nuevo.');
+      } else if (error.status === 400) {
+        showError('Google rechazó el acceso. Revisa que el dominio esté autorizado en Google Cloud.');
+      } else {
+        showError('No pudimos iniciar sesión con Google. Intenta de nuevo.');
+      }
       return;
     }
 
-    const next = new URLSearchParams(window.location.search).get('next');
-    window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/cuenta';
+    await routeAfterSignIn(hadSession, data?.user?.created_at);
   }
 
-  // Acelera el SDK mientras el usuario lee el formulario
+  // Acelera la carga del SDK mientras el usuario lee el formulario
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => loadSdk().catch(() => {}));
   } else {
@@ -191,38 +247,38 @@ const GOOGLE_CLIENT_ID =
       return;
     }
 
-    if (!google?.accounts?.id) {
+    const oauth2 = google?.accounts?.oauth2;
+    if (!oauth2?.initIdTokenClient) {
       showError('Google no está disponible en este navegador.');
       return;
     }
 
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: handleCredential,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      ux_mode: 'popup',
-    });
+    const nonce = createNonce();
 
-    // Prompt en modo popup: genera el token sin salir de la página.
-    // timeout: si FedCM no responde, el usuario recupera el botón.
-    setLoading(false, 'Continuar con Google');
+    try {
+      // initIdTokenClient: popup OAuth + nonce propio (sin One Tap/FedCM).
+      const tokenClient = oauth2.initIdTokenClient({
+        client_id: clientId,
+        scope,
+        nonce,
+        callback: (resp: any) => {
+          setLoading(false);
+          void onCredential(resp);
+        },
+        error_callback: (err: any) => {
+          setLoading(false);
+          if (err?.type === 'popup_closed' || err?.type === 'popup_failed_to_open') {
+            return; // el usuario cerró el popup: no es un error que mostrar
+          }
+          showError('Google no completó el inicio de sesión. Intenta de nuevo.');
+        },
+      });
 
-    google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-        // FedCM puede no mostrar el diálogo: avisamos en vez de dejar el botón colgado
-        setLoading(false, 'Continuar con Google');
-        const reason = notification.getNotDisplayedReason?.() ?? '';
-        showError(
-          reason === 'suppressed_by_user'
-            ? 'Bloqueaste el acceso con Google. Habilítalo en el ícono de tu navegador.'
-            : 'Google no muestra el diálogo. Revisa que las cookies de terceros estén permitidas.'
-        );
-      }
-
-      if (notification.isDismissedMoment?.()) {
-        setLoading(false, 'Continuar con Google');
-      }
-    });
+      tokenClient.requestAccessToken({ prompt: 'select_account' });
+      setLoading(false);
+    } catch {
+      setLoading(false);
+      showError('No se pudo abrir Google. Recarga la página e intenta de nuevo.');
+    }
   });
 </script>

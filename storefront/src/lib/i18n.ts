@@ -356,6 +356,8 @@ export const copy = {
       mustAccept: 'Debes aceptar los términos y la política de privacidad.',
       confirmEmail: 'Revisa tu correo para confirmar tu cuenta.',
       invalidCredentials: 'Correo o contraseña incorrectos.',
+      alreadyRegistered:
+        'Ese correo ya tiene cuenta. Entra con tu contraseña o usa Continuar con Google si te registraste así.',
       profileSection: 'Mis datos',
       saveChanges: 'Guardar cambios',
       saved: 'Guardado ✓',
@@ -407,6 +409,19 @@ export const copy = {
       closingTitle: 'No seguimos modas, las creamos',
       closingText: 'Descubre el drop reflectivo antes de que se agote.',
       closingCta: 'Ver catálogo',
+    },
+
+    // ---------------- Onboarding (primer acceso con Google) ----------------
+    onboarding: {
+      metaTitle: 'Completa tu cuenta | Dinero Sobre Problemas',
+      metaDescription: 'Termina de configurar tu cuenta para agilizar tus compras.',
+      label: 'Bienvenido',
+      title: 'Completa tu cuenta',
+      subtitle: 'Solo faltan estos datos para agilizar tus compras.',
+      signedInAs: 'Entraste como',
+      displayName: 'Nombre completo',
+      save: 'Guardar y continuar',
+      skip: 'Completar más tarde',
     },
 
     // ---------------- Confirmación de pedido ----------------
@@ -757,6 +772,8 @@ export const copy = {
       mustAccept: 'You must accept the terms and the privacy policy.',
       confirmEmail: 'Check your email to confirm your account.',
       invalidCredentials: 'Wrong email or password.',
+      alreadyRegistered:
+        'That email already has an account. Sign in with your password or use Continue with Google if that is how you signed up.',
       profileSection: 'My details',
       saveChanges: 'Save changes',
       saved: 'Saved ✓',
@@ -807,6 +824,19 @@ export const copy = {
       closingTitle: 'We do not follow trends, we create them',
       closingText: 'Find the reflective drop before it sells out.',
       closingCta: 'View catalogue',
+    },
+
+    // ---------------- Onboarding (first Google sign-in) ----------------
+    onboarding: {
+      metaTitle: 'Complete your account | Dinero Sobre Problemas',
+      metaDescription: 'Finish setting up your account to speed up checkout.',
+      label: 'Welcome',
+      title: 'Complete your account',
+      subtitle: 'Just these details to speed up your purchases.',
+      signedInAs: 'You signed in as',
+      displayName: 'Full name',
+      save: 'Save and continue',
+      skip: 'Complete later',
     },
 
     // ---------------- Order confirmation ----------------
