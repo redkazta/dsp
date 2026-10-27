@@ -6,6 +6,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const page = t.legal.returns;
 ---
 
 <BaseLayout
@@ -13,70 +14,35 @@ const t = getCopy(lang);
   description={t.content.returnsMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
-    <p class="section-label mb-4">Ayuda</p>
-    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Devoluciones</h1>
+    <p class="section-label mb-4">{t.legal.help}</p>
+    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
     <div class="gold-line mb-12"></div>
 
     <div class="space-y-10 text-base text-white/80 leading-relaxed">
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Plazo
-        </h2>
-        <p>
-          Tienes <strong class="text-white">30 días naturales</strong> desde la
-          recepción para solicitar un cambio o devolución.
-        </p>
-      </section>
+      {
+        page.sections.map((section) => (
+          <section>
+            <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
+              {section.title}
+            </h2>
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Requisitos
-        </h2>
-        <ul class="space-y-2 list-disc pl-5">
-          <li>La prenda no debe haber sido usada, lavada ni alterada.</li>
-          <li>Debe conservar etiquetas y empaque original.</li>
-          <li>Adjunta tu número de pedido y fotos del artículo.</li>
-        </ul>
-      </section>
+            {section.p?.map((text) => <p class="mb-3 last:mb-0">{text}</p>)}
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Cómo solicitarla
-        </h2>
-        <ol class="space-y-2 list-decimal pl-5">
-          <li>
-            Escríbenos a
-            <a href="mailto:hola@dinerosobreproblemas.com" class="text-oro-brillo hover:text-white transition-colors">
-              hola@dinerosobreproblemas.com
-            </a>
-            con el asunto "Devolución #pedido".
-          </li>
-          <li>Te confirmaremos si aplica y te daremos instrucciones de envío.</li>
-          <li>Una vez recibida la pieza, procesamos el cambio o reembolso en 5 días hábiles.</li>
-        </ol>
-      </section>
+            {section.items && (
+              <ul class="space-y-2 list-disc pl-5">
+                {section.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
+    </div>
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Excepciones
-        </h2>
-        <p>
-          Por tratarse de piezas personalizadas bajo pedido, los artículos marcados
-          como "edición limitada" solo pueden devolverse por defecto de fabricación
-          o por error en la talla enviada.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Garantía
-        </h2>
-        <p>
-          Si tu prenda presenta un defecto de fabricación, contáctanos con fotos
-          dentro de los 15 días posteriores a la entrega. Reponemos la pieza o
-          reembolsamos el importe sin costo.
-        </p>
-      </section>
+    <div class="mt-14 flex flex-wrap gap-3">
+      <a href="/contacto" class="btn-gold">{t.legal.linkContact}</a>
+      <a href="/tienda" class="btn-outline">{t.legal.viewCatalog}</a>
     </div>
   </article>
 </BaseLayout>

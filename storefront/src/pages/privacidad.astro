@@ -6,8 +6,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
-
-const updated = '17 de octubre de 2026';
+const page = t.legal.privacy;
 ---
 
 <BaseLayout
@@ -15,148 +14,32 @@ const updated = '17 de octubre de 2026';
   description={t.content.privacyMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
-    <p class="section-label mb-4">Legal</p>
-    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Política de Privacidad</h1>
-    <p class="text-sm text-white/80 mb-12">Última actualización: {updated}</p>
+    <p class="section-label mb-4">{t.legal.legal}</p>
+    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
+    <p class="text-sm text-white/80 mb-12">
+      {t.legal.lastUpdated}: {t.legal.updatedOn}
+    </p>
 
     <div class="space-y-10 text-base text-white/80 leading-relaxed">
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          1. Quiénes somos
-        </h2>
-        <p>
-          Dinero Sobre Problemas ("DSP", "nosotros") opera la tienda en línea
-          disponible en <strong class="text-white">dspstorefront.vercel.app</strong>.
-          Esta política explica qué datos personales recopilamos, con qué finalidad
-          y cómo los protegemos.
-        </p>
-      </section>
+      {
+        page.sections.map((section) => (
+          <section>
+            <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
+              {section.title}
+            </h2>
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          2. Datos que recopilamos
-        </h2>
-        <ul class="space-y-2 list-disc pl-5">
-          <li><strong class="text-white">Datos de cuenta:</strong> nombre, correo electrónico, contraseña cifrada y, si inicias sesión con Google, tu nombre, correo y foto de perfil públicas de tu cuenta de Google.</li>
-          <li><strong class="text-white">Datos de pedido:</strong> productos comprados, importe, dirección de envío, teléfono y correo de contacto.</li>
-          <li><strong class="text-white">Datos de pago:</strong> procesados directamente por nuestro proveedor de pagos. <em>Nunca almacenamos números de tarjeta.</em></li>
-          <li><strong class="text-white">Datos técnicos:</strong> dirección IP, tipo de navegador y páginas visitadas, con fines de seguridad y mejora del servicio.</li>
-        </ul>
-      </section>
+            {section.p?.map((text) => <p class="mb-3 last:mb-0">{text}</p>)}
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          3. Inicio de sesión con Google
-        </h2>
-        <p class="mb-3">
-          Puedes crear una cuenta o iniciar sesión usando tu cuenta de Google (Google Sign-In).
-          Al hacerlo, Google nos comparte únicamente la siguiente información:
-        </p>
-        <ul class="space-y-2 list-disc pl-5">
-          <li>Tu dirección de correo electrónico principal.</li>
-          <li>Tu nombre público y foto de perfil.</li>
-          <li>Un identificador único de tu cuenta de Google.</li>
-        </ul>
-        <p class="mt-3">
-          <strong class="text-white">No solicitamos ni recibimos acceso</strong> a tu Gmail,
-          contactos, calendario, Google Drive ni ningún otro dato de tu cuenta de Google.
-          Los permisos solicitados se limitan a <code class="text-oro-brillo">userinfo.email</code>,
-          <code class="text-oro-brillo">userinfo.profile</code> y <code class="text-oro-brillo">openid</code>.
-        </p>
-        <p class="mt-3">
-          Estos datos se usan exclusivamente para identificar tu cuenta y mostrarte tu nombre
-          en la tienda. Puedes revocar el acceso en cualquier momento desde
-          <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" class="text-oro-brillo hover:text-white transition-colors">
-            la configuración de tu cuenta de Google
-          </a>.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          4. Finalidad del tratamiento
-        </h2>
-        <p class="mb-3">Usamos tus datos para:</p>
-        <ul class="space-y-2 list-disc pl-5">
-          <li>Procesar y enviar tus pedidos.</li>
-          <li>Enviarte confirmaciones y avisos de seguimiento.</li>
-          <li>Atender solicitudes de soporte, devoluciones y garantías.</li>
-          <li>Prevenir fraudes y cumplir obligaciones legales.</li>
-          <li>Enviarte novedades de la marca, solo si lo autorizas expresamente.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          5. Con quién compartimos la información
-        </h2>
-        <p class="mb-3">
-          No vendemos tus datos. Los compartimos únicamente con proveedores que nos
-          permiten operar la tienda:
-        </p>
-        <ul class="space-y-2 list-disc pl-5">
-          <li><strong class="text-white">Supabase</strong> — base de datos y autenticación.</li>
-          <li><strong class="text-white">Stripe</strong> — procesamiento de pagos.</li>
-          <li><strong class="text-white">Vercel / Render</strong> — infraestructura de hosting.</li>
-          <li><strong class="text-white">Paqueterías</strong> — únicamente los datos necesarios para entregar tu pedido.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          6. Conservación
-        </h2>
-        <p>
-          Conservamos los datos de tu cuenta mientras esté activa. Los datos de pedidos
-          se conservan durante el plazo exigido por las obligaciones fiscales y contables
-          aplicables.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          7. Tus derechos (ARCO)
-        </h2>
-        <p>
-          Puedes solicitar el acceso, rectificación, cancelación u oposición al
-          tratamiento de tus datos, así como su portabilidad, escribiendo a
-          <a href="mailto:hola@dinerosobreproblemas.com" class="text-oro-brillo hover:text-white transition-colors">
-            hola@dinerosobreproblemas.com
-          </a>.
-          Responderemos en un plazo máximo de 20 días hábiles.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          8. Cookies
-        </h2>
-        <p>
-          Usamos cookies estrictamente necesarias para mantener tu sesión iniciada y
-          el contenido de tu carrito. No utilizamos cookies publicitarias de terceros.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          9. Seguridad
-        </h2>
-        <p>
-          Aplicamos cifrado en tránsito (HTTPS), contraseñas con hash y controles de
-          acceso por fila en la base de datos, de modo que cada usuario solo puede
-          consultar su propia información.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          10. Cambios a esta política
-        </h2>
-        <p>
-          Podemos actualizar esta política. La versión vigente siempre estará publicada
-          en esta página con su fecha de actualización.
-        </p>
-      </section>
+            {section.items && (
+              <ul class="space-y-2 list-disc pl-5">
+                {section.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
     </div>
   </article>
 </BaseLayout>

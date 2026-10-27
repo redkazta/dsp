@@ -6,28 +6,39 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const page = t.legal.contact;
+
+// Textos del script del navegador (el asunto del correo y el aviso).
+const ui = {
+  subject: page.subject,
+  name: page.name,
+  email: 'Email',
+  opening: page.opening,
+};
 ---
 
 <BaseLayout
   title={t.content.contactMetaTitle}
   description={t.content.contactMetaDescription}
 >
+  <script type="application/json" id="contact-ui" set:html={JSON.stringify(ui)} />
+
   <section class="max-w-5xl mx-auto px-6 py-16 lg:py-24">
     <div class="text-center mb-16">
-      <p class="section-label mb-4">Contacto</p>
-      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Hablemos</h1>
+      <p class="section-label mb-4">{page.label}</p>
+      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
       <div class="gold-line mx-auto"></div>
     </div>
 
     <div class="grid lg:grid-cols-2 gap-12">
       <!-- Formulario -->
       <form id="contact-form" class="space-y-4">
-        <input name="name" placeholder="Nombre" required class="input-dark" />
+        <input name="name" placeholder={page.name} required class="input-dark" />
         <input name="email" type="email" placeholder="Email" required class="input-dark" />
-        <input name="subject" placeholder="Asunto" required class="input-dark" />
-        <textarea name="message" placeholder="Mensaje" rows="5" required class="input-dark"></textarea>
+        <input name="subject" placeholder={page.subject} required class="input-dark" />
+        <textarea name="message" placeholder={page.message} rows="5" required class="input-dark"></textarea>
 
-        <button type="submit" id="send-btn" class="btn-gold w-full">Enviar mensaje</button>
+        <button type="submit" id="send-btn" class="btn-gold w-full">{page.send}</button>
         <p id="form-msg" class="hidden text-xs text-center"></p>
       </form>
 
@@ -35,7 +46,7 @@ const t = getCopy(lang);
       <div class="space-y-8">
         <div>
           <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-            Email
+            {page.emailLabel}
           </h2>
           <a
             href="mailto:hola@dinerosobreproblemas.com"
@@ -47,7 +58,7 @@ const t = getCopy(lang);
 
         <div>
           <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-            Redes
+            {page.social}
           </h2>
           <ul class="space-y-2">
             <li>
@@ -65,19 +76,16 @@ const t = getCopy(lang);
 
         <div>
           <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-            Pedidos especiales
+            {page.customTitle}
           </h2>
-          <p class="text-sm text-white/80 leading-relaxed">
-            Para jeans personalizados y piezas a medida, escríbenos por DM
-            en Instagram con tu talla y diseño deseado.
-          </p>
+          <p class="text-sm text-white/80 leading-relaxed">{page.customText}</p>
         </div>
 
         <div>
           <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-            Tiempo de respuesta
+            {page.responseTitle}
           </h2>
-          <p class="text-sm text-white/80">Menos de 24 horas hábiles.</p>
+          <p class="text-sm text-white/80">{page.responseText}</p>
         </div>
       </div>
     </div>
@@ -88,17 +96,23 @@ const t = getCopy(lang);
     const btn = document.getElementById('send-btn') as HTMLButtonElement;
     const msg = document.getElementById('form-msg')!;
 
+    /** Textos resueltos en servidor. */
+    const ui = JSON.parse(document.getElementById('contact-ui')?.textContent || '{}') as Record<
+      string,
+      string
+    >;
+
     form?.addEventListener('submit', (e) => {
       e.preventDefault();
       const data = new FormData(form);
-      const subject = encodeURIComponent(`Contacto: ${data.get('subject')}`);
+      const subject = encodeURIComponent(`${ui.subject}: ${data.get('subject')}`);
       const body = encodeURIComponent(
-        `Nombre: ${data.get('name')}\nEmail: ${data.get('email')}\n\n${data.get('message')}`
+        `${ui.name}: ${data.get('name')}\n${ui.email}: ${data.get('email')}\n\n${data.get('message')}`
       );
 
       window.location.href = `mailto:hola@dinerosobreproblemas.com?subject=${subject}&body=${body}`;
 
-      msg.textContent = 'Abriendo tu cliente de correo...';
+      msg.textContent = ui.opening;
       msg.className = 'text-xs text-center text-oro-brillo';
       btn.disabled = true;
       setTimeout(() => {

@@ -475,6 +475,281 @@ export const copy = {
       termsMetaDescription: 'Condiciones de compra y uso del sitio.',
     },
 
+    // ---------------- Páginas legales e informativas ----------------
+    legal: {
+      help: 'Ayuda',
+      legal: 'Legal',
+      lastUpdated: 'Última actualización',
+      updatedOn: '17 de octubre de 2026',
+      viewCatalog: 'Ver catálogo',
+      shipping: {
+        title: 'Envíos',
+        sections: [
+          {
+            title: 'Producción',
+            p: [
+              'Cada prenda se personaliza a mano después de tu compra. Por eso los pedidos salen de taller en 2 a 3 días hábiles posteriores a la confirmación del pago.',
+            ],
+          },
+          {
+            title: 'Tiempos de entrega',
+            items: [
+              'México: 3 a 7 días hábiles.',
+              'Estados Unidos: 7 a 12 días hábiles.',
+              'Los tiempos son estimados y pueden variar en temporada alta.',
+            ],
+          },
+          {
+            title: 'Costos',
+            items: [
+              'Gratis en pedidos superiores a $150 USD.',
+              'Pedidos menores: el costo se calcula en el checkout.',
+              'Envíos internacionales: costo calculado según destino y peso.',
+            ],
+          },
+          {
+            title: 'Seguimiento',
+            p: [
+              'Cuando tu pedido es despachado recibirás un correo con el número de guía para seguirlo con la paquetería.',
+            ],
+          },
+          {
+            title: 'Devoluciones',
+            p: [
+              'Consulta nuestras condiciones completas en los Términos y Condiciones.',
+            ],
+          },
+        ],
+      },
+      returns: {
+        title: 'Devoluciones',
+        sections: [
+          {
+            title: 'Plazo',
+            p: [
+              'Tienes 30 días naturales desde la recepción para solicitar un cambio o devolución.',
+            ],
+          },
+          {
+            title: 'Requisitos',
+            items: [
+              'La prenda no debe haber sido usada, lavada ni alterada.',
+              'Debe conservar etiquetas y empaque original.',
+              'Adjunta tu número de pedido y fotos del artículo.',
+            ],
+          },
+          {
+            title: 'Cómo solicitarla',
+            items: [
+              'Escríbenos a hola@dinerosobreproblemas.com con el asunto «Devolución #pedido».',
+              'Te confirmaremos si aplica y te daremos instrucciones de envío.',
+              'Una vez recibida la pieza, procesamos el cambio o reembolso en 5 días hábiles.',
+            ],
+          },
+          {
+            title: 'Excepciones',
+            p: [
+              'Por tratarse de piezas personalizadas bajo pedido, los artículos marcados como «edición limitada» solo pueden devolverse por defecto de fabricación o por error en la talla enviada.',
+            ],
+          },
+          {
+            title: 'Garantía',
+            p: [
+              'Si tu prenda presenta un defecto de fabricación, contáctanos con fotos dentro de los 15 días posteriores a la entrega. Reponemos la pieza o reembolsamos el importe sin costo.',
+            ],
+          },
+        ],
+      },
+      contact: {
+        title: 'Hablemos',
+        label: 'Contacto',
+        name: 'Nombre',
+        subject: 'Asunto',
+        message: 'Mensaje',
+        send: 'Enviar mensaje',
+        opening: 'Abriendo tu cliente de correo…',
+        emailLabel: 'Email',
+        social: 'Redes',
+        customTitle: 'Pedidos especiales',
+        customText: 'Para jeans personalizados y piezas a medida, escríbenos por DM en Instagram con tu talla y diseño deseado.',
+        responseTitle: 'Tiempo de respuesta',
+        responseText: 'Menos de 24 horas hábiles.',
+      },
+      sizes: {
+        title: 'Guía de tallas',
+        intro: 'Medidas de la prenda extendida, en centímetros. El corte es relajado; si buscas un ajuste más holgado, sube una talla.',
+        colSize: 'Talla',
+        colChest: 'Pecho (cm)',
+        colLength: 'Largo (cm)',
+        howTitle: 'Cómo medirte',
+        howChest: 'Pecho: mide alrededor de la parte más ancha del torso, con la cinta horizontal.',
+        howLength: 'Largo: desde el hombro hasta el borde inferior de la prenda.',
+        doubtsTitle: 'Dudas',
+        doubtsText: 'Escríbenos o mándanos un mensaje por Instagram y te ayudamos a elegir.',
+      },
+      privacy: {
+        title: 'Política de Privacidad',
+        sections: [
+          {
+            title: '1. Quiénes somos',
+            p: [
+              'Dinero Sobre Problemas («DSP», «nosotros») opera la tienda en línea disponible en dspstorefront.vercel.app. Esta política explica qué datos personales recopilamos, con qué finalidad y cómo los protegemos.',
+            ],
+          },
+          {
+            title: '2. Datos que recopilamos',
+            items: [
+              'Datos de cuenta: nombre, correo electrónico, contraseña cifrada y, si inicias sesión con Google, tu nombre, correo y foto de perfil públicas de tu cuenta de Google.',
+              'Datos de pedido: productos comprados, importe, dirección de envío, teléfono y correo de contacto.',
+              'Datos de pago: procesados directamente por nuestro proveedor de pagos. Nunca almacenamos números de tarjeta.',
+              'Datos técnicos: dirección IP, tipo de navegador y páginas visitadas, con fines de seguridad y mejora del servicio.',
+            ],
+          },
+          {
+            title: '3. Inicio de sesión con Google',
+            p: [
+              'Puedes crear una cuenta o iniciar sesión usando tu cuenta de Google (Google Sign-In). Al hacerlo, Google nos comparte únicamente tu correo principal, tu nombre público y foto de perfil, y un identificador único de tu cuenta.',
+              'No solicitamos ni recibimos acceso a tu Gmail, contactos, calendario, Google Drive ni ningún otro dato de tu cuenta de Google. Los permisos solicitados se limitan a los alcances básicos de identidad (correo y perfil).',
+              'Estos datos se usan exclusivamente para identificar tu cuenta y mostrarte tu nombre en la tienda. Puedes revocar el acceso en cualquier momento desde la configuración de tu cuenta de Google.',
+            ],
+          },
+          {
+            title: '4. Finalidad del tratamiento',
+            items: [
+              'Procesar y enviar tus pedidos.',
+              'Enviarte confirmaciones y avisos de seguimiento.',
+              'Atender solicitudes de soporte, devoluciones y garantías.',
+              'Prevenir fraudes y cumplir obligaciones legales.',
+              'Enviarte novedades de la marca, solo si lo autorizas expresamente.',
+            ],
+          },
+          {
+            title: '5. Con quién compartimos la información',
+            items: [
+              'Supabase — base de datos y autenticación.',
+              'Stripe — procesamiento de pagos.',
+              'Vercel / Render — infraestructura de hosting.',
+              'Paqueterías — únicamente los datos necesarios para entregar tu pedido.',
+            ],
+          },
+          {
+            title: '6. Conservación',
+            p: [
+              'Conservamos los datos de tu cuenta mientras esté activa. Los datos de pedidos se conservan durante el plazo exigido por las obligaciones fiscales y contables aplicables.',
+            ],
+          },
+          {
+            title: '7. Tus derechos (ARCO)',
+            p: [
+              'Puedes solicitar el acceso, rectificación, cancelación u oposición al tratamiento de tus datos, así como su portabilidad, escribiendo a hola@dinerosobreproblemas.com. Responderemos en un plazo máximo de 20 días hábiles.',
+            ],
+          },
+          {
+            title: '8. Cookies',
+            p: [
+              'Usamos cookies estrictamente necesarias para mantener tu sesión iniciada y el contenido de tu carrito. No utilizamos cookies publicitarias de terceros.',
+            ],
+          },
+          {
+            title: '9. Seguridad',
+            p: [
+              'Aplicamos cifrado en tránsito (HTTPS), contraseñas con hash y controles de acceso por fila en la base de datos, de modo que cada usuario solo puede consultar su propia información.',
+            ],
+          },
+          {
+            title: '10. Cambios a esta política',
+            p: [
+              'Podemos actualizar esta política. La versión vigente siempre estará publicada en esta página con su fecha de actualización.',
+            ],
+          },
+        ],
+      },
+      terms: {
+        title: 'Términos y Condiciones',
+        sections: [
+          {
+            title: '1. Aceptación',
+            p: [
+              'Al comprar en dspstorefront.vercel.app aceptas estos términos. Si no estás de acuerdo, te pedimos no realizar compras.',
+            ],
+          },
+          {
+            title: '2. Productos',
+            p: [
+              'Nuestras prendas se personalizan a mano, una por una. Esto significa que:',
+            ],
+            items: [
+              'Cada pieza es única; pueden existir variaciones mínimas en el acabado.',
+              'Las fotografías son ilustrativas; el color puede variar ligeramente según la pantalla.',
+              'Los productos se producen bajo pedido y en ediciones limitadas.',
+            ],
+          },
+          {
+            title: '3. Precios y pagos',
+            p: [
+              'Los precios se muestran en dólares estadounidenses (USD) e incluyen impuestos. El cobro se realiza a través de una pasarela de pago segura; no almacenamos datos de tarjetas. El pedido se confirma cuando el pago es aprobado.',
+            ],
+          },
+          {
+            title: '4. Producción y envíos',
+            items: [
+              'Tiempo de producción: 2 a 3 días hábiles después de confirmado el pago.',
+              'Tiempo de envío: 3 a 7 días hábiles dentro de México. Envíos a Estados Unidos disponibles en el checkout.',
+              'Envío gratis en pedidos superiores a $150 USD.',
+              'Te enviaremos un número de guía por correo cuando tu pedido sea despachado.',
+            ],
+          },
+          {
+            title: '5. Devoluciones y cambios',
+            p: [
+              'Aceptamos devoluciones dentro de 30 días naturales posteriores a la recepción, siempre que:',
+            ],
+            items: [
+              'La prenda no haya sido usada, lavada ni alterada.',
+              'Conserve etiquetas y empaque original.',
+              'Nos contactes previamente a hola@dinerosobreproblemas.com.',
+            ],
+            after: [
+              'Por tratarse de piezas personalizadas, los artículos marcados como «edición limitada bajo pedido» solo pueden devolverse por defecto de fabricación o error en la talla enviada.',
+            ],
+          },
+          {
+            title: '6. Garantía por defecto',
+            p: [
+              'Si tu prenda presenta un defecto de fabricación, contáctanos con fotos del producto dentro de los 15 días posteriores a la entrega. Repondremos la pieza o reembolsaremos el importe sin costo adicional.',
+            ],
+          },
+          {
+            title: '7. Cuidado de las prendas',
+            items: [
+              'Lavar al revés con agua fría.',
+              'No planchar directamente sobre el estampado o vinil.',
+              'Secar al aire para conservar el diseño.',
+              'Evitar el uso de secadora y blanqueadores.',
+            ],
+          },
+          {
+            title: '8. Cancelaciones',
+            p: [
+              'Puedes cancelar un pedido sin costo mientras no haya iniciado su producción. Una vez iniciada la personalización, la cancelación no aplica.',
+            ],
+          },
+          {
+            title: '9. Propiedad intelectual',
+            p: [
+              'El nombre, logotipo, diseños y fotografías de Dinero Sobre Problemas son propiedad de la marca. Queda prohibida su reproducción total o parcial sin autorización escrita.',
+            ],
+          },
+          {
+            title: '10. Contacto',
+            p: [
+              'Para cualquier duda sobre estos términos, escríbenos a hola@dinerosobreproblemas.com.',
+            ],
+          },
+        ],
+      },
+    },
+
     errors: {
       noSession: 'Inicia sesión o crea tu cuenta para completar el pedido.',
       badRequest: 'Revisa los datos de contacto y envío.',
@@ -913,6 +1188,281 @@ export const copy = {
       privacyMetaDescription: 'How we handle your personal data.',
       termsMetaTitle: 'Terms | Dinero Sobre Problemas',
       termsMetaDescription: 'Purchase and site usage conditions.',
+    },
+
+    // ---------------- Legal and informational pages ----------------
+    legal: {
+      help: 'Help',
+      legal: 'Legal',
+      lastUpdated: 'Last updated',
+      updatedOn: 'October 17, 2026',
+      viewCatalog: 'Browse the catalogue',
+      shipping: {
+        title: 'Shipping',
+        sections: [
+          {
+            title: 'Production',
+            p: [
+              'Every garment is customised by hand after your purchase. That is why orders leave the workshop 2 to 3 business days after payment is confirmed.',
+            ],
+          },
+          {
+            title: 'Delivery times',
+            items: [
+              'Mexico: 3 to 7 business days.',
+              'United States: 7 to 12 business days.',
+              'Times are estimates and may vary during peak season.',
+            ],
+          },
+          {
+            title: 'Costs',
+            items: [
+              'Free on orders over $150 USD.',
+              'Smaller orders: the cost is calculated at checkout.',
+              'International shipping: cost calculated by destination and weight.',
+            ],
+          },
+          {
+            title: 'Tracking',
+            p: [
+              'Once your order ships you will receive an email with the tracking number so you can follow it with the carrier.',
+            ],
+          },
+          {
+            title: 'Returns',
+            p: [
+              'See the full conditions in our Terms and Conditions.',
+            ],
+          },
+        ],
+      },
+      returns: {
+        title: 'Returns',
+        sections: [
+          {
+            title: 'Window',
+            p: [
+              'You have 30 calendar days from delivery to request an exchange or return.',
+            ],
+          },
+          {
+            title: 'Requirements',
+            items: [
+              'The garment must not have been worn, washed or altered.',
+              'Tags and original packaging must be kept.',
+              'Include your order number and photos of the item.',
+            ],
+          },
+          {
+            title: 'How to request it',
+            items: [
+              'Email hola@dinerosobreproblemas.com with the subject "Return #order".',
+              'We will confirm whether it applies and send you shipping instructions.',
+              'Once we receive the piece, we process the exchange or refund within 5 business days.',
+            ],
+          },
+          {
+            title: 'Exceptions',
+            p: [
+              'Because these are custom pieces made to order, items marked as "limited edition" can only be returned for a manufacturing defect or if the wrong size was shipped.',
+            ],
+          },
+          {
+            title: 'Warranty',
+            p: [
+              'If your garment has a manufacturing defect, contact us with photos within 15 days of delivery. We replace the piece or refund the amount at no cost.',
+            ],
+          },
+        ],
+      },
+      contact: {
+        title: "Let's talk",
+        label: 'Contact',
+        name: 'Name',
+        subject: 'Subject',
+        message: 'Message',
+        send: 'Send message',
+        opening: 'Opening your email client…',
+        emailLabel: 'Email',
+        social: 'Social',
+        customTitle: 'Custom orders',
+        customText: 'For custom jeans and made-to-measure pieces, send us a DM on Instagram with your size and the design you want.',
+        responseTitle: 'Response time',
+        responseText: 'Under 24 business hours.',
+      },
+      sizes: {
+        title: 'Size guide',
+        intro: 'Measurements of the garment laid flat, in centimetres. The cut is relaxed; if you want a looser fit, go up one size.',
+        colSize: 'Size',
+        colChest: 'Chest (cm)',
+        colLength: 'Length (cm)',
+        howTitle: 'How to measure yourself',
+        howChest: 'Chest: measure around the widest part of your torso with the tape horizontal.',
+        howLength: 'Length: from the shoulder to the bottom edge of the garment.',
+        doubtsTitle: 'Questions',
+        doubtsText: 'Email us or send us a message on Instagram and we will help you choose.',
+      },
+      privacy: {
+        title: 'Privacy Policy',
+        sections: [
+          {
+            title: '1. Who we are',
+            p: [
+              'Dinero Sobre Problemas ("DSP", "we") operates the online store available at dspstorefront.vercel.app. This policy explains what personal data we collect, for what purpose and how we protect it.',
+            ],
+          },
+          {
+            title: '2. Data we collect',
+            items: [
+              'Account data: name, email address, encrypted password and, if you sign in with Google, your public name, email and profile photo from your Google account.',
+              'Order data: products purchased, amount, shipping address, phone and contact email.',
+              'Payment data: processed directly by our payment provider. We never store card numbers.',
+              'Technical data: IP address, browser type and pages visited, for security and service improvement.',
+            ],
+          },
+          {
+            title: '3. Signing in with Google',
+            p: [
+              'You can create an account or sign in using your Google account (Google Sign-In). When you do, Google shares only your primary email address, your public name and profile photo, and a unique identifier for your account.',
+              'We do not request or receive access to your Gmail, contacts, calendar, Google Drive or any other Google account data. The requested permissions are limited to basic identity scopes (email and profile).',
+              'This data is used solely to identify your account and show your name in the store. You can revoke access at any time from your Google account settings.',
+            ],
+          },
+          {
+            title: '4. Purpose of processing',
+            items: [
+              'To process and ship your orders.',
+              'To send you confirmations and tracking notices.',
+              'To handle support, return and warranty requests.',
+              'To prevent fraud and comply with legal obligations.',
+              'To send you brand news, only if you expressly allow it.',
+            ],
+          },
+          {
+            title: '5. Who we share information with',
+            items: [
+              'Supabase — database and authentication.',
+              'Stripe — payment processing.',
+              'Vercel / Render — hosting infrastructure.',
+              'Carriers — only the data needed to deliver your order.',
+            ],
+          },
+          {
+            title: '6. Retention',
+            p: [
+              'We keep your account data while the account is active. Order data is kept for the period required by applicable tax and accounting obligations.',
+            ],
+          },
+          {
+            title: '7. Your rights (ARCO)',
+            p: [
+              'You can request access, rectification, cancellation or objection to the processing of your data, as well as its portability, by writing to hola@dinerosobreproblemas.com. We will reply within a maximum of 20 business days.',
+            ],
+          },
+          {
+            title: '8. Cookies',
+            p: [
+              'We use strictly necessary cookies to keep you signed in and to store your cart contents. We do not use third-party advertising cookies.',
+            ],
+          },
+          {
+            title: '9. Security',
+            p: [
+              'We apply encryption in transit (HTTPS), hashed passwords and row-level access controls in the database, so each user can only query their own information.',
+            ],
+          },
+          {
+            title: '10. Changes to this policy',
+            p: [
+              'We may update this policy. The current version will always be published on this page along with its update date.',
+            ],
+          },
+        ],
+      },
+      terms: {
+        title: 'Terms and Conditions',
+        sections: [
+          {
+            title: '1. Acceptance',
+            p: [
+              'By purchasing at dspstorefront.vercel.app you accept these terms. If you do not agree, please do not place an order.',
+            ],
+          },
+          {
+            title: '2. Products',
+            p: [
+              'Our garments are customised by hand, one by one. This means:',
+            ],
+            items: [
+              'Every piece is unique; minimal variations in the finish may exist.',
+              'Photographs are illustrative; colour may vary slightly depending on your screen.',
+              'Products are made to order and in limited editions.',
+            ],
+          },
+          {
+            title: '3. Prices and payments',
+            p: [
+              'Prices are shown in US dollars (USD) and include taxes. Payment is taken through a secure payment gateway; we do not store card data. Your order is confirmed when payment is approved.',
+            ],
+          },
+          {
+            title: '4. Production and shipping',
+            items: [
+              'Production time: 2 to 3 business days after payment is confirmed.',
+              'Shipping time: 3 to 7 business days within Mexico. Shipping to the United States is available at checkout.',
+              'Free shipping on orders over $150 USD.',
+              'We will email you a tracking number once your order ships.',
+            ],
+          },
+          {
+            title: '5. Returns and exchanges',
+            p: [
+              'We accept returns within 30 calendar days of delivery, provided that:',
+            ],
+            items: [
+              'The garment has not been worn, washed or altered.',
+              'Tags and original packaging are kept.',
+              'You contact us first at hola@dinerosobreproblemas.com.',
+            ],
+            after: [
+              'Because these are custom pieces, items marked as "limited edition made to order" can only be returned for a manufacturing defect or if the wrong size was shipped.',
+            ],
+          },
+          {
+            title: '6. Warranty for defects',
+            p: [
+              'If your garment has a manufacturing defect, contact us with photos of the product within 15 days of delivery. We will replace the piece or refund the amount at no extra cost.',
+            ],
+          },
+          {
+            title: '7. Garment care',
+            items: [
+              'Wash inside out in cold water.',
+              'Do not iron directly over the print or vinyl.',
+              'Air dry to preserve the design.',
+              'Avoid tumble drying and bleach.',
+            ],
+          },
+          {
+            title: '8. Cancellations',
+            p: [
+              'You can cancel an order at no cost as long as production has not started. Once customisation has begun, cancellation no longer applies.',
+            ],
+          },
+          {
+            title: '9. Intellectual property',
+            p: [
+              'The name, logo, designs and photographs of Dinero Sobre Problemas are the property of the brand. Total or partial reproduction without written permission is prohibited.',
+            ],
+          },
+          {
+            title: '10. Contact',
+            p: [
+              'For any questions about these terms, email hola@dinerosobreproblemas.com.',
+            ],
+          },
+        ],
+      },
     },
 
     errors: {

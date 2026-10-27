@@ -6,6 +6,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const page = t.legal.sizes;
 
 const rows = [
   { size: 'XS', chest: '86–91', length: '66' },
@@ -23,20 +24,17 @@ const rows = [
   description={t.content.sizesMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
-    <p class="section-label mb-4">Ayuda</p>
-    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Guía de tallas</h1>
-    <p class="text-base text-white/80 mb-12">
-      Medidas de la prenda extendida, en centímetros. El corte es relajado;
-      si buscas un ajuste más holgado, sube una talla.
-    </p>
+    <p class="section-label mb-4">{t.legal.help}</p>
+    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
+    <p class="text-base text-white/80 mb-12">{page.intro}</p>
 
     <div class="overflow-x-auto border border-white/30">
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-white/30 bg-negro-carbono">
-            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">Talla</th>
-            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">Pecho (cm)</th>
-            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">Largo (cm)</th>
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">{page.colSize}</th>
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">{page.colChest}</th>
+            <th class="text-left px-5 py-4 font-acentos text-[10px] uppercase tracking-[0.2em] text-oro-brillo">{page.colLength}</th>
           </tr>
         </thead>
         <tbody>
@@ -56,30 +54,29 @@ const rows = [
     <div class="mt-12 space-y-6 text-base text-white/80 leading-relaxed">
       <div>
         <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-          Cómo medirte
+          {page.howTitle}
         </h2>
         <ul class="space-y-2 list-disc pl-5">
-          <li><strong class="text-white">Pecho:</strong> mide alrededor de la parte más ancha del torso, con la cinta horizontal.</li>
-          <li><strong class="text-white">Largo:</strong> desde el hombro hasta el borde inferior de la prenda.</li>
+          <li>{page.howChest}</li>
+          <li>{page.howLength}</li>
         </ul>
       </div>
 
       <div>
         <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
-          Dudas
+          {page.doubtsTitle}
         </h2>
         <p>
-          Escríbenos a
+          {page.doubtsText}
           <a href="mailto:hola@dinerosobreproblemas.com" class="text-oro-brillo hover:text-white transition-colors">
             hola@dinerosobreproblemas.com
           </a>
-          o por Instagram y te ayudamos a elegir.
         </p>
       </div>
     </div>
 
     <div class="mt-14">
-      <a href="/tienda" class="btn-gold inline-block">Ver catálogo</a>
+      <a href="/tienda" class="btn-gold inline-block">{t.legal.viewCatalog}</a>
     </div>
   </article>
 </BaseLayout>

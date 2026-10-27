@@ -6,6 +6,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const page = t.legal.shipping;
 ---
 
 <BaseLayout
@@ -13,70 +14,35 @@ const t = getCopy(lang);
   description={t.content.shippingMetaDescription}
 >
   <article class="max-w-3xl mx-auto px-6 py-16 lg:py-24">
-    <p class="section-label mb-4">Ayuda</p>
-    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">Envíos</h1>
+    <p class="section-label mb-4">{t.legal.help}</p>
+    <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
     <div class="gold-line mb-12"></div>
 
     <div class="space-y-10 text-base text-white/80 leading-relaxed">
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Producción
-        </h2>
-        <p>
-          Cada prenda se personaliza a mano después de tu compra. Por eso los pedidos
-          salen de taller en <strong class="text-white">2 a 3 días hábiles</strong>
-          posteriores a la confirmación del pago.
-        </p>
-      </section>
+      {
+        page.sections.map((section) => (
+          <section>
+            <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
+              {section.title}
+            </h2>
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Tiempos de entrega
-        </h2>
-        <ul class="space-y-2 list-disc pl-5">
-          <li><strong class="text-white">México:</strong> 3 a 7 días hábiles.</li>
-          <li><strong class="text-white">Estados Unidos:</strong> 7 a 12 días hábiles.</li>
-          <li>Los tiempos son estimados y pueden variar en temporada alta.</li>
-        </ul>
-      </section>
+            {section.p?.map((text) => <p class="mb-3 last:mb-0">{text}</p>)}
 
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Costos
-        </h2>
-        <ul class="space-y-2 list-disc pl-5">
-          <li><strong class="text-white">Gratis</strong> en pedidos superiores a $150 USD.</li>
-          <li>Pedidos menores: el costo se calcula en el checkout.</li>
-          <li>Envíos internacionales: costo calculado según destino y peso.</li>
-        </ul>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Seguimiento
-        </h2>
-        <p>
-          Cuando tu pedido es despachado recibirás un correo con el número de guía
-          para seguirlo con la paquetería.
-        </p>
-      </section>
-
-      <section>
-        <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-4">
-          Devoluciones
-        </h2>
-        <p>
-          Consulta nuestras condiciones completas en
-          <a href="/terminos" class="text-oro-brillo hover:text-white transition-colors">
-            Términos y Condiciones
-          </a>.
-        </p>
-      </section>
+            {section.items && (
+              <ul class="space-y-2 list-disc pl-5">
+                {section.items.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
     </div>
 
     <div class="mt-14 flex flex-wrap gap-3">
-      <a href="/tienda" class="btn-gold">Ver catálogo</a>
-      <a href="/contacto" class="btn-outline">Contacto</a>
+      <a href="/tienda" class="btn-gold">{t.legal.viewCatalog}</a>
+      <a href="/contacto" class="btn-outline">{t.legal.linkContact}</a>
     </div>
   </article>
 </BaseLayout>
