@@ -22,6 +22,7 @@ import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
 import { verifyWebhookSignature, type StripeEvent } from '../../../lib/stripe';
 import { applyPaidStatus, applyFailedStatus, applyRefundedStatus } from '../../../lib/checkout';
+import { sendOrderConfirmation } from '../../../lib/resend';
 
 export const prerender = false;
 
@@ -81,6 +82,22 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
           paymentIntentId: paymentIntent ?? object.id,
           amount: typeof object.amount_total === 'number' ? object.amount_total / 100 : 0,
         });
+
+        // Confirmación por email con Resend (dominio propio).
+        const { data: order } = await db
+          .from('orders')
+          .select('contact_email, contact_name, order_number, total_amount')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (order?.contact_email) {
+          sendOrderConfirmation({
+            to: order.contact_email,
+            orderNumber: order.order_number ?? orderId,
+            customerName: order.contact_name ?? 'Valoración',
+            total: `$${Number(order.total_amount).toFixed(2)}`,
+          }).catch(() => {});
+        }
         break;
       }
 
