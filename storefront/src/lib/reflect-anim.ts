@@ -1,94 +1,67 @@
 /**
- * Cuenta atrás del reflejo en las piezas reflectivas.
+ * Ciclo del reflejo: el badge **es** el cronómetro de la pieza.
  *
- * Se apoya en el carrusel que ya tiene cada componente (hero, tarjetas,
- * ficha) y muestra "Reflectivo en… 2" → "1" → enciende la foto del flash,
- * espera un momento y vuelve a la portada para empezar otra vez.
+ *   Reflectivo en: 2      foto sin flash
+ *   Reflectivo en: 1      foto sin flash
+ *              ↓
+ *   Normal en: 2          foto con flash
+ *   Normal en: 1          foto con flash
+ *              ↓
+ *   …y vuelve a empezar
+ *
+ * No hay un segundo reloj: este ciclo también decide cuándo pasa el
+ * carrusel a la siguiente pieza (`rotates: true`), así que badge y
+ * movimiento nunca se desincronizan.
  *
  * Contrato con el HTML:
  *
  * ```html
- * <div data-reflect data-reflect-flash="1" data-reflect-ms="1000">
- *   <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
- *     <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
- *     <span class="reflect-badge-dot"></span>
+ * <div data-reflect data-reflect-flash="1" data-reflect-rotates>
+ *   <span class="reflect-badge" data-reflect-badge>
+ *     <span class="reflect-badge-label" data-reflect-label>Reflectivo en:</span>
  *   </span>
- *   … fotos ([data-carousel-dot] / [data-carousel-thumb]) …
+ *   … fotos ([data-carousel-thumb] / [data-hero-photo]) …
  * </div>
  * ```
  *
  * - `data-reflect-flash` = índice de la foto con reflejo.
- * - `data-reflect-ms` = un segundo de la cuenta (por defecto 1000).
- * - Respeta `prefers-reduced-motion`: deja la foto del reflejo fija.
+ * - `data-reflect-rotates` = al cerrar la fase, avisa para pasar de pieza.
  */
-import {
-  COUNT_FROM,
-  COUNT_STEP_MS,
-  RESUME_MS,
-  ROTATION_MS,
-} from './reflect-timing';
+import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
 
-// Los scripts de Astro comparten el scope del bundle: el IIFE evita
-// colisiones con `carousel.ts`. Además el mismo módulo se importa desde
-// varios componentes (hero, tarjetas, ficha): sin este candado se
-// ejecutaba dos veces y cada copia abría su propio intervalo, alternando
-// las fotos entre sí y dejando el badge encendido.
 (() => {
   const FLAG = '__dspReflectAnim';
   const w = window as unknown as Record<string, boolean>;
   if (w[FLAG]) return;
   w[FLAG] = true;
 
-  /** Un segundo de la cuenta atrás (se recalcula según el carrusel). */
-  const DEFAULT_MS = COUNT_STEP_MS;
-
-  /** Desde qué número arranca la cuenta. */
-  const COUNT_FROM_VALUE = COUNT_FROM;
-
-  /**
-   * Tiempo del encendido. Se deriva del intervalo **real** del carrusel que
-   * envuelve cada pieza (o de `ROTATION_MS` si no hay ninguno), no de una
-   * constante suelta: así el encendido se apaga justo cuando el carrusel
-   * avanza y ambos ciclos no se van separando.
-   */
-  function holdFor(scope: ReflectScope): number {
-    const host = scope.root.closest<HTMLElement>('[data-carousel-interval]');
-    const interval = Number(host?.dataset.carouselInterval) || ROTATION_MS;
-
-    // Lo que sobra de la vuelta tras la cuenta atrás.
-    return Math.max(scope.ms, interval - scope.ms * scope.seconds);
-  }
+  /** Las dos etiquetas del ciclo. */
+  type Phase = 'reflect' | 'normal';
 
   type ReflectScope = {
     root: HTMLElement;
     badge: HTMLElement | null;
     text: HTMLElement | null;
-    /** Número del cuenta atrás (se crea una vez). */
     count: HTMLElement | null;
-    label: string;
-    /** Un segundo de la cuenta. */
-    ms: number;
-    /** Desde cuántos segundos arranca ("Reflectivo en… 3 · 2 · 1"). */
-    seconds: number;
+    /** Textos: "Reflectivo en:" y "Normal en:". */
+    labelReflect: string;
+    labelNormal: string;
     flashIndex: number;
     plainIndex: number;
-    /** Segundos que faltan para encender; 0 = reflejo encendido. */
+    /** Fase actual del ciclo. */
+    phase: Phase;
+    /** Número que se está mostrando. */
     remaining: number;
-    /** Ticks que le quedan al reflejo encendido antes de volver. */
-    holdLeft: number;
-    /** Milisegundos reales que dura el encendido. */
-    holdMs: number;
-    /** 1 = mostrando el reflejo, 0 = foto normal. */
-    flipped: boolean;
+    /** Si al cerrar la fase avisa al carrusel para pasar de pieza. */
+    rotates: boolean;
     timer?: number;
   };
 
   const scopes = new Map<HTMLElement, ReflectScope>();
 
   /**
-   * `true` mientras el reflejo pulsa sus propios controles.
-   * Evita que ese cambio se interprete como "el carrusel pasó de pieza" y
-   * reinicie la cuenta en mitad del encendido amarillo.
+   * `true` mientras el propio ciclo cambia la foto.
+   * Evita que ese cambio se confunda con el usuario o con un avance ajeno.
    */
   let settling = false;
 
@@ -100,71 +73,39 @@ import {
     if (!Number.isInteger(flashIndex) || flashIndex < 0) return null;
 
     const plainRaw = Number(root.dataset.reflectPlain);
-    const ms = Number(root.dataset.reflectMs);
-
     const badge = root.querySelector<HTMLElement>('[data-reflect-badge]');
-    const text = badge?.querySelector<HTMLElement>('[data-reflect-label]') ?? null;
-
-    // El número viene ya en el HTML (evita el salto al hidratar).
-    const count = badge?.querySelector<HTMLElement>('[data-reflect-count]') ?? null;
 
     const scope: ReflectScope = {
       root,
       badge,
-      text,
-      count,
-      label: badge?.dataset.label ?? '',
-      ms: Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_MS,
-      seconds: COUNT_FROM_VALUE,
+      text: badge?.querySelector<HTMLElement>('[data-reflect-label]') ?? null,
+      count: badge?.querySelector<HTMLElement>('[data-reflect-count]') ?? null,
+      labelReflect: badge?.dataset.label ?? 'Reflectivo en:',
+      labelNormal: badge?.dataset.labelNormal ?? 'Normal en:',
       flashIndex,
       plainIndex: Number.isInteger(plainRaw) && plainRaw >= 0 ? plainRaw : 0,
-      remaining: 0,
-      holdLeft: 0,
-      holdMs: 0,
-      flipped: false,
+      phase: 'reflect',
+      remaining: COUNT_FROM,
+      rotates: root.hasAttribute('data-reflect-rotates'),
     };
 
     scopes.set(root, scope);
     return scope;
   }
 
-  /**
-   * El reflejo **no** toca el avance del carrusel de productos.
-   *
-   * Antes se pausaba y reanudaba desde cada pieza: con 10 slides en el hero
-   * eso desbalanceaba el contador y el carrusel de productos se movía a
-   * destiempo, como si cambiara cada segundo. El reflejo solo cambia la foto
-   * dentro de la misma pieza; el avance sigue su propio ritmo.
-   */
-
-  /**
-   * Cambia la foto **dentro de la pieza**. Nunca mueve el carrusel de
-   * productos: el reflejo solo alterna entre la portada y la toma con flash
-   * del mismo artículo.
-   */
+  /** Cambia la foto **dentro de la pieza**. */
   function showPhoto(scope: ReflectScope, index: number) {
     const { root } = scope;
 
-    // 1) El hero: las fotos están apiladas en el propio `.hero-media`.
+    // Hero: las fotos están apiladas en el propio `.hero-media`.
     const stacked = [...root.querySelectorAll<HTMLElement>('[data-hero-photo]')];
     if (stacked.length > 1) {
       stacked.forEach((photo, i) => photo.classList.toggle('is-active', i === index));
-
-      const media = root.classList.contains('hero-media')
-        ? root
-        : root.querySelector<HTMLElement>('.hero-media');
-
-      media?.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb, i) => {
-        const active = i === index;
-        thumb.classList.toggle('is-active', active);
-        thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-
       root.classList.toggle('is-flash-photo', index === scope.flashIndex);
       return;
     }
 
-    // 2) Tarjetas y ficha: se pulsan sus miniaturas, que sí cambian de foto.
+    // Tarjetas y ficha: se pulsan sus miniaturas (misma pieza).
     const thumb = root.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`);
     if (thumb) {
       (thumb as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
@@ -184,137 +125,93 @@ import {
 
       if (index === scope.flashIndex) {
         root
-          .querySelector<HTMLElement>(`.card-slide:nth-child(${index + 1}) img, .pdp-slide:nth-child(${index + 1}) img`)
+          .querySelector<HTMLElement>(
+            `.card-slide:nth-child(${index + 1}) img, .pdp-slide:nth-child(${index + 1}) img`
+          )
           ?.classList.add('is-flash-photo');
       }
-      return;
     }
-
-    // 3) Carrusel propio del componente: se le avisa por evento.
-    root.dispatchEvent(new CustomEvent('reflect:photo', { detail: { index }, bubbles: true }));
   }
 
-  /**
-   * Pinta el cuenta atrás. La estructura es siempre la misma:
-   *
-   *   Reflectivo en…        ← etiqueta
-   *         2               ← número
-   *
-   * El número NO se quita al encenderse: el badge se ve igual en los tres
-   * estados (2 → 1 → encendido), solo cambia el color. Antes el número
-   * desaparecía al llegar a cero y el badge quedaba más bajo, lo que hacía
-   * que "Reflectivo" se viera distinto.
-   */
-  function paintCount(scope: ReflectScope, value: number, animate = true) {
+  /** Pinta etiqueta, número y estado del badge. */
+  function paint(scope: ReflectScope, animate = true) {
     const { badge, text } = scope;
     if (!badge || !text) return;
 
-    badge.classList.add('is-counting');
-    text.textContent = scope.label;
+    const reflecting = scope.phase === 'reflect';
 
-    // El número viene del HTML; si no está (favoritos, carrito) se crea.
-    if (!scope.count) {
-      scope.count = document.createElement('span');
-      scope.count.className = 'reflect-badge-count';
-      scope.count.dataset.reflectCount = '';
-      badge.insertBefore(scope.count, badge.querySelector('.reflect-badge-dot'));
-    }
+    badge.classList.toggle('is-lit', reflecting);
+    text.textContent = reflecting ? scope.labelReflect : scope.labelNormal;
 
-    const seconds = value > 0 ? value : scope.seconds;
-    if (scope.count.textContent !== String(seconds)) {
-      scope.count.textContent = String(seconds);
+    if (scope.count) {
+      const next = String(scope.remaining);
+      if (scope.count.textContent !== next) {
+        scope.count.textContent = next;
 
-      if (animate) {
-        scope.count.classList.remove('is-ticking');
-        void scope.count.offsetWidth; // reinicia la animación en cada número
-        scope.count.classList.add('is-ticking');
+        if (animate) {
+          scope.count.classList.remove('is-ticking');
+          void scope.count.offsetWidth;
+          scope.count.classList.add('is-ticking');
+        }
       }
     }
   }
 
-  /** Pone la pieza en su foto normal y reinicia la cuenta. */
-  function reset(scope: ReflectScope, animate = false) {
-    scope.flipped = false;
-    scope.remaining = scope.seconds;
-    scope.badge?.classList.remove('is-lit');
+  /** Reinicia el ciclo en la fase del reflejo. */
+  function restart(scope: ReflectScope) {
+    scope.phase = 'reflect';
+    scope.remaining = COUNT_FROM;
     showPhoto(scope, scope.plainIndex);
-    paintCount(scope, scope.remaining, animate);
-    // El carrusel recupera su avance automático.
+    paint(scope, false);
   }
 
   /**
-   * ¿La pieza está en pantalla?
+   * Un tick por segundo. Cada fase dura `COUNT_FROM` ticks:
    *
-   * Un rect en cero (imagen aún sin cargar, altura sin resolver, contenedor
-   * oculto) NO significa "fuera de pantalla": antes se descartaba y el
-   * carrusel nunca arrancaba. En ese caso se considera visible.
-   */
-  function onScreen(el: HTMLElement) {
-    const rect = el.getBoundingClientRect();
-    if (rect.width === 0 && rect.height === 0) return true;
-    if (rect.bottom === 0 && rect.top === 0) return true;
-    return rect.bottom > 0 && rect.top < window.innerHeight;
-  }
-
-  /**
-   * El ciclo solo se detiene si la pestaña está oculta.
-   *
-   * Antes también se pausaba con el hover, pero en escritorio el puntero
-   * está sobre alguna tarjeta casi siempre: esa pieza nunca se encendía.
-   * El reflejo dura 2 s y no impide leer, así que ya no frena por hover.
-   */
-  function busy() {
-    return document.hidden;
-  }
-
-  /**
-   * Ciclo cerrado, una sola fase activa a la vez:
-   *
-   *   t=0   "Reflectivo en… 2"   (foto normal)
-   *   t=1s  "Reflectivo en… 1"   (foto normal)
-   *   t=2s  ENCENDIDO            (foto con flash, badge dorado)
-   *   t=4.2s vuelve a t=0
-   *
-   * Antes el número se repintaba al arrancar y el primer tick lo bajaba
-   * enseguida: se veía un "2" suelto al encenderse y otro al reiniciar.
-   * Ahora cada fase dura `ms` y el encendido espera `HOLD_MS`.
+   *   2 → 1 → (cambia de fase y de foto)
    */
   function schedule(scope: ReflectScope) {
     window.clearInterval(scope.timer);
 
     scope.timer = window.setInterval(() => {
-      if (busy() || !onScreen(scope.root)) return;
+      if (document.hidden) return;
 
-      // Mientras el usuario interactúa con el carrusel no se le encima.
-      if (scope.root.dataset.reflectUserHold) return;
+      const rect = scope.root.getBoundingClientRect();
+      const visible =
+        (rect.width === 0 && rect.height === 0) ||
+        (rect.bottom > 0 && rect.top < window.innerHeight);
+      if (!visible) return;
 
-      // 1) Está encendido: ya cumplió su tiempo, vuelve a la portada.
-      if (scope.flipped) {
-        scope.holdLeft -= 1;
-        if (scope.holdLeft > 0) return;
-
-        reset(scope, false);
-        return;
-      }
-
-      // 2) Cuenta atrás: 2 → 1 → (encender en el siguiente paso).
       scope.remaining -= 1;
 
       if (scope.remaining > 0) {
-        paintCount(scope, scope.remaining);
+        paint(scope);
         return;
       }
 
-      // 3) Llegó a cero: se enciende la foto del reflejo y el carrusel se
-      //    queda quieto para que el encendido se vea completo.
-      scope.flipped = true;
+      // Se acabó la fase: cambio de foto y de etiqueta.
+      if (scope.phase === 'reflect') {
+        // Reflejo → normal: aparece la foto con flash.
+        scope.phase = 'normal';
+        scope.remaining = COUNT_FROM;
+        showPhoto(scope, scope.flashIndex);
+        paint(scope);
+        return;
+      }
 
-      // El encendido ocupa lo que resta de la vuelta del carrusel.
-      scope.holdMs = holdFor(scope);
-      scope.holdLeft = Math.max(1, Math.round(scope.holdMs / scope.ms));
-      scope.badge?.classList.add('is-lit');
-      showPhoto(scope, scope.flashIndex);
-    }, scope.ms);
+      // Normal → reflejo: vuelve la portada. Aquí cierra la vuelta.
+      scope.phase = 'reflect';
+      scope.remaining = COUNT_FROM;
+      showPhoto(scope, scope.plainIndex);
+      paint(scope);
+
+      // El mismo reloj avanza el carrusel de piezas.
+      if (scope.rotates) {
+        scope.root.dispatchEvent(
+          new CustomEvent('reflect:rotate', { bubbles: true, detail: scope.root })
+        );
+      }
+    }, COUNT_STEP_MS);
   }
 
   function init() {
@@ -324,74 +221,41 @@ import {
       const scope = register(root);
       if (!scope) return;
 
-      // Con movimiento reducido queda fija la toma con el reflejo encendido.
       if (reduce) {
-        scope.flipped = true;
-        scope.badge?.classList.add('is-lit');
-        paintCount(scope, scope.seconds, false);
+        // Sin animación: se queda la foto con reflejo y la etiqueta fija.
+        scope.phase = 'normal';
         showPhoto(scope, scope.flashIndex);
+        paint(scope, false);
         return;
       }
 
-      reset(scope, false);
-
-      // `schedule` ya limpia el intervalo previo: un refresh no duplica.
+      restart(scope);
       schedule(scope);
     });
   }
 
-  /**
-   * El carrusel cambió de foto (autoplay, flecha o dedo).
-   *
-   * Se reinicia la cuenta en ese instante para que el reflejo arranque
-   * alineado con el movimiento y no con su propio reloj: antes ambos ciclos
-   * tenían periodos distintos y se iban separando poco a poco.
-   */
-  /**
-   * El carrusel cambió de foto (autoplay, flecha o dedo).
-   *
-   * Se reinicia la cuenta para que el reflejo arranque alineado con el
-   * movimiento. **No** cuando el cambio lo provocó el propio reflejo: en el
-   * encendido se pulsa un punto, eso dispara `carousel:changed` y el badge
-   * amarillo volvía a mostrar un "2" que no tocaba.
-   */
-  document.addEventListener('carousel:changed', (e) => {
-    if (settling) return;
+  // La página se repinta (filtros, favoritos): se registran las piezas nuevas.
+  document.addEventListener('reflect:refresh', init);
 
-    const scopeEl = (e.target as HTMLElement | null)?.closest?.('[data-carousel-scope]');
-    if (!scopeEl) return;
-
-    scopes.forEach((scope, root) => {
-      if (!scopeEl.contains(root) && !root.contains(scopeEl)) return;
-      if (scope.flipped) return; // no cortar un encendido en curso
-      reset(scope, false);
-    });
-  });
-
-  // Cambio manual de foto: se detiene el ciclo unos segundos para no pelearse
-  // con quien está mirando la prenda.
+  // Si el usuario cambia de foto a mano, se le da margen antes de retomar.
   document.addEventListener('click', (e) => {
     const target = e.target as (HTMLElement & { __reflectAuto?: boolean }) | null;
     if (!target?.closest('[data-reflect]')) return;
     if (!target.closest('[data-carousel-dir], [data-carousel-dot], [data-carousel-thumb]')) return;
 
-    // El controlador también pulsa esos botones: no es el usuario.
     if (target.__reflectAuto) {
       target.__reflectAuto = false;
       return;
     }
 
-    document.querySelectorAll<HTMLElement>('[data-reflect]').forEach((root) => {
-      const scope = scopes.get(root);
-      if (!scope) return;
-
+    scopes.forEach((scope) => {
       window.clearInterval(scope.timer);
-      window.setTimeout(() => schedule(scope), RESUME_MS);
+      window.setTimeout(() => {
+        restart(scope);
+        schedule(scope);
+      }, RESUME_MS);
     });
   });
-
-  // La página se repinta a veces (drawer, filtros): se registran los nuevos.
-  document.addEventListener('reflect:refresh', init);
 
   init();
 })();

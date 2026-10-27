@@ -1,38 +1,36 @@
 /**
- * Timing compartido del carrusel y del reflejo.
+ * Timing del ciclo del reflejo.
  *
- * Es la **única** fuente de verdad: si el carrusel cambia de intervalo y el
- * reflejo no, ambos derivan y el encendido deja de caer con el cambio de
- * pieza. Antes había tres constantes sueltas (carousel.ts, reflect-anim.ts y
- * HeroCarousel.astro) que había que mantener a mano en sincronía.
+ * **Un solo reloj** para todo: el badge es el cronómetro del carrusel.
+ * Antes había tres intervalos sueltos (autoavance del carrusel, avance de
+ * tandas del hero y cuenta del reflejo) que se peleaban entre sí.
  *
- * El ciclo del reflejo se **deriva** de aquí:
+ *   Reflectivo en: 2      foto A
+ *   Reflectivo en: 1      foto A
+ *                ↓ cambia de foto
+ *   Normal en: 2          foto B (con flash)
+ *   Normal en: 1          foto B (con flash)
+ *                ↓ cambia de foto
+ *   …vuelve a empezar
  *
- *   cuenta (2 ticks)   = 2000 ms
- *   + encendido        = 2500 ms
- *   ─────────────────────────────
- *   total              = 4500 ms = intervalo del carrusel
- *
- * Si `ROTATION_MS` cambia, `COUNT_STEP_MS` y `HOLD_MS` se recalculan solos.
+ * Cada fase dura `PHASE_MS`, así que la vuelta completa son 4 s y cada
+ * número se ve 1 s.
  */
 
-/** Cada cuánto el carrusel pasa a la siguiente pieza. */
-export const ROTATION_MS = 4500;
+/** Cada cuánto baja el número (y por tanto cada cuánto se mueve todo). */
+export const COUNT_STEP_MS = 1000;
 
-/** Desde qué número arranca la cuenta ("Reflectivo en… 2"). */
+/** Números de cada fase: "2 … 1". */
 export const COUNT_FROM = 2;
 
-/** Cuánto dura la cuenta atrás completa. Ocupa el 44 % de la vuelta. */
-const COUNT_SPAN_MS = Math.round(ROTATION_MS * 0.444);
+/** Cuánto dura una fase completa. */
+export const PHASE_MS = COUNT_STEP_MS * COUNT_FROM;
 
-/** Lo que se ve cada número. */
-export const COUNT_STEP_MS = Math.round(COUNT_SPAN_MS / COUNT_FROM);
-
-/** Cuánto se queda encendida la foto del reflejo (el resto de la vuelta). */
-export const HOLD_MS = ROTATION_MS - COUNT_SPAN_MS;
+/** Vuelta completa: reflejo + normal. Es el intervalo del carrusel. */
+export const ROTATION_MS = PHASE_MS * 2;
 
 /** Margen tras una interacción manual antes de retomar el ciclo. */
 export const RESUME_MS = 6000;
 
-/** Tiempo que dura el flash de brillo sobre la foto. */
+/** Duración del destello de brillo sobre la foto. */
 export const FLASH_MS = 650;

@@ -307,6 +307,17 @@
   color: #000000;
 }
 
+/* Fase "Normal en:": la foto con flash está puesta y el badge se apaga para
+   que se note el cambio de estado. Mantiene el mismo tamaño que en
+   "Reflectivo en:" para que nada salte. */
+.reflect-badge:not(.is-lit) .reflect-badge-count {
+  color: #ffe28a;
+}
+
+.reflect-badge:not(.is-lit) .reflect-badge-dot {
+  animation: none;
+}
+
 /* Sin reflejo: se lee, pero no compite con las piezas que sí lo tienen. */
 .reflect-badge.is-plain {
   background: rgba(6, 6, 6, 0.72);

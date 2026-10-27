@@ -83,6 +83,7 @@ const plans = list.map((item) =>
                 data-reflect={plan.animatable ? '1' : undefined}
                 data-reflect-flash={plan.animatable ? plan.flashIndex : undefined}
                 data-reflect-ms={plan.animatable ? REFLECT_MS : undefined}
+                data-reflect-rotates={plan.animatable ? '1' : undefined}
               >
                 <ReflectBadge reflective={plan.animatable} />
 
@@ -392,10 +393,6 @@ const plans = list.map((item) =>
 
     /** Avance de slide (playera → jean → …). No cambia de foto dentro del slide. */
     let index = 0;
-    let timer: number | undefined;
-
-    /** Cada cuánto pasa a la siguiente tanda de piezas (fuente única). */
-    const SLIDE_MS = ROTATION_MS;
 
     /**
      * El cuenta atrás del reflejo lo maneja `lib/reflect-anim.ts`.
@@ -472,15 +469,14 @@ const plans = list.map((item) =>
       goTo(index + 1);
     }
 
-    /** Avanza de tanda cada SLIDE_MS (el encendido del reflejo va aparte). */
-    function start() {
-      if (!timer) timer = window.setInterval(next, SLIDE_MS);
-    }
-
-    function stop() {
-      window.clearInterval(timer);
-      timer = undefined;
-    }
+    /**
+     * El avance de piezas lo dicta el badge del reflejo (`reflect:rotate`):
+     * un solo reloj para la foto y para el producto, nunca dos.
+     */
+    root.addEventListener('reflect:rotate', () => {
+      if (document.hidden) return;
+      next();
+    });
 
     /*
      * El reflejo NO pausa este avance. Antes se pausaba desde cada pieza y,
@@ -533,7 +529,7 @@ const plans = list.map((item) =>
       swiped = false;
       startX = e.clientX;
       startY = e.clientY;
-      stop();
+
     });
 
     root.addEventListener('pointerup', (e) => {
@@ -550,7 +546,6 @@ const plans = list.map((item) =>
         goTo(index + (dx < 0 ? 1 : -1));
       }
 
-      start();
     });
 
     // Si hubo swipe, se cancela el clic para no navegar sin querer.
@@ -573,14 +568,6 @@ const plans = list.map((item) =>
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!reduce) {
-      start();
-
-      // Evita saltos al volver de otra pestaña o al redimensionar.
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden) stop();
-        else start();
-      });
-
       window.addEventListener('resize', () => {
         index = Math.min(index, Math.max(0, total - perView()));
         apply(false);

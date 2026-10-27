@@ -1,15 +1,15 @@
 ---
 /**
- * ReflectBadge — aviso "Reflectivo en…" con el cuenta atrás debajo.
+ * ReflectBadge — cronómetro del ciclo del reflejo.
  *
- *   ┌──────────────────┐
- *   │   Reflectivo en… │
- *   │        2         │
- *   └──────────────────┘
+ *   ┌─────────────────┐   ┌─────────────────┐
+ *   │ REFLECTIVO EN:  │   │   NORMAL EN:    │
+ *   │        2        │   │        1        │
+ *   └─────────────────┘   └─────────────────┘
  *
- * Se usa en el hero, en las tarjetas del catálogo, en la ficha, en favoritos
- * y en el carrito. El controlador (`lib/reflect-anim.ts`) escribe el número
- * y marca `.is-lit` cuando ya está puesta la foto del reflejo.
+ * El número baja 2 → 1 y al llegar a cero cambia la foto de la prenda.
+ * El controlador (`lib/reflect-anim.ts`) es quien pinta el texto y el
+ * número; este componente solo aporta la estructura.
  *
  * Si la prenda no es reflectiva muestra "Sin reflejo", apagado.
  */
@@ -18,7 +18,7 @@ import { getCopy, type Lang } from '../../lib/i18n';
 export interface Props {
   /** true = la prenda tiene reflejo y se anima. Normalmente `product.is_reflective`. */
   reflective: boolean;
-  /** Desde qué número arranca la cuenta (debe coincidir con `COUNT_FROM`). */
+  /** Desde qué número arranca la cuenta. */
   seconds?: number;
   /** Clases extra del contenedor (p. ej. `is-lowered` si hay badge de agotado). */
   class?: string;
@@ -28,17 +28,21 @@ const { reflective, seconds = 2, class: className = '' } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
-
-// "Reflectivo en…" → la palabra sola se usa al encenderse.
-const label = reflective ? t.product.reflective : t.product.notReflective;
 ---
 
 <span
-  class:list={['reflect-badge', { 'is-plain': !reflective }, className]}
+  class:list={[
+    'reflect-badge',
+    { 'is-plain': !reflective, 'is-lit': reflective },
+    className,
+  ]}
   data-reflect-badge
   data-label={t.product.reflective}
+  data-label-normal={t.product.normalPhase}
 >
-  <span class="reflect-badge-label" data-reflect-label>{label}</span>
+  <span class="reflect-badge-label" data-reflect-label>
+    {reflective ? t.product.reflective : t.product.notReflective}
+  </span>
   {
     reflective && (
       <span class="reflect-badge-count" data-reflect-count>

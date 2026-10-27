@@ -139,28 +139,39 @@ function register(scope: HTMLElement): Carousel | null {
 function start() {
   window.clearInterval(timer);
 
+  // Sin reloj propio: el avance lo dicta el ciclo del reflejo
+  // (`reflect:rotate`). Dos intervalos separados se desincronizaban.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-  timer = window.setInterval(() => {
-    if (focused || hovering > 0 || document.hidden) return;
-
-    document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach((scope) => {
-      // En pausa por otra animación (reflejo): no se mueve por debajo.
-      if (paused.has(scope)) return;
-
-      const carousel = registry.get(scope) ?? register(scope);
-      if (!carousel || carousel.slides.length < 2) return;
-
-      // Solo anima los carruseles visibles en pantalla
-      const rect = scope.getBoundingClientRect();
-      const visible = rect.bottom > 0 && rect.top < window.innerHeight;
-      if (!visible) return;
-
-      const next = (currentIndex(carousel) + 1) % carousel.slides.length;
-      goTo(carousel, next);
-    });
-  }, DEFAULT_INTERVAL);
 }
+
+/**
+ * Avance automático **dirigido por el badge del reflejo**.
+ *
+ * El ciclo del reflejo (2 → 1 → cambio de foto) emite `reflect:rotate` al
+ * cerrar su vuelta; aquí se pasa a la siguiente pieza de los carruseles que
+ * no tienen su propio timer.
+ */
+document.addEventListener('reflect:rotate', (e) => {
+  if (focused || hovering > 0 || document.hidden) return;
+
+  const origin = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-carousel-scope]');
+
+  document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach((scope) => {
+    // Solo responde el carrusel de la pieza que marcó el compás.
+    if (origin && origin !== scope) return;
+    if (paused.has(scope)) return;
+
+    const carousel = registry.get(scope) ?? register(scope);
+    if (!carousel || carousel.slides.length < 2) return;
+
+    const rect = scope.getBoundingClientRect();
+    const visible = rect.bottom > 0 && rect.top < window.innerHeight;
+    if (!visible) return;
+
+    const next = (currentIndex(carousel) + 1) % carousel.slides.length;
+    goTo(carousel, next);
+  });
+});
 
 // ---------- Interacción (delegada) ----------
 document.addEventListener(
