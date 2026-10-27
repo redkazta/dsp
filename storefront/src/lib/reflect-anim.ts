@@ -8,9 +8,10 @@
  * Contrato con el HTML:
  *
  * ```html
- * <div data-reflect data-reflect-flash="1" data-reflect-ms="2000">
- *   <span class="reflect-badge" data-reflect-badge data-label="Reflectivo">
- *     <span class="reflect-badge-text" data-reflect-text>Reflectivo</span>
+ * <div data-reflect data-reflect-flash="1" data-reflect-ms="1000">
+ *   <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
+ *     <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
+ *     <span class="reflect-badge-dot"></span>
  *   </span>
  *   … fotos ([data-carousel-dot] / [data-carousel-thumb]) …
  * </div>
@@ -51,6 +52,8 @@
     /** Número del cuenta atrás (se crea una vez). */
     count: HTMLElement | null;
     label: string;
+    /** "Reflectivo" sin el "en…", para cuando está encendido. */
+    shortLabel: string;
     /** Un segundo de la cuenta. */
     ms: number;
     /** Desde cuántos segundos arranca ("Reflectivo en… 3 · 2 · 1"). */
@@ -77,14 +80,20 @@
     const ms = Number(root.dataset.reflectMs);
 
     const badge = root.querySelector<HTMLElement>('[data-reflect-badge]');
-    const text = badge?.querySelector<HTMLElement>('[data-reflect-text]') ?? null;
+    const text = badge?.querySelector<HTMLElement>('[data-reflect-label]') ?? null;
+
+    // "Reflectivo en…" mientras cuenta; "Reflectivo" al encenderse.
+    const longLabel = badge?.dataset.label ?? '';
+    const shortLabel =
+      badge?.dataset.labelShort || longLabel.replace(/\s*en[….]+\s*$/i, '').trim();
 
     const scope: ReflectScope = {
       root,
       badge,
       text,
       count: null,
-      label: badge?.dataset.label ?? '',
+      label: longLabel,
+      shortLabel,
       ms: Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_MS,
       seconds: COUNT_FROM,
       flashIndex,
@@ -128,8 +137,13 @@
   }
 
   /**
-   * Pinta el número del cuenta atrás.
-   * `0` significa que el reflejo ya se encendió: ahí se quita el número.
+   * Pinta el número del cuenta atrás bajo la palabra.
+   *
+   *   Reflectivo en…
+   *         2
+   *
+   * `0` = el reflejo ya está encendido: se quita el número y la palabra
+   * vuelve a su forma corta.
    */
   function paintCount(scope: ReflectScope, value: number, animate = true) {
     const { badge, text, label } = scope;
@@ -139,24 +153,19 @@
       badge.classList.remove('is-counting');
       if (scope.count) scope.count.remove();
       scope.count = null;
-      // El texto pasa a "Reflectivo" (sin "en…") mientras está encendido.
-      if (label) text.textContent = label;
+      // La palabra sola se usa cuando el reflejo ya está encendido.
+      if (scope.shortLabel) text.textContent = scope.shortLabel;
       return;
     }
 
     badge.classList.add('is-counting');
+    text.textContent = label;
 
-    // Crea el número la primera vez y lo reutiliza para no perder la animación.
+    // El número es hermano de la palabra: va en su propia fila, centrado.
     if (!scope.count) {
-      // Texto base ("Reflectivo en…") + número que se actualiza después.
-      text.textContent = '';
-      const base = document.createElement('span');
-      base.textContent = scope.label;
-
       scope.count = document.createElement('span');
       scope.count.className = 'reflect-badge-count';
-
-      text.append(base, scope.count);
+      badge.appendChild(scope.count);
     }
 
     scope.count.textContent = String(value);

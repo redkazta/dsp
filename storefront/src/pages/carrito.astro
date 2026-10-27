@@ -79,12 +79,13 @@ const suggestions = (featured.data ?? []).map((p: any) => {
                   <div class="product-frame">
                     <span
                       class:list={['reflect-badge', { 'is-plain': !p.isReflective }]}
-                      data-label={t.product.reflective}
+                      data-reflect-badge
+                      data-label={p.isReflective ? t.product.reflective : t.product.notReflective}
                     >
-                      <span class="reflect-badge-dot" />
-                      <span class="reflect-badge-text">
+                      <span class="reflect-badge-label">
                         {p.isReflective ? t.product.reflective : t.product.notReflective}
                       </span>
+                      <span class="reflect-badge-dot"></span>
                     </span>
                     {p.image && (
                       <img

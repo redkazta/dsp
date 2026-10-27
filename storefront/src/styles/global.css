@@ -225,61 +225,58 @@
    Fuera de @layer para que el selector no se colapse.
 
    Estados (los pone `lib/reflect-anim.ts`):
-     normal   → "Reflectivo en… 2"
-     .is-lit  → dorado + número final, coincide con la foto del flash
-     .is-plain→ "Sin reflejo", apagado, en las piezas sin flash */
+     normal    → "Reflectivo en…" con 2 / 1 debajo, centrado
+     .is-lit   → dorado, con la foto del reflejo puesta
+     .is-plain → "Sin reflejo", apagado */
 .reflect-badge {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 9;
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 9px;
-  padding: 8px 14px 8px 11px;
-  background: rgba(6, 6, 6, 0.88);
+  justify-content: center;
+  gap: 3px;
+  min-width: 104px;
+  padding: 7px 12px 6px;
+  background: rgba(6, 6, 6, 0.9);
   border: 1.5px solid rgba(255, 226, 138, 0.6);
   color: #ffe28a;
   font-family: 'Space Grotesk', Inter, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  text-align: center;
   line-height: 1;
-  white-space: nowrap;
   pointer-events: none;
   backdrop-filter: blur(6px);
   transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
+/* "Reflectivo en…" — se parte en dos líneas si el marco es estrecho. */
+.reflect-badge-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
 .reflect-badge-dot {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 10px;
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
   border-radius: 999px;
   background: #b9c3cc;
   transition: background 0.25s ease;
 }
 
-/* El número del cuenta atrás. Tiene ancho fijo para que el badge no salte
-   al pasar de 2 a 1. */
-.reflect-badge-text::after {
-  content: '';
-}
-
-.reflect-badge.is-counting .reflect-badge-text {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
+/* El número del cuenta atrás, centrado bajo la palabra. */
 .reflect-badge-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.15em;
-  font-size: 1.25em;
+  display: block;
+  margin-top: 1px;
+  font-size: 26px;
   font-weight: 700;
+  line-height: 1;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
 }
@@ -358,21 +355,30 @@ img.is-flash-photo {
   }
 }
 
-/* En móvil el marco es más pequeño: se reduce sin perder legibilidad. */
+/* En móvil el marco es más estrecho: el badge se encoge pero el número se
+   mantiene legible (antes el `nowrap` lo dejaba fuera del marco). */
 @media (max-width: 640px) {
   .reflect-badge {
     top: 8px;
     left: 8px;
-    gap: 6px;
-    padding: 5px 9px 5px 7px;
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    min-width: 74px;
+    padding: 5px 8px 4px;
+    gap: 2px;
+  }
+
+  .reflect-badge-label {
+    font-size: 8px;
+    letter-spacing: 0.06em;
   }
 
   .reflect-badge-dot {
-    width: 7px;
-    height: 7px;
-    flex-basis: 7px;
+    width: 5px;
+    height: 5px;
+    flex-basis: 5px;
+  }
+
+  .reflect-badge-count {
+    font-size: 20px;
   }
 }
 

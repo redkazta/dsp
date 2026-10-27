@@ -1,12 +1,17 @@
 ---
 /**
- * ReflectBadge — aviso "Reflectivo en… 2 · 1" sobre la foto de la pieza.
+ * ReflectBadge — aviso "Reflectivo en…" con el cuenta atrás debajo.
  *
- * Se usa en el hero, en las tarjetas del catálogo y en la ficha. El
- * controlador (`lib/reflect-anim.ts`) escribe el número y le pone
- * `.is-lit` cuando la foto del reflejo está puesta.
+ *   ┌──────────────────┐
+ *   │   Reflectivo en… │
+ *   │        2         │
+ *   └──────────────────┘
  *
- * Si la prenda no es reflectiva, muestra "Sin reflejo" en tono apagado.
+ * Se usa en el hero, en las tarjetas del catálogo, en la ficha, en favoritos
+ * y en el carrito. El controlador (`lib/reflect-anim.ts`) escribe el número
+ * y marca `.is-lit` cuando ya está puesta la foto del reflejo.
+ *
+ * Si la prenda no es reflectiva muestra "Sin reflejo", apagado.
  */
 import { getCopy, type Lang } from '../../lib/i18n';
 
@@ -21,6 +26,9 @@ const { reflective, class: className = '' } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+
+// "Reflectivo en…" → la palabra sola se usa al encenderse.
+const label = reflective ? t.product.reflective : t.product.notReflective;
 ---
 
 <span
@@ -29,8 +37,6 @@ const t = getCopy(lang);
   data-label={t.product.reflective}
   data-label-off={t.product.notReflective}
 >
-  <span class="reflect-badge-dot" aria-hidden="true" />
-  <span class="reflect-badge-text" data-reflect-text>
-    {reflective ? t.product.reflective : t.product.notReflective}
-  </span>
+  <span class="reflect-badge-label" data-reflect-label>{label}</span>
+  <span class="reflect-badge-dot" aria-hidden="true"></span>
 </span>

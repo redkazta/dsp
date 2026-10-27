@@ -10,7 +10,7 @@ function mountCard() {
     <div class="product-frame" data-reflect data-reflect-flash="1" data-reflect-ms="1000">
       <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
         <span class="reflect-badge-dot"></span>
-        <span class="reflect-badge-text" data-reflect-text>Reflectivo en…</span>
+        <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
       </span>
       <div class="card-carousel" data-carousel-scope>
         <div class="card-track" data-carousel-track>
