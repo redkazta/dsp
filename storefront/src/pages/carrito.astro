@@ -27,7 +27,7 @@ const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
 const featured = await supabase
   .from('products')
-  .select('id, name, slug, base_price, categories(name), product_variants(price), product_images(url, position)')
+  .select('id, name, slug, base_price, is_reflective, categories(name), product_variants(price), product_images(url, position)')
   .eq('is_active', true)
   .eq('is_deleted', false)
   .order('created_at', { ascending: false })
@@ -44,6 +44,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
     category: p.categories?.name ?? null,
     price: Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0),
     image: images[0]?.url ?? null,
+    isReflective: Boolean(p.is_reflective),
   };
 });
 ---
@@ -76,6 +77,12 @@ const suggestions = (featured.data ?? []).map((p: any) => {
                   class="group block border-2 border-white/25 hover:border-oro-brillo transition-colors"
                 >
                   <div class="product-frame">
+                    {p.isReflective && (
+                      <span class="reflect-badge" aria-hidden="true">
+                        <span class="reflect-badge-dot" />
+                        {t.product.reflective}
+                      </span>
+                    )}
                     {p.image && (
                       <img
                         src={p.image}

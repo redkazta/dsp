@@ -10,6 +10,7 @@ import {
   TENANT_SLUG,
 } from '../../lib/supabase';
 import { getCopy, type Lang } from '../../lib/i18n';
+import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -29,27 +30,32 @@ const related = product
 
 const rawImages = product?.product_images ?? [];
 
+// La prenda dice si es reflectiva; las fotos solo dicen cuál es la del reflejo.
+const isReflective = Boolean((product as any)?.is_reflective);
+const reflectPlan = planReflectImages(rawImages, isReflective);
+
 // Orden de galería según el nombre del archivo:
 //   1. frente sin flash (portada)  2. espalda sin flash
 //   3. frente con flash            4. espalda con flash
 function viewRank(url: string): number {
   const file = url.toLowerCase();
   const back = file.includes('back') ? 1 : 0;
-  const flash = /flash/.test(file.replace(/no_flash/g, '')) ? 2 : 0;
+  const flash = isFlashUrl(file) ? 2 : 0;
   return flash + back;
 }
 
-const images = [...rawImages].sort(
-  (a: any, b: any) =>
-    viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
-);
+const images = reflectPlan.animatable
+  ? reflectPlan.images.map((url) => ({ url, alt_text: undefined }))
+  : [...rawImages].sort(
+      (a: any, b: any) =>
+        viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
+    );
+
+const reflectFlash = reflectPlan.flashIndex;
 
 function viewLabel(url: string) {
-  const file = url.toLowerCase();
-  const back = file.includes('back');
-  const flash = /flash/.test(file.replace(/no_flash/g, ''));
-  if (flash) return back ? t.product.backFlash : t.product.frontFlash;
-  return back ? t.product.back : t.product.front;
+  if (isFlashUrl(url)) return t.product.frontFlash;
+  return t.product.front;
 }
 
 const variants = product?.product_variants ?? [];
@@ -140,7 +146,18 @@ const ui = {
                   <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${product.name}: ${t.product.photos}`}>
                     {images.map((img: any, i: number) => (
                       <div class="pdp-slide" data-carousel-slide>
-                        <div class="product-frame border-2 border-white/25">
+                        <div
+                          class="product-frame border-2 border-white/25"
+                          data-reflect={reflectPlan.animatable ? '' : undefined}
+                          data-reflect-flash={reflectPlan.animatable ? reflectFlash : undefined}
+                          data-reflect-ms={reflectPlan.animatable ? 2000 : undefined}
+                        >
+                          {reflectPlan.animatable && (
+                            <span class="reflect-badge">
+                              <span class="reflect-badge-dot" aria-hidden="true" />
+                              {t.product.reflective}
+                            </span>
+                          )}
                           <img
                             src={img.url}
                             alt={img.alt_text ?? product.name}
@@ -490,10 +507,12 @@ const ui = {
         scroll-behavior: auto;
       }
     }
+
   </style>
 
   <script>
     import '../../lib/carousel';
+    import '../../lib/reflect-anim';
     import { addToCart } from '../../lib/cart';
     import { openStoreDrawer } from '../../lib/store-drawer';
     import { sanitizeVariants } from '../../lib/product-variants';

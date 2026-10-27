@@ -12,6 +12,7 @@
  */
 import type { HomeSlide } from '../../lib/home-products';
 import type { Copy } from '../../lib/i18n';
+import { planReflectImages } from '../../lib/reflective';
 
 interface Props {
   slides: HomeSlide[];
@@ -21,12 +22,16 @@ interface Props {
 
 const { slides, t, currency = 'USD' } = Astro.props;
 
+/** Ritmo del encendido del reflejo en la portada. */
+const REFLECT_MS = 2000;
+
 const fallback: HomeSlide = {
   id: 'fallback',
   slug: '',
   name: '¡D$P!',
   price: 0,
   category: null,
+  isReflective: false,
   images: ['/img/camisas/camisa-dsp-2-01-frente.jpg'],
 };
 
@@ -39,57 +44,85 @@ const rendered = loop ? [...list, ...list] : list;
 
 const money = (n: number) =>
   `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/**
+ * Fotos y estado de reflejo de cada pieza. Las reflectivas muestran solo
+ * portada + flash para que el encendido se lea de un vistazo.
+ */
+const plans = list.map((item) =>
+  planReflectImages(
+    item.images.map((url) => ({ url })),
+    Boolean(item.isReflective)
+  )
+);
 ---
 
 <div class="hero-carousel" data-hero-carousel data-hero-loop={loop ? '1' : '0'}>
   <div class="hero-track" data-hero-track>
     {
-      rendered.map((item, index) => (
-        <article class="hero-slide" data-hero-slide>
-          <a
-            href={item.slug ? `/producto/${item.slug}` : '/tienda'}
-            class="hero-link"
-            aria-label={`${item.name} — ${t.hero.ctaFull}`}
-          >
-            <div class="hero-media">
-              {item.images.map((src, i) => (
-                <img
-                  src={src}
-                  alt={i === 0 ? item.name : ''}
-                  class:list={['hero-photo', { 'is-active': i === 0 }]}
-                  data-hero-photo={i}
-                  loading={index < 6 ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-              ))}
+      rendered.map((item, index) => {
+        const plan = plans[index % plans.length];
+        const photos = plan.images.length > 0 ? plan.images : item.images;
 
-              {/* Miniaturas: solo si la pieza tiene más de una foto */}
-              {item.images.length > 1 && (
-                <div class="hero-thumbs" role="group" aria-label={t.product.photos}>
-                  {item.images.map((src, i) => (
-                    <button
-                      type="button"
-                      class:list={['hero-thumb', { 'is-active': i === 0 }]}
-                      data-hero-thumb={i}
-                      aria-label={`${t.product.seeView} ${i + 1}`}
-                      aria-pressed={i === 0 ? 'true' : 'false'}
-                    >
-                      <img src={src} alt="" loading="lazy" />
-                    </button>
-                  ))}
-                </div>
-              )}
+        return (
+          <article class="hero-slide" data-hero-slide>
+            <a
+              href={item.slug ? `/producto/${item.slug}` : '/tienda'}
+              class="hero-link"
+              aria-label={`${item.name} — ${t.hero.ctaFull}`}
+            >
+              <div
+                class="hero-media"
+                data-reflect={plan.animatable ? '' : undefined}
+                data-reflect-flash={plan.animatable ? plan.flashIndex : undefined}
+                data-reflect-ms={plan.animatable ? REFLECT_MS : undefined}
+              >
+                {plan.animatable && (
+                  <span class="hero-reflect" aria-hidden="true">
+                    <span class="hero-reflect-dot" />
+                    {t.product.reflective}
+                  </span>
+                )}
 
-              <span class="hero-price">{money(item.price)} <small>{currency}</small></span>
-            </div>
+                {photos.map((src, i) => (
+                  <img
+                    src={src}
+                    alt={i === 0 ? item.name : ''}
+                    class:list={['hero-photo', { 'is-active': i === 0 }]}
+                    data-hero-photo={i}
+                    loading={index < 6 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                ))}
 
-            <div class="hero-caption">
-              {item.category && <span class="hero-category">{item.category}</span>}
-              <span class="hero-name">{item.name}</span>
-            </div>
-          </a>
-        </article>
-      ))
+                {/* Miniaturas: solo si la pieza tiene más de una foto */}
+                {photos.length > 1 && (
+                  <div class="hero-thumbs" role="group" aria-label={t.product.photos}>
+                    {photos.map((src, i) => (
+                      <button
+                        type="button"
+                        class:list={['hero-thumb', { 'is-active': i === 0 }]}
+                        data-hero-thumb={i}
+                        aria-label={`${t.product.seeView} ${i + 1}`}
+                        aria-pressed={i === 0 ? 'true' : 'false'}
+                      >
+                        <img src={src} alt="" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <span class="hero-price">{money(item.price)} <small>{currency}</small></span>
+              </div>
+
+              <div class="hero-caption">
+                {item.category && <span class="hero-category">{item.category}</span>}
+                <span class="hero-name">{item.name}</span>
+              </div>
+            </a>
+          </article>
+        );
+      })
     }
   </div>
 
@@ -282,6 +315,78 @@ const money = (n: number) =>
     right: 0.75rem;
   }
 
+  /* ---------- Reflejo (arriba a la izquierda) ---------- */
+  .hero-reflect {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px 4px 7px;
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(255, 226, 138, 0.55);
+    color: #ffe28a;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    line-height: 1;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
+
+  .hero-reflect-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #b9c3cc;
+    transition: background 0.25s ease;
+  }
+
+  /* Reflejo encendido: badge dorado + destello en la foto. */
+  [data-reflect-state='on'] .hero-reflect {
+    background: #ffe28a;
+    border-color: #ffe28a;
+    color: #000000;
+  }
+
+  [data-reflect-state='on'] .hero-reflect-dot {
+    background: #000000;
+    animation: reflect-pulse 2s ease-out infinite;
+  }
+
+  [data-reflect-state='on'] .hero-photo.is-active {
+    animation: reflect-flash 0.65s ease-out;
+  }
+
+  @keyframes reflect-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.45);
+    }
+    70% {
+      box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+  }
+
+  @keyframes reflect-flash {
+    0% {
+      filter: brightness(1);
+    }
+    30% {
+      filter: brightness(1.2) saturate(1.15);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+
   /* Móvil: una pieza a la vez y sin flechas (se arrastra) */
   @media (max-width: 640px) {
     .hero-slide {
@@ -297,6 +402,12 @@ const money = (n: number) =>
       width: 30px;
       height: 38px;
     }
+
+    .hero-reflect {
+      font-size: 8px;
+      letter-spacing: 0.16em;
+      padding: 3px 7px 3px 6px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -304,10 +415,17 @@ const money = (n: number) =>
     .hero-photo {
       transition: none;
     }
+
+    [data-reflect-state='on'] .hero-reflect-dot,
+    [data-reflect-state='on'] .hero-photo.is-active {
+      animation: none;
+    }
   }
 </style>
 
 <script>
+  import '../../lib/reflect-anim';
+
   const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
 
   if (root) {
@@ -317,8 +435,35 @@ const money = (n: number) =>
     const total = loop ? track.children.length / 2 : track.children.length;
     const perView = () => (window.matchMedia('(max-width: 640px)').matches ? 1 : 3);
 
+    /** Avance de slide (playera → jean → …). No cambia de foto dentro del slide. */
     let index = 0;
     let timer: number | undefined;
+
+    /** Cada cuánto pasa a la siguiente tanda de piezas. */
+    const SLIDE_MS = 5000;
+
+    /**
+     * El encendido del reflejo lo maneja `lib/reflect-anim.ts` (cada 2 s).
+     * Aquí solo se aplica el cambio de foto pedido a un slide concreto.
+     */
+    root.addEventListener('reflect:photo', (e) => {
+      const detail = (e as CustomEvent<{ index?: number }>).detail;
+      const target = Number(detail?.index);
+      const media = (e.target as HTMLElement | null)?.closest('.hero-media');
+      if (!media || !Number.isInteger(target)) return;
+
+      const photos = [...media.querySelectorAll<HTMLElement>('[data-hero-photo]')];
+      if (photos.length < 2) return;
+
+      photos.forEach((photo, i) => photo.classList.toggle('is-active', i === target));
+
+      const slide = media.closest('[data-hero-slide]');
+      slide?.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb, i) => {
+        const active = i === target;
+        thumb.classList.toggle('is-active', active);
+        thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
 
     /** Desplaza `index` slides, en % del ancho del track. */
     function apply(animate: boolean) {
@@ -368,9 +513,9 @@ const money = (n: number) =>
       goTo(index + 1);
     }
 
+    /** Avanza de tanda cada SLIDE_MS (el encendido del reflejo va aparte). */
     function start() {
-      if (timer || total <= perView()) return;
-      timer = window.setInterval(next, 5000);
+      if (!timer) timer = window.setInterval(next, SLIDE_MS);
     }
 
     function stop() {
@@ -382,10 +527,8 @@ const money = (n: number) =>
     root.querySelectorAll<HTMLElement>('[data-hero-dir]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        stop();
         const dir = Number(btn.dataset.heroDir);
         goTo(index + dir);
-        start();
       });
     });
 

@@ -7,6 +7,7 @@
  * El clic en una flecha no navega al producto.
  */
 import { getCopy, type Lang } from '../../lib/i18n';
+import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 
 export interface Props {
   product: {
@@ -14,6 +15,7 @@ export interface Props {
     slug?: string | null;
     name: string;
     base_price: number;
+    is_reflective?: boolean | null;
     product_variants?: Array<{ id: string; name: string; price: number; stock: number }> | null;
     product_images?: Array<{ url: string; alt_text?: string; position?: number }> | null;
   };
@@ -31,13 +33,22 @@ const price = product.product_variants?.[0]?.price ?? product.base_price;
 function viewRank(url: string): number {
   const file = url.toLowerCase();
   const back = file.includes('back') ? 1 : 0;
-  const flash = /flash/.test(file.replace(/no_flash/g, '')) ? 2 : 0;
+  const flash = isFlashUrl(file) ? 2 : 0;
   return flash + back;
 }
 
-const images = [...(product.product_images ?? [])].sort(
-  (a: any, b: any) => viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
-);
+// Piezas reflectivas: solo portada + toma con el reflejo, para que el
+// encendido se note (ver `lib/reflective.ts`).
+const reflectPlan = planReflectImages(product.product_images, Boolean(product.is_reflective));
+
+const images = reflectPlan.animatable
+  ? reflectPlan.images.map((url) => ({ url }))
+  : [...(product.product_images ?? [])].sort(
+      (a: any, b: any) => viewRank(a.url) - viewRank(b.url) || (a.position ?? 0) - (b.position ?? 0)
+    );
+
+const reflect = reflectPlan.animatable;
+const reflectFlash = reflectPlan.flashIndex;
 
 const totalStock =
   product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
@@ -70,7 +81,18 @@ void trackId;
 
   <a href={href} class="block">
     <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
-    <div class="product-frame border-2 product-media transition-colors duration-300">
+    <div
+      class="product-frame border-2 product-media transition-colors duration-300"
+      data-reflect={reflect ? '' : undefined}
+      data-reflect-flash={reflect ? reflectFlash : undefined}
+      data-reflect-ms={reflect ? 2000 : undefined}
+    >
+      {reflect && (
+        <span class:list={['reflect-badge', { 'is-lowered': isSoldOut }]} aria-hidden="true">
+          <span class="reflect-badge-dot" />
+          <span class="reflect-badge-text">{t.product.reflective}</span>
+        </span>
+      )}
       {images.length > 0 ? (
         <>
           {images.length > 1 ? (
@@ -84,6 +106,15 @@ void trackId;
                       loading={i === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                     />
+                    {reflect && (
+                      <button
+                        type="button"
+                        class="reflect-target"
+                        data-reflect-target={i}
+                        tabindex="-1"
+                        aria-hidden="true"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
@@ -336,10 +367,28 @@ void trackId;
       scroll-behavior: auto;
     }
   }
+
+  /* El badge vive en global.css (también lo usan ficha y favoritos).
+     Aquí solo se ajusta cuando la pieza está agotada. */
+  .reflect-badge.is-lowered {
+    top: 46px;
+  }
+
+  /* Botón invisible que dispara el cambio de foto (lo pulsa el controlador). */
+  .card-slide .reflect-target {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
 </style>
 
 <script>
   import '../../lib/carousel';
+  import '../../lib/reflect-anim';
   import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
   type WishWindow = Window & { __dspWishBound?: boolean };
 

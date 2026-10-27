@@ -14,6 +14,8 @@ export interface HomeSlide {
   name: string;
   price: number;
   category: string | null;
+  /** Prenda con detalles reflectivos (`products.is_reflective`). */
+  isReflective: boolean;
   /** Todas las fotos de la pieza: la primera es la portada. */
   images: string[];
 }
@@ -38,7 +40,7 @@ export async function getHomeSlides(
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, name, slug, base_price, created_at, categories(id, name), product_variants(price), product_images(url, position)'
+      'id, name, slug, base_price, is_reflective, created_at, categories(id, name), product_variants(price), product_images(url, position)'
     )
     .eq('tenant_id', TENANT_ID)
     .eq('is_active', true)
@@ -61,6 +63,7 @@ export async function getHomeSlides(
         name: p.name,
         price,
         category: category?.name ?? null,
+        isReflective: Boolean(p.is_reflective),
         images,
         categoryId: category?.id ?? '__none__',
       };
@@ -80,6 +83,7 @@ export async function getHomeSlides(
       name: p.name,
       price: p.price,
       category: p.category,
+      isReflective: p.isReflective,
       images: p.images,
     });
     buckets.set(p.categoryId, bucket);

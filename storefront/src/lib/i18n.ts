@@ -111,6 +111,7 @@ export const copy = {
     hero: {
       cta: 'Ver drop',
       ctaFull: 'Ver el drop',
+      reveal: 'Reflex',
     },
     search: {
       placeholder: 'Buscar piezas…',
@@ -184,6 +185,7 @@ export const copy = {
       adding: 'Agregando…',
       added: '¡Agregado!',
       soldOut: 'Agotado',
+      reflective: 'Reflectivo',
       outOfStockSize: 'Esa talla no está disponible',
       wishlistAdd: 'Guardar en favoritos',
       wishlistRemove: 'Quitar de favoritos',
@@ -547,6 +549,7 @@ export const copy = {
     hero: {
       cta: 'Shop the drop',
       ctaFull: 'Shop the drop',
+      reveal: 'Reflex',
     },
     search: {
       placeholder: 'Search pieces…',
@@ -620,6 +623,7 @@ export const copy = {
       adding: 'Adding…',
       added: 'Added!',
       soldOut: 'Sold out',
+      reflective: 'Reflective',
       outOfStockSize: 'That size is not available',
       wishlistAdd: 'Save to wishlist',
       wishlistRemove: 'Remove from wishlist',
