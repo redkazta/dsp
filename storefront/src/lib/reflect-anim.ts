@@ -111,7 +111,16 @@ import { onTick, sync } from './reflect-clock';
     }
 
     // Tarjetas y ficha: se pulsan sus miniaturas (misma pieza).
-    const thumb = root.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`);
+    //
+    // En la ficha el badge vive en `.pdp-reflect`, **fuera** del track, así que
+    // sus miniaturas son hermanas y no hijas: hay que buscarlas también en el
+    // carrusel que lo envuelve.
+    const host = root.closest<HTMLElement>('[data-carousel-scope]') ?? root;
+
+    const thumb =
+      root.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`) ??
+      host.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`);
+
     if (thumb) {
       (thumb as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
       settling = true;
@@ -124,12 +133,12 @@ import { onTick, sync } from './reflect-clock';
         }, 0);
       }
 
-      root.querySelectorAll<HTMLElement>('img').forEach((el) => {
+      host.querySelectorAll<HTMLElement>('img').forEach((el) => {
         el.classList.remove('is-flash-photo');
       });
 
       if (index === scope.flashIndex) {
-        root
+        host
           .querySelector<HTMLElement>(
             `.card-slide:nth-child(${index + 1}) img, .pdp-slide:nth-child(${index + 1}) img`
           )

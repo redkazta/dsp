@@ -432,31 +432,40 @@ const plans = list.map((item) =>
     }
 
     function goTo(target: number, animate = true) {
-      const max = Math.max(0, total - perView());
-
       // Sin ciclo no hay copia: se da la vuelta sin animar.
       if (!loop) {
+        const max = Math.max(0, total - perView());
         index = target > max ? 0 : target < 0 ? max : target;
         apply(animate);
         return;
       }
 
+      /*
+       * Ciclo infinito sin saltos.
+       *
+       * El track lleva la lista dos veces, así que la posición `total` (6)
+       * muestra exactamente las mismas piezas que la `0`. Solo hay que
+       * animar hasta ahí y, al terminar, mover el índice al original sin
+       * animación: el ojo no ve ningún corte.
+       *
+       * Antes se cortaba en `total - perView` y se volvía a 0 de golpe: por
+       * eso en algún momento "volvía a empezar" de forma visible.
+       */
       index = target;
 
+      // Hacia atrás: salta a la copia equivalente y anima hacia la izquierda.
       if (index < 0) {
-        // salta a la copia equivalente y anima hacia la izquierda
-        index = max;
+        index += total;
         apply(false);
         requestAnimationFrame(() => goTo(index - 1, true));
         return;
       }
 
-      if (index > max) {
-        // fin de la copia: se anima al final y se vuelve al inicio sin animar
-        index = max;
+      // Hacia delante: llega a la copia y se recoloca sin animar.
+      if (index >= total) {
         apply(animate);
         window.setTimeout(() => {
-          index = 0;
+          index -= total;
           apply(false);
         }, 750);
         return;
@@ -570,7 +579,9 @@ const plans = list.map((item) =>
 
     if (!reduce) {
       window.addEventListener('resize', () => {
-        index = Math.min(index, Math.max(0, total - perView()));
+        // El índice puede vivir en la copia (0…total-1); al redimensionar
+        // basta con que siga siendo válido.
+        index = Math.max(0, Math.min(index, loop ? total - 1 : total - perView()));
         apply(false);
       });
     }
