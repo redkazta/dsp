@@ -21,6 +21,12 @@
  * - `data-reflect-ms` = un segundo de la cuenta (por defecto 1000).
  * - Respeta `prefers-reduced-motion`: deja la foto del reflejo fija.
  */
+import {
+  COUNT_FROM,
+  COUNT_STEP_MS,
+  RESUME_MS,
+  ROTATION_MS,
+} from './reflect-timing';
 
 // Los scripts de Astro comparten el scope del bundle: el IIFE evita
 // colisiones con `carousel.ts`. Además el mismo módulo se importa desde
@@ -33,24 +39,25 @@
   if (w[FLAG]) return;
   w[FLAG] = true;
 
-  /** Un segundo de la cuenta atrás. */
-  const DEFAULT_MS = 1000;
-
-  /** Margen tras una interacción manual antes de retomar el ciclo. */
-  const RESUME_MS = 6000;
-
-  /**
-   * Cuánto se queda encendida la foto del reflejo.
-   *
-   * Cuenta + encendido = 2 s + 2.5 s = 4.5 s, que es justo el intervalo
-   * del carrusel (`DEFAULT_INTERVAL` en `carousel.ts`). Así el reflejo se
-   * apaga justo cuando el carrusel pasa a la siguiente pieza, en vez de
-   * derivar y desincronizarse.
-   */
-  const HOLD_MS = 2500;
+  /** Un segundo de la cuenta atrás (se recalcula según el carrusel). */
+  const DEFAULT_MS = COUNT_STEP_MS;
 
   /** Desde qué número arranca la cuenta. */
-  const COUNT_FROM = 2;
+  const COUNT_FROM_VALUE = COUNT_FROM;
+
+  /**
+   * Tiempo del encendido. Se deriva del intervalo **real** del carrusel que
+   * envuelve cada pieza (o de `ROTATION_MS` si no hay ninguno), no de una
+   * constante suelta: así el encendido se apaga justo cuando el carrusel
+   * avanza y ambos ciclos no se van separando.
+   */
+  function holdFor(scope: ReflectScope): number {
+    const host = scope.root.closest<HTMLElement>('[data-carousel-interval]');
+    const interval = Number(host?.dataset.carouselInterval) || ROTATION_MS;
+
+    // Lo que sobra de la vuelta tras la cuenta atrás.
+    return Math.max(scope.ms, interval - scope.ms * scope.seconds);
+  }
 
   type ReflectScope = {
     root: HTMLElement;
@@ -69,12 +76,21 @@
     remaining: number;
     /** Ticks que le quedan al reflejo encendido antes de volver. */
     holdLeft: number;
+    /** Milisegundos reales que dura el encendido. */
+    holdMs: number;
     /** 1 = mostrando el reflejo, 0 = foto normal. */
     flipped: boolean;
     timer?: number;
   };
 
   const scopes = new Map<HTMLElement, ReflectScope>();
+
+  /**
+   * `true` mientras el reflejo pulsa sus propios controles.
+   * Evita que ese cambio se interprete como "el carrusel pasó de pieza" y
+   * reinicie la cuenta en mitad del encendido amarillo.
+   */
+  let settling = false;
 
   function register(root: HTMLElement): ReflectScope | null {
     const existing = scopes.get(root);
@@ -99,11 +115,12 @@
       count,
       label: badge?.dataset.label ?? '',
       ms: Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_MS,
-      seconds: COUNT_FROM,
+      seconds: COUNT_FROM_VALUE,
       flashIndex,
       plainIndex: Number.isInteger(plainRaw) && plainRaw >= 0 ? plainRaw : 0,
       remaining: 0,
       holdLeft: 0,
+      holdMs: 0,
       flipped: false,
     };
 
@@ -140,9 +157,20 @@
     );
 
     if (target) {
-      // Evita que el listener de abajo confunda este click con uno del usuario.
+      // Evita que los listeners confundan este click con uno del usuario o
+      // con un cambio de pieza ajeno.
       (target as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
-      target.click();
+      settling = true;
+
+      try {
+        target.click();
+      } finally {
+        // El carrusel pinta el índice de forma síncrona, pero el `scroll`
+        // suave puede llegar después: se libera en el siguiente frame.
+        window.setTimeout(() => {
+          settling = false;
+        }, 0);
+      }
 
       root.querySelectorAll<HTMLElement>('img').forEach((el) => {
         el.classList.remove('is-flash-photo');
@@ -275,7 +303,10 @@
       // 3) Llegó a cero: se enciende la foto del reflejo y el carrusel se
       //    queda quieto para que el encendido se vea completo.
       scope.flipped = true;
-      scope.holdLeft = Math.max(1, Math.round(HOLD_MS / scope.ms));
+
+      // El encendido ocupa lo que resta de la vuelta del carrusel.
+      scope.holdMs = holdFor(scope);
+      scope.holdLeft = Math.max(1, Math.round(scope.holdMs / scope.ms));
 
       holdCarousel(scope, true);
       scope.badge?.classList.add('is-lit');
@@ -313,7 +344,17 @@
    * alineado con el movimiento y no con su propio reloj: antes ambos ciclos
    * tenían periodos distintos y se iban separando poco a poco.
    */
+  /**
+   * El carrusel cambió de foto (autoplay, flecha o dedo).
+   *
+   * Se reinicia la cuenta para que el reflejo arranque alineado con el
+   * movimiento. **No** cuando el cambio lo provocó el propio reflejo: en el
+   * encendido se pulsa un punto, eso dispara `carousel:changed` y el badge
+   * amarillo volvía a mostrar un "2" que no tocaba.
+   */
   document.addEventListener('carousel:changed', (e) => {
+    if (settling) return;
+
     const scopeEl = (e.target as HTMLElement | null)?.closest?.('[data-carousel-scope]');
     if (!scopeEl) return;
 

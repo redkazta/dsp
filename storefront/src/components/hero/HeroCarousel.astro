@@ -10,6 +10,7 @@
  * El desplazamiento es de UNA tanda completa (el track contiene la lista dos
  * veces), así nunca se repite una playera ni aparecen huecos.
  */
+import { COUNT_STEP_MS, ROTATION_MS } from '../../lib/reflect-timing';
 import type { HomeSlide } from '../../lib/home-products';
 import type { Copy } from '../../lib/i18n';
 import { planReflectImages } from '../../lib/reflective';
@@ -23,8 +24,8 @@ interface Props {
 
 const { slides, t, currency = 'USD' } = Astro.props;
 
-/** Un segundo de la cuenta atrás (2 → 1 → encendido). */
-const REFLECT_MS = 1000;
+/** Un segundo de la cuenta atrás (misma fuente que el carrusel). */
+const REFLECT_MS = COUNT_STEP_MS;
 
 const fallback: HomeSlide = {
   id: 'fallback',
@@ -58,7 +59,12 @@ const plans = list.map((item) =>
 );
 ---
 
-<div class="hero-carousel" data-hero-carousel data-hero-loop={loop ? '1' : '0'}>
+<div
+  class="hero-carousel"
+  data-hero-carousel
+  data-hero-loop={loop ? '1' : '0'}
+  data-carousel-interval={ROTATION_MS}
+>
   <div class="hero-track" data-hero-track>
     {
       rendered.map((item, index) => {
@@ -373,6 +379,7 @@ const plans = list.map((item) =>
 
 <script>
   import '../../lib/reflect-anim';
+  import { ROTATION_MS } from '../../lib/reflect-timing';
 
   const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
 
@@ -387,8 +394,8 @@ const plans = list.map((item) =>
     let index = 0;
     let timer: number | undefined;
 
-    /** Cada cuánto pasa a la siguiente tanda de piezas. */
-    const SLIDE_MS = 5000;
+    /** Cada cuánto pasa a la siguiente tanda de piezas (fuente única). */
+    const SLIDE_MS = ROTATION_MS;
 
     /**
      * El cuenta atrás del reflejo lo maneja `lib/reflect-anim.ts`.

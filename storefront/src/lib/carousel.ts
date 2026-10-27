@@ -17,8 +17,9 @@
  * Se inicializa por delegación en el documento, así que da igual si el HTML
  * del carrusel llegó en el SSR o se pintó después.
  */
+import { ROTATION_MS } from './reflect-timing';
 
-const DEFAULT_INTERVAL = 4500;
+const DEFAULT_INTERVAL = ROTATION_MS;
 
 type Carousel = {
   scope: HTMLElement;
@@ -120,6 +121,9 @@ function register(scope: HTMLElement): Carousel | null {
     lastIndex: -1,
   };
 
+  // El reflejo lee este valor para ajustar su cuenta al mismo periodo.
+  scope.dataset.carouselInterval = String(DEFAULT_INTERVAL);
+
   if (carousel.slides.length < 2) {
     registry.set(scope, carousel);
     return carousel;
@@ -191,11 +195,15 @@ document.addEventListener(
 
     if (dot) {
       goTo(carousel, Number(dot.dataset.carouselDot ?? '0'));
+      // `scroll` puede no dispararse (scroll instantáneo o ya en posición):
+      // se repinta igual para que los puntos y el reflejo no se queden atrás.
+      paint(carousel);
       return;
     }
 
     if (thumb) {
       goTo(carousel, Number(thumb.dataset.carouselThumb ?? '0'));
+      paint(carousel);
     }
   },
   true // captura: se ejecuta antes de que el <a> navegue
