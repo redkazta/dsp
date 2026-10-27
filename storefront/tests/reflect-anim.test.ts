@@ -123,4 +123,26 @@ describe('reflect-anim', () => {
     vi.advanceTimersByTime(2000);
     expect(calls).toBe(0);
   });
+  it('pausa el carrusel mientras el reflejo esta encendido', async () => {
+    const seen: string[] = [];
+    document.addEventListener('carousel:pause', () => seen.push('pause'));
+    document.addEventListener('carousel:resume', () => seen.push('resume'));
+
+    await import('../src/lib/reflect-anim');
+
+    const root = document.querySelector<HTMLElement>('[data-reflect]')!;
+    const scope = root.querySelector('.card-carousel')!;
+
+    // El evento lleva el scope del carrusel para que solo se pause ese.
+    document.addEventListener('carousel:pause', (e) => {
+      expect((e as CustomEvent).detail).toBe(root);
+    });
+
+    vi.advanceTimersByTime(2000);
+    expect(seen).toContain('pause');
+
+    vi.advanceTimersByTime(2500);
+    expect(seen).toContain('resume');
+    void scope;
+  });
 });

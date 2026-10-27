@@ -32,6 +32,29 @@ let focused = false;
 let hovering = 0;
 let timer: number | undefined;
 
+/**
+ * Scopes cuyo autoplay está en pausa (por ejemplo, mientras el reflejo
+ * muestra la foto con flash). Sin esto, el avance automático y el reflejo
+ * pulsaban los mismos puntos y se peleaban.
+ */
+const paused = new Set<HTMLElement>();
+
+/**
+ * Detiene/reanuda el avance automático de un carrusel concreto.
+ *
+ * Se expone por evento (`storefront` no puede importar funciones entre
+ * scripts de navegador: cada uno es un módulo aparte).
+ */
+document.addEventListener('carousel:pause', (e) => {
+  const scope = (e as CustomEvent<HTMLElement>).detail;
+  if (scope instanceof HTMLElement) paused.add(scope);
+});
+
+document.addEventListener('carousel:resume', (e) => {
+  const scope = (e as CustomEvent<HTMLElement>).detail;
+  if (scope instanceof HTMLElement) paused.delete(scope);
+});
+
 function readSlideWidth(track: HTMLElement) {
   return Math.max(track.clientWidth, 1);
 }
@@ -106,6 +129,9 @@ function start() {
     if (focused || hovering > 0 || document.hidden) return;
 
     document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach((scope) => {
+      // En pausa por otra animación (reflejo): no se mueve por debajo.
+      if (paused.has(scope)) return;
+
       const carousel = registry.get(scope) ?? register(scope);
       if (!carousel || carousel.slides.length < 2) return;
 

@@ -101,6 +101,25 @@
     return scope;
   }
 
+  /**
+   * Detiene el avance automático del carrusel mientras el reflejo cambia la
+   * foto. Sin esto, `carousel.ts` y el hero movían el carrusel por debajo y
+   * el reflejo aterrizaba en la foto equivocada.
+   */
+  function holdCarousel(scope: ReflectScope, hold: boolean) {
+    const event = hold ? 'carousel:pause' : 'carousel:resume';
+
+    // El carrusel del catálogo escucha el evento con el scope como detalle.
+    scope.root.dispatchEvent(
+      new CustomEvent(event, { bubbles: true, detail: scope.root })
+    );
+
+    // El hero tiene su propio avance (`hero:pause` / `hero:resume`).
+    scope.root.dispatchEvent(
+      new CustomEvent(hold ? 'hero:pause' : 'hero:resume', { bubbles: true })
+    );
+  }
+
   /** Lleva el carrusel a la foto `index`. */
   function showPhoto(scope: ReflectScope, index: number) {
     const { root } = scope;
@@ -176,6 +195,8 @@
     scope.badge?.classList.remove('is-lit');
     showPhoto(scope, scope.plainIndex);
     paintCount(scope, scope.remaining, animate);
+    // El carrusel recupera su avance automático.
+    holdCarousel(scope, false);
   }
 
   /**
@@ -218,13 +239,18 @@
       // Reflejo encendido: aún no toca volver.
       if (scope.flipped) return;
 
+      // Mientras el usuario interactúa con el carrusel no se le encima.
+      if (scope.root.dataset.reflectUserHold) return;
+
       scope.remaining -= 1;
       paintCount(scope, scope.remaining);
 
       if (scope.remaining > 0) return;
 
-      // Llegó a cero: se enciende la foto del reflejo.
+      // Llegó a cero: se enciende la foto del reflejo y el carrusel se queda
+      // quieto para que el encendido se vea completo.
       scope.flipped = true;
+      holdCarousel(scope, true);
       scope.badge?.classList.add('is-lit');
       showPhoto(scope, scope.flashIndex);
 

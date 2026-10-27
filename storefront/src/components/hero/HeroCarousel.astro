@@ -475,6 +475,26 @@ const plans = list.map((item) =>
       timer = undefined;
     }
 
+    /*
+     * El reflejo pide pausa mientras muestra la foto con flash.
+     * Sin esto, el avance de tanda movía el carrusel por debajo y el
+     * encendido aterrizaba en otra pieza.
+     *
+     * La pausa es por pieza: si dos slides brillan a la vez, el avance solo
+     * se reanuda cuando ya no queda ninguna encendida.
+     */
+    let holdingSlides = 0;
+
+    root.addEventListener('hero:pause', () => {
+      holdingSlides += 1;
+      stop();
+    });
+
+    root.addEventListener('hero:resume', () => {
+      holdingSlides = Math.max(0, holdingSlides - 1);
+      if (holdingSlides === 0) start();
+    });
+
     // ---------- Flechas ----------
     root.querySelectorAll<HTMLElement>('[data-hero-dir]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
