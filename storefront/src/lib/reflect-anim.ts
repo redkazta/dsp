@@ -55,17 +55,13 @@ import { onTick, sync } from './reflect-clock';
     remaining: number;
     /** Si al cerrar la fase avisa al carrusel para pasar de pieza. */
     rotates: boolean;
+    /** Mientras el propio ciclo pulsa un control (evita la recursión). */
+    settling: boolean;
     /** Cancela la suscripción al reloj compartido. */
     unsubscribe?: () => void;
   };
 
   const scopes = new Map<HTMLElement, ReflectScope>();
-
-  /**
-   * `true` mientras el propio ciclo cambia la foto.
-   * Evita que ese cambio se confunda con el usuario o con un avance ajeno.
-   */
-  let settling = false;
 
   function register(root: HTMLElement): ReflectScope | null {
     const existing = scopes.get(root);
@@ -89,6 +85,7 @@ import { onTick, sync } from './reflect-clock';
       phase: 'reflect',
       remaining: COUNT_FROM,
       rotates: root.hasAttribute('data-reflect-rotates'),
+      settling: false,
     };
 
     scopes.set(root, scope);
@@ -97,8 +94,13 @@ import { onTick, sync } from './reflect-clock';
 
   /** Cambia la foto **dentro de la pieza**. */
   function showPhoto(scope: ReflectScope, index: number) {
-    // El click del thumb vuelve a entrar aquí: se corta la recursión.
-    if (settling) return;
+    // El click del propio control vuelve a entrar aquí: se corta la recursión.
+    //
+    // El flag es **por pieza** (`scope.settling`), no global: con un flag
+    // compartido, cuando varias tarjetas cambiaban de foto en el mismo tick
+    // solo la primera entraba y las demás salían por el `return`, así que en
+    // /tienda avanzaba una tarjeta y el resto se quedaba quieta.
+    if (scope.settling) return;
 
     const { root } = scope;
 
@@ -132,13 +134,13 @@ import { onTick, sync } from './reflect-clock';
 
     if (control) {
       (control as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
-      settling = true;
+      scope.settling = true;
 
       try {
         control.click();
       } finally {
         window.setTimeout(() => {
-          settling = false;
+          scope.settling = false;
         }, 0);
       }
 
@@ -266,7 +268,7 @@ import { onTick, sync } from './reflect-clock';
     if (!target.closest('[data-carousel-dir], [data-carousel-dot], [data-carousel-thumb]')) return;
 
     // El propio ciclo acaba de pulsar ese control: no es el usuario.
-    if (target.__reflectAuto || settling) {
+    if (target.__reflectAuto) {
       target.__reflectAuto = false;
       return;
     }
