@@ -1,25 +1,24 @@
 /**
- * Animación del reflejo en las piezas reflectivas.
+ * Cuenta atrás del reflejo en las piezas reflectivas.
  *
- * No es un carrusel propio: se apoya en el que ya tiene cada componente
- * (hero, tarjetas del catálogo, galería de la ficha) y solo alterna entre la
- * foto normal y la del flash cada 2 segundos.
+ * Se apoya en el carrusel que ya tiene cada componente (hero, tarjetas,
+ * ficha) y muestra "Reflectivo en… 2" → "1" → enciende la foto del flash,
+ * espera un momento y vuelve a la portada para empezar otra vez.
  *
  * Contrato con el HTML:
  *
  * ```html
  * <div data-reflect data-reflect-flash="1" data-reflect-ms="2000">
- *   … fotos [data-reflect-target="0"] / [data-reflect-target="1"] …
+ *   <span class="reflect-badge" data-reflect-badge data-label="Reflectivo">
+ *     <span class="reflect-badge-text" data-reflect-text>Reflectivo</span>
+ *   </span>
+ *   … fotos ([data-carousel-dot] / [data-carousel-thumb]) …
  * </div>
  * ```
  *
- * - `data-reflect-flash` = índice de la foto con reflejo (la que se "enciende").
- * - El cambio se hace pulsando el botón `[data-reflect-target="N"]` (o el
- *   `[data-carousel-thumb]` / `[data-carousel-dot]` con ese índice). Así
- *   flechas, puntos y miniaturas siguen sincronizados sin duplicar lógica.
- * - Se pausa en hover (desktop), con el foco de teclado, en pestañas ocultas
- *   y cuando la pieza sale de pantalla.
- * - Respeta `prefers-reduced-motion`.
+ * - `data-reflect-flash` = índice de la foto con reflejo.
+ * - `data-reflect-ms` = un segundo de la cuenta (por defecto 1000).
+ * - Respeta `prefers-reduced-motion`: deja la foto del reflejo fija.
  */
 
 // Los scripts de Astro comparten el scope del bundle: el IIFE evita
@@ -33,16 +32,33 @@
   if (w[FLAG]) return;
   w[FLAG] = true;
 
-  const DEFAULT_MS = 2000;
+  /** Un segundo de la cuenta atrás. */
+  const DEFAULT_MS = 1000;
 
   /** Margen tras una interacción manual antes de retomar el ciclo. */
   const RESUME_MS = 6000;
 
+  /** Cuánto se queda encendida la foto del reflejo antes de volver. */
+  const HOLD_MS = 2200;
+
+  /** Desde qué número arranca la cuenta. */
+  const COUNT_FROM = 2;
+
   type ReflectScope = {
     root: HTMLElement;
+    badge: HTMLElement | null;
+    text: HTMLElement | null;
+    /** Número del cuenta atrás (se crea una vez). */
+    count: HTMLElement | null;
+    label: string;
+    /** Un segundo de la cuenta. */
     ms: number;
+    /** Desde cuántos segundos arranca ("Reflectivo en… 3 · 2 · 1"). */
+    seconds: number;
     flashIndex: number;
     plainIndex: number;
+    /** Segundos que faltan para encender; 0 = reflejo encendido. */
+    remaining: number;
     /** 1 = mostrando el reflejo, 0 = foto normal. */
     flipped: boolean;
     timer?: number;
@@ -60,11 +76,20 @@
     const plainRaw = Number(root.dataset.reflectPlain);
     const ms = Number(root.dataset.reflectMs);
 
+    const badge = root.querySelector<HTMLElement>('[data-reflect-badge]');
+    const text = badge?.querySelector<HTMLElement>('[data-reflect-text]') ?? null;
+
     const scope: ReflectScope = {
       root,
+      badge,
+      text,
+      count: null,
+      label: badge?.dataset.label ?? '',
       ms: Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_MS,
+      seconds: COUNT_FROM,
       flashIndex,
       plainIndex: Number.isInteger(plainRaw) && plainRaw >= 0 ? plainRaw : 0,
+      remaining: 0,
       flipped: false,
     };
 
@@ -77,35 +102,79 @@
     const { root } = scope;
 
     // Solo controles que el carrusel ya escucha (`lib/carousel.ts`).
-    // Un botón inventado no dispara nada.
     const target = root.querySelector<HTMLElement>(
       `[data-carousel-dot="${index}"], [data-carousel-thumb="${index}"]`
     );
 
     if (target) {
-      // `programmatic` evita que el listener de abajo confunda este click
-      // con uno del usuario y detenga el ciclo.
+      // Evita que el listener de abajo confunda este click con uno del usuario.
       (target as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
       target.click();
 
-      // El CSS scoped no puede leer `[data-reflect-state]` (lo pone el JS),
-      // así que el destello va con una clase en la foto visible.
-      root.querySelectorAll<HTMLElement>('img, .reflect-badge').forEach((el) => {
-        el.classList.remove('is-flash-photo', 'is-lit');
+      root.querySelectorAll<HTMLElement>('img').forEach((el) => {
+        el.classList.remove('is-flash-photo');
       });
 
       if (index === scope.flashIndex) {
-        const photo = root.querySelector<HTMLElement>(
-          `.card-slide:nth-child(${index + 1}) img`
-        );
-        photo?.classList.add('is-flash-photo');
-        root.querySelector('.reflect-badge')?.classList.add('is-lit');
+        root
+          .querySelector<HTMLElement>(`.card-slide:nth-child(${index + 1}) img`)
+          ?.classList.add('is-flash-photo');
       }
       return;
     }
 
     // Carruseles con control propio (hero): el componente escucha este evento.
     root.dispatchEvent(new CustomEvent('reflect:photo', { detail: { index }, bubbles: true }));
+  }
+
+  /**
+   * Pinta el número del cuenta atrás.
+   * `0` significa que el reflejo ya se encendió: ahí se quita el número.
+   */
+  function paintCount(scope: ReflectScope, value: number, animate = true) {
+    const { badge, text, label } = scope;
+    if (!badge || !text) return;
+
+    if (value <= 0) {
+      badge.classList.remove('is-counting');
+      if (scope.count) scope.count.remove();
+      scope.count = null;
+      // El texto pasa a "Reflectivo" (sin "en…") mientras está encendido.
+      if (label) text.textContent = label;
+      return;
+    }
+
+    badge.classList.add('is-counting');
+
+    // Crea el número la primera vez y lo reutiliza para no perder la animación.
+    if (!scope.count) {
+      // Texto base ("Reflectivo en…") + número que se actualiza después.
+      text.textContent = '';
+      const base = document.createElement('span');
+      base.textContent = scope.label;
+
+      scope.count = document.createElement('span');
+      scope.count.className = 'reflect-badge-count';
+
+      text.append(base, scope.count);
+    }
+
+    scope.count.textContent = String(value);
+
+    if (animate) {
+      scope.count.classList.remove('is-ticking');
+      void scope.count.offsetWidth; // reinicia la animación en cada número
+      scope.count.classList.add('is-ticking');
+    }
+  }
+
+  /** Pone la pieza en su foto normal y reinicia la cuenta. */
+  function reset(scope: ReflectScope, animate = false) {
+    scope.flipped = false;
+    scope.remaining = scope.seconds;
+    scope.badge?.classList.remove('is-lit');
+    showPhoto(scope, scope.plainIndex);
+    paintCount(scope, scope.remaining, animate);
   }
 
   /**
@@ -133,14 +202,35 @@
     return document.hidden;
   }
 
+  /**
+   * Ciclo: 2 → 1 → encendido → (espera) → vuelve a 2.
+   *
+   * El `setInterval` corre un tick por segundo y cada tick decide qué toca
+   * según `remaining`; cuando el reflejo está encendido se pausa `HOLD_MS`.
+   */
   function schedule(scope: ReflectScope) {
     window.clearInterval(scope.timer);
 
     scope.timer = window.setInterval(() => {
       if (busy() || !onScreen(scope.root)) return;
 
-      scope.flipped = !scope.flipped;
-      showPhoto(scope, scope.flipped ? scope.flashIndex : scope.plainIndex);
+      // Reflejo encendido: aún no toca volver.
+      if (scope.flipped) return;
+
+      scope.remaining -= 1;
+      paintCount(scope, scope.remaining);
+
+      if (scope.remaining > 0) return;
+
+      // Llegó a cero: se enciende la foto del reflejo.
+      scope.flipped = true;
+      scope.badge?.classList.add('is-lit');
+      showPhoto(scope, scope.flashIndex);
+
+      window.setTimeout(() => {
+        if (busy()) return;
+        reset(scope, true);
+      }, HOLD_MS);
     }, scope.ms);
   }
 
@@ -153,9 +243,14 @@
 
       // Con movimiento reducido queda fija la toma con el reflejo encendido.
       if (reduce) {
+        scope.flipped = true;
+        scope.badge?.classList.add('is-lit');
+        paintCount(scope, 0, false);
         showPhoto(scope, scope.flashIndex);
         return;
       }
+
+      reset(scope, false);
 
       // `schedule` ya limpia el intervalo previo: un refresh no duplica.
       schedule(scope);

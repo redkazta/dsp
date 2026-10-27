@@ -1049,7 +1049,7 @@ const ui = {
                 <p class="font-acentos text-base text-oro-brillo">${money(i.price * i.qty)}</p>
                 <button type="button" data-remove="${escapeHtml(i.variantId)}"
                   class="text-xs uppercase tracking-wider text-white/80 hover:text-red-400 py-1">
-                  Quitar
+                  ${escapeHtml(uiText('removeWish'))}
                 </button>
               </div>
             </div>
@@ -1125,11 +1125,11 @@ const ui = {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
-              Ver
+              ${escapeHtml(uiText('openPiece'))}
             </a>
             <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
               class="text-xs uppercase tracking-wider text-white/80 hover:text-red-400 py-2 px-1">
-              Quitar
+              ${escapeHtml(uiText('removeWish'))}
             </button>
           </div>
         </div>

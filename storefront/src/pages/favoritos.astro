@@ -15,6 +15,8 @@ const ui = {
   pieceOne: t.checkout.pieceOne,
   pieceMany: t.checkout.pieceMany,
   reflective: t.product.reflective,
+  notReflective: t.product.notReflective,
+  remove: t.cart.remove,
 };
 
 const user = Astro.locals.user;
@@ -184,9 +186,9 @@ const available = items.filter((i) => !stale.includes(i.productId));
           <a href="${href}" class="block">
             <div
               class="product-frame border-2 border-white/25"
-              ${animated ? `data-reflect data-reflect-flash="${plan.flashIndex}" data-reflect-ms="2000"` : ''}
+              ${animated ? `data-reflect data-reflect-flash="${plan.flashIndex}" data-reflect-ms="1000"` : ''}
             >
-              ${animated ? `<span class="reflect-badge" aria-hidden="true"><span class="reflect-badge-dot"></span>${escapeHtml(reflectiveLabel)}</span>` : ''}
+              <span class="reflect-badge${animated ? '' : ' is-plain'}" data-label="${escapeHtml(reflectiveLabel)}"><span class="reflect-badge-dot"></span><span class="reflect-badge-text">${escapeHtml(animated ? reflectiveLabel : uiText('notReflective'))}</span></span>
               ${img ? `<img src="${img}" alt="" loading="lazy">` : ''}
             </div>
             <div class="pt-4 flex items-start justify-between gap-3">
@@ -198,7 +200,7 @@ const available = items.filter((i) => !stale.includes(i.productId));
             <a href="${href}" class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1">${uiText('chooseSize')}</a>
             <button type="button" data-wish-remove="${escapeHtml(item.productId)}"
               class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
-              Quitar
+              ${uiText('remove')}
             </button>
           </div>
         </article>`;
@@ -206,7 +208,7 @@ const available = items.filter((i) => !stale.includes(i.productId));
 
     function render(items: WishlistItem[]) {
       loading.classList.add('hidden');
-      summary.textContent = `${items.length} ${items.length === 1 ? 'pieza' : 'piezas'}`;
+      summary.textContent = `${items.length} ${items.length === 1 ? uiText('pieceOne') : uiText('pieceMany')}`;
 
       if (items.length === 0) {
         empty.classList.remove('hidden');

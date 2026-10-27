@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
-import { getCopy, type Lang } from '../lib/i18n';
+import { getCopy, categoryName, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -41,7 +41,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
     id: p.id,
     name: p.name,
     slug: p.slug ?? p.id,
-    category: p.categories?.name ?? null,
+    category: categoryName(lang, p.categories),
     price: Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0),
     image: images[0]?.url ?? null,
     isReflective: Boolean(p.is_reflective),
@@ -77,12 +77,15 @@ const suggestions = (featured.data ?? []).map((p: any) => {
                   class="group block border-2 border-white/25 hover:border-oro-brillo transition-colors"
                 >
                   <div class="product-frame">
-                    {p.isReflective && (
-                      <span class="reflect-badge" aria-hidden="true">
-                        <span class="reflect-badge-dot" />
-                        {t.product.reflective}
+                    <span
+                      class:list={['reflect-badge', { 'is-plain': !p.isReflective }]}
+                      data-label={t.product.reflective}
+                    >
+                      <span class="reflect-badge-dot" />
+                      <span class="reflect-badge-text">
+                        {p.isReflective ? t.product.reflective : t.product.notReflective}
                       </span>
-                    )}
+                    </span>
                     {p.image && (
                       <img
                         src={p.image}

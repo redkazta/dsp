@@ -7,6 +7,7 @@
  */
 
 import { supabase, TENANT_ID } from './supabase';
+import { categoryName, type Lang } from './i18n';
 
 export interface HomeSlide {
   id: string;
@@ -33,14 +34,14 @@ function imagesOf(product: any): string[] {
  * sacando por turnos. Si una categoría se queda sin piezas, las demás siguen.
  */
 export async function getHomeSlides(
-  options: { perCategory?: number; max?: number } = {}
+  options: { perCategory?: number; max?: number; lang?: Lang } = {}
 ): Promise<HomeSlide[]> {
-  const { perCategory = 8, max = 12 } = options;
+  const { perCategory = 8, max = 12, lang = 'es' } = options;
 
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, name, slug, base_price, is_reflective, created_at, categories(id, name), product_variants(price), product_images(url, position)'
+      'id, name, slug, base_price, is_reflective, created_at, categories(id, name, slug), product_variants(price), product_images(url, position)'
     )
     .eq('tenant_id', TENANT_ID)
     .eq('is_active', true)
@@ -62,7 +63,7 @@ export async function getHomeSlides(
         slug: p.slug ?? p.id,
         name: p.name,
         price,
-        category: category?.name ?? null,
+        category: categoryName(lang, category),
         isReflective: Boolean(p.is_reflective),
         images,
         categoryId: category?.id ?? '__none__',

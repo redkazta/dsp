@@ -1,14 +1,17 @@
 // @vitest-environment happy-dom
 /**
- * Verificación del ciclo del reflejo: el controlador debe alternar la foto
- * y marcar las clases que el CSS usa para el destello.
+ * Cuenta atrás del reflejo: "Reflectivo en… 2" → "1" → enciende la foto del
+ * flash → vuelve a la portada y arranca otra vez.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 function mountCard() {
   document.body.innerHTML = `
-    <div class="product-frame" data-reflect data-reflect-flash="1" data-reflect-ms="2000">
-      <span class="reflect-badge"><span class="reflect-badge-dot"></span></span>
+    <div class="product-frame" data-reflect data-reflect-flash="1" data-reflect-ms="1000">
+      <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
+        <span class="reflect-badge-dot"></span>
+        <span class="reflect-badge-text" data-reflect-text>Reflectivo en…</span>
+      </span>
       <div class="card-carousel" data-carousel-scope>
         <div class="card-track" data-carousel-track>
           <div class="card-slide" data-carousel-slide><img src="a.jpg"></div>
@@ -19,6 +22,9 @@ function mountCard() {
       </div>
     </div>`;
 }
+
+const countOf = (root: HTMLElement) =>
+  root.querySelector('.reflect-badge-count')?.textContent ?? null;
 
 beforeEach(() => {
   vi.resetModules();
@@ -34,32 +40,43 @@ afterEach(() => {
 });
 
 describe('reflect-anim', () => {
-  it('alterna la foto y marca el destello cada 2 s', async () => {
+  it('cuenta 2 → 1 y enciende la foto con destello', async () => {
     await import('../src/lib/reflect-anim');
 
     const root = document.querySelector<HTMLElement>('[data-reflect]')!;
-    const dots = [...root.querySelectorAll<HTMLElement>('[data-carousel-dot]')];
-    const clicks: number[] = [];
-    dots.forEach((dot, i) => dot.addEventListener('click', () => clicks.push(i)));
+    const badge = root.querySelector('.reflect-badge')!;
+    const clicked: number[] = [];
+    root
+      .querySelectorAll<HTMLElement>('[data-carousel-dot]')
+      .forEach((dot, i) => dot.addEventListener('click', () => clicked.push(i)));
 
-    vi.advanceTimersByTime(2000);
+    // Arranca mostrando la cuenta, no encendido.
+    expect(countOf(root)).toBe('2');
+    expect(badge.classList.contains('is-lit')).toBe(false);
 
-    // Pidió la foto con reflejo (índice 1).
-    expect(clicks).toContain(1);
+    vi.advanceTimersByTime(1000);
+    expect(countOf(root)).toBe('1');
+    expect(badge.classList.contains('is-lit')).toBe(false);
 
-    // El badge se enciende y la foto lleva la clase del destello.
-    expect(root.querySelector('.reflect-badge')!.classList.contains('is-lit')).toBe(true);
+    // Al llegar a cero: foto del reflejo + badge encendido.
+    vi.advanceTimersByTime(1000);
+    expect(clicked).toContain(1);
+    expect(badge.classList.contains('is-lit')).toBe(true);
     expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(true);
 
-    vi.advanceTimersByTime(2000);
+    // Se queda encendido un momento…
+    vi.advanceTimersByTime(1500);
+    expect(badge.classList.contains('is-lit')).toBe(true);
 
-    // Vuelve a la portada y apaga el badge.
-    expect(root.querySelector('.reflect-badge')!.classList.contains('is-lit')).toBe(false);
+    // …y vuelve a la portada reiniciando la cuenta.
+    vi.advanceTimersByTime(1000);
+    expect(badge.classList.contains('is-lit')).toBe(false);
+    expect(countOf(root)).toBe('2');
     expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(false);
   });
 
   it('no arranca sin la foto con reflejo', async () => {
-    document.body.innerHTML = '<div data-reflect data-reflect-ms="2000"><img></div>';
+    document.body.innerHTML = '<div data-reflect data-reflect-ms="1000"><img></div>';
     await import('../src/lib/reflect-anim');
 
     const root = document.querySelector<HTMLElement>('[data-reflect]')!;
@@ -67,7 +84,7 @@ describe('reflect-anim', () => {
     expect(root.querySelector('.reflect-badge')).toBeNull();
   });
 
-  it('sigue animando aunque el mouse esté sobre la tarjeta', async () => {
+  it('sigue contando aunque el mouse esté sobre la tarjeta', async () => {
     await import('../src/lib/reflect-anim');
 
     const root = document.querySelector<HTMLElement>('[data-reflect]')!;
@@ -80,5 +97,19 @@ describe('reflect-anim', () => {
 
     vi.advanceTimersByTime(2000);
     expect(calls).toBeGreaterThan(0);
+  });
+
+  it('un click manual del usuario retrasa el ciclo', async () => {
+    await import('../src/lib/reflect-anim');
+
+    const root = document.querySelector<HTMLElement>('[data-reflect]')!;
+    root.querySelector<HTMLElement>('[data-carousel-dot="0"]')!.click();
+
+    const dot = root.querySelector<HTMLElement>('[data-carousel-dot="1"]')!;
+    let calls = 0;
+    dot.addEventListener('click', () => calls++);
+
+    vi.advanceTimersByTime(2000);
+    expect(calls).toBe(0);
   });
 });

@@ -9,8 +9,9 @@ import {
   getRelatedProducts,
   TENANT_SLUG,
 } from '../../lib/supabase';
-import { getCopy, type Lang } from '../../lib/i18n';
+import { getCopy, categoryName, type Lang } from '../../lib/i18n';
 import { planReflectImages, isFlashUrl } from '../../lib/reflective';
+import ReflectBadge from '../../components/product/ReflectBadge.astro';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -150,14 +151,9 @@ const ui = {
                           class="product-frame border-2 border-white/25"
                           data-reflect={reflectPlan.animatable ? '' : undefined}
                           data-reflect-flash={reflectPlan.animatable ? reflectFlash : undefined}
-                          data-reflect-ms={reflectPlan.animatable ? 2000 : undefined}
+                          data-reflect-ms={reflectPlan.animatable ? 1000 : undefined}
                         >
-                          {reflectPlan.animatable && (
-                            <span class="reflect-badge">
-                              <span class="reflect-badge-dot" aria-hidden="true" />
-                              {t.product.reflective}
-                            </span>
-                          )}
+                          <ReflectBadge reflective={reflectPlan.animatable} />
                           <img
                             src={img.url}
                             alt={img.alt_text ?? product.name}
@@ -209,6 +205,7 @@ const ui = {
                 </div>
               ) : (
                 <div class="product-frame border-2 border-white/25">
+                  <ReflectBadge reflective={false} />
                   {images.length > 0 ? (
                     <img src={images[0].url} alt={images[0].alt_text ?? product.name} loading="eager" />
                   ) : (
@@ -226,7 +223,7 @@ const ui = {
             <div class="lg:py-4">
               {product.categories?.name && (
                 <a href={`/tienda?category=${product.categories.id}`} class="section-label mb-4 inline-block hover:text-white transition-colors">
-                  {product.categories.name}
+                  {categoryName(lang, product.categories)}
                 </a>
               )}
 
@@ -348,7 +345,7 @@ const ui = {
                   <ul class="pt-3 pb-2 space-y-2 text-base text-white/80">
                     <li>SKU: {product.sku ?? '—'}</li>
                     <li>{t.product.stockAvailable}: {totalStock}</li>
-                    {product.categories?.name && <li>{t.product.category}: {product.categories.name}</li>}
+                    {product.categories?.name && <li>{t.product.category}: {categoryName(lang, product.categories)}</li>}
                   </ul>
                 </details>
 

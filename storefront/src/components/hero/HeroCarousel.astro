@@ -13,6 +13,7 @@
 import type { HomeSlide } from '../../lib/home-products';
 import type { Copy } from '../../lib/i18n';
 import { planReflectImages } from '../../lib/reflective';
+import ReflectBadge from '../product/ReflectBadge.astro';
 
 interface Props {
   slides: HomeSlide[];
@@ -22,8 +23,8 @@ interface Props {
 
 const { slides, t, currency = 'USD' } = Astro.props;
 
-/** Ritmo del encendido del reflejo en la portada. */
-const REFLECT_MS = 2000;
+/** Un segundo de la cuenta atrás (2 → 1 → encendido). */
+const REFLECT_MS = 1000;
 
 const fallback: HomeSlide = {
   id: 'fallback',
@@ -77,12 +78,7 @@ const plans = list.map((item) =>
                 data-reflect-flash={plan.animatable ? plan.flashIndex : undefined}
                 data-reflect-ms={plan.animatable ? REFLECT_MS : undefined}
               >
-                {plan.animatable && (
-                  <span class="hero-reflect" aria-hidden="true">
-                    <span class="hero-reflect-dot" />
-                    {t.product.reflective}
-                  </span>
-                )}
+                <ReflectBadge reflective={plan.animatable} />
 
                 {photos.map((src, i) => (
                   <img
@@ -315,53 +311,8 @@ const plans = list.map((item) =>
     right: 0.75rem;
   }
 
-  /* ---------- Reflejo (arriba a la izquierda) ---------- */
-  .hero-reflect {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 4;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 9px 4px 7px;
-    background: rgba(0, 0, 0, 0.82);
-    border: 1px solid rgba(255, 226, 138, 0.55);
-    color: #ffe28a;
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    line-height: 1;
-    pointer-events: none;
-    backdrop-filter: blur(4px);
-    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-  }
-
-  .hero-reflect-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: #b9c3cc;
-    transition: background 0.25s ease;
-  }
-
-  /* Reflejo encendido.
-     Se marca con clases en el propio elemento (no con un selector del tipo
-     `[data-reflect-state] .hero-reflect`: Astro le añade su cid al atributo
-     del padre y el selector nunca llega a coincidir). */
-  .hero-reflect.is-lit {
-    background: #ffe28a;
-    border-color: #ffe28a;
-    color: #000000;
-  }
-
-  .hero-reflect.is-lit .hero-reflect-dot {
-    background: #000000;
-    animation: reflect-pulse 2s ease-out infinite;
-  }
-
+  /* El badge del reflejo vive en global.css (`ReflectBadge.astro`), así se
+     ve igual en el hero, el catálogo y la ficha. */
   .hero-media.is-flash-photo .hero-photo.is-active {
     animation: reflect-flash 0.65s ease-out;
   }
@@ -406,11 +357,6 @@ const plans = list.map((item) =>
       height: 38px;
     }
 
-    .hero-reflect {
-      font-size: 8px;
-      letter-spacing: 0.16em;
-      padding: 3px 7px 3px 6px;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -419,7 +365,6 @@ const plans = list.map((item) =>
       transition: none;
     }
 
-    .hero-reflect.is-lit .hero-reflect-dot,
     .hero-media.is-flash-photo .hero-photo.is-active {
       animation: none;
     }
@@ -446,7 +391,7 @@ const plans = list.map((item) =>
     const SLIDE_MS = 5000;
 
     /**
-     * El encendido del reflejo lo maneja `lib/reflect-anim.ts` (cada 2 s).
+     * El cuenta atrás del reflejo lo maneja `lib/reflect-anim.ts`.
      * Aquí solo se aplica el cambio de foto pedido a un slide concreto.
      */
     root.addEventListener('reflect:photo', (e) => {
@@ -460,10 +405,9 @@ const plans = list.map((item) =>
 
       photos.forEach((photo, i) => photo.classList.toggle('is-active', i === target));
 
-      // Clases en el propio componente: el CSS scoped las sí reconoce.
+      // El destello de la foto (el badge lo pinta `reflect-anim.ts`).
       const lit = target === Number(media.dataset.reflectFlash ?? -1);
       media.classList.toggle('is-flash-photo', lit);
-      media.querySelector('.hero-reflect')?.classList.toggle('is-lit', lit);
 
       const slide = media.closest('[data-hero-slide]');
       slide?.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb, i) => {

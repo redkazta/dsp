@@ -4,7 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductList from '../components/product/ProductList.astro';
 import { getProducts, getCategories, TENANT_SLUG } from '../lib/supabase';
-import { getCopy, type Lang } from '../lib/i18n';
+import { getCopy, categoryName, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -111,7 +111,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
         <div>
           <p class="section-label mb-4">{t.shop.collection}</p>
           <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto leading-none mb-4">
-            {categoryId ? categories.find((c: any) => c.id === categoryId)?.name ?? t.shop.breadcrumb : t.shop.allPieces}
+            {categoryId ? categoryName(lang, categories.find((c: any) => c.id === categoryId)) ?? t.shop.breadcrumb : t.shop.allPieces}
           </h1>
           <p class="text-base text-white/80">
             {products.length} {products.length === 1 ? t.shop.productOne : t.shop.productMany}
@@ -154,7 +154,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
                     : 'border-white/40 text-white/80 hover:border-oro-brillo hover:text-oro-brillo',
                 ]}
               >
-                {cat.name}
+                {categoryName(lang, cat)}
               </a>
             ))
           }

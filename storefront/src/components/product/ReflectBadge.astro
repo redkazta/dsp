@@ -1,0 +1,36 @@
+---
+/**
+ * ReflectBadge — aviso "Reflectivo en… 2 · 1" sobre la foto de la pieza.
+ *
+ * Se usa en el hero, en las tarjetas del catálogo y en la ficha. El
+ * controlador (`lib/reflect-anim.ts`) escribe el número y le pone
+ * `.is-lit` cuando la foto del reflejo está puesta.
+ *
+ * Si la prenda no es reflectiva, muestra "Sin reflejo" en tono apagado.
+ */
+import { getCopy, type Lang } from '../../lib/i18n';
+
+export interface Props {
+  /** true = la prenda tiene reflejo y se anima. Normalmente `product.is_reflective`. */
+  reflective: boolean;
+  /** Clases extra del contenedor (p. ej. `is-lowered` si hay badge de agotado). */
+  class?: string;
+}
+
+const { reflective, class: className = '' } = Astro.props;
+
+const lang = (Astro.locals.lang ?? 'es') as Lang;
+const t = getCopy(lang);
+---
+
+<span
+  class:list={['reflect-badge', { 'is-plain': !reflective }, className]}
+  data-reflect-badge
+  data-label={t.product.reflective}
+  data-label-off={t.product.notReflective}
+>
+  <span class="reflect-badge-dot" aria-hidden="true" />
+  <span class="reflect-badge-text" data-reflect-text>
+    {reflective ? t.product.reflective : t.product.notReflective}
+  </span>
+</span>

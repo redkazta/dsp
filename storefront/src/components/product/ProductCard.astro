@@ -8,6 +8,7 @@
  */
 import { getCopy, type Lang } from '../../lib/i18n';
 import { planReflectImages, isFlashUrl } from '../../lib/reflective';
+import ReflectBadge from './ReflectBadge.astro';
 
 export interface Props {
   product: {
@@ -72,7 +73,7 @@ void trackId;
     data-wish-price={price}
     data-wish-image={images[0]?.url ?? ''}
     aria-pressed="false"
-    aria-label={`Guardar ${product.name} en favoritos`}
+    aria-label={`${t.product.wishlistAdd}: ${product.name}`}
   >
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
@@ -85,14 +86,9 @@ void trackId;
       class="product-frame border-2 product-media transition-colors duration-300"
       data-reflect={reflect ? '' : undefined}
       data-reflect-flash={reflect ? reflectFlash : undefined}
-      data-reflect-ms={reflect ? 2000 : undefined}
+      data-reflect-ms={reflect ? 1000 : undefined}
     >
-      {reflect && (
-        <span class:list={['reflect-badge', { 'is-lowered': isSoldOut }]} aria-hidden="true">
-          <span class="reflect-badge-dot" />
-          <span class="reflect-badge-text">{t.product.reflective}</span>
-        </span>
-      )}
+      <ReflectBadge reflective={reflect} class={isSoldOut ? 'is-lowered' : ''} />
       {images.length > 0 ? (
         <>
           {images.length > 1 ? (
@@ -153,7 +149,7 @@ void trackId;
       ) : (
         <div class="absolute inset-0 flex items-center justify-center">
           <span class="font-acentos text-[10px] uppercase tracking-[0.3em] text-negro-profundo/20">
-            Sin imagen
+            {t.product.noImage}
           </span>
         </div>
       )}
@@ -171,7 +167,7 @@ void trackId;
       <div class="product-cta absolute bottom-0 left-0 right-0 transition-transform duration-500">
         <div class="bg-oro-brillo text-negro-profundo text-center py-3">
           <span class="font-acentos text-[10px] uppercase tracking-[0.3em] font-medium">
-            Ver producto
+            {t.product.viewProduct}
           </span>
         </div>
       </div>
@@ -365,18 +361,7 @@ void trackId;
     top: 46px;
   }
 
-  /* Destello de la foto al encenderse el reflejo.
-     Va con clase en el <img> porque el CSS scoped no puede leer
-     `[data-reflect-state]` (lo pone el JS en tiempo de ejecución). */
-  .card-slide img.is-flash-photo {
-    animation: reflect-flash 0.65s ease-out;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .card-slide img.is-flash-photo {
-      animation: none;
-    }
-  }
+  /* El badge y su cuenta atrás viven en global.css (ReflectBadge.astro). */
 </style>
 
 <script>

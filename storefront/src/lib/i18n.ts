@@ -185,7 +185,8 @@ export const copy = {
       adding: 'Agregando…',
       added: '¡Agregado!',
       soldOut: 'Agotado',
-      reflective: 'Reflectivo',
+      reflective: 'Reflectivo en…',
+      notReflective: 'Sin reflejo',
       outOfStockSize: 'Esa talla no está disponible',
       wishlistAdd: 'Guardar en favoritos',
       wishlistRemove: 'Quitar de favoritos',
@@ -214,6 +215,7 @@ export const copy = {
       frontFlash: 'Frente · flash',
       backFlash: 'Espalda · flash',
       noImage: 'Sin imagen',
+      viewProduct: 'Ver producto',
       wishlistShort: 'Favorito',
       defaultDescription:
         'Playera oversize de algodón premium. Logo ¡D$P! estampado al frente.',
@@ -507,7 +509,8 @@ export const copy = {
   },
 
   en: {
-    brand: 'Money Over Problems',
+    // La marca no se traduce: siempre en español.
+    brand: 'Dinero Sobre Problemas',
     brandShort: 'DSP',
     brandTagline: 'Hand-pressed craft streetwear, one piece at a time.',
     brandTagline2: 'Street design with a luxury edge.',
@@ -623,7 +626,8 @@ export const copy = {
       adding: 'Adding…',
       added: 'Added!',
       soldOut: 'Sold out',
-      reflective: 'Reflective',
+      reflective: 'Reflective in…',
+      notReflective: 'No reflection',
       outOfStockSize: 'That size is not available',
       wishlistAdd: 'Save to wishlist',
       wishlistRemove: 'Remove from wishlist',
@@ -652,6 +656,7 @@ export const copy = {
       frontFlash: 'Front · flash',
       backFlash: 'Back · flash',
       noImage: 'No image',
+      viewProduct: 'View product',
       wishlistShort: 'Favourite',
       defaultDescription:
         'Oversized premium cotton shirt. ¡D$P! logo printed on the front.',
@@ -949,4 +954,29 @@ export type Copy = typeof copy.es;
 
 export function getCopy(lang: Lang | string | null | undefined): Copy {
   return copy[normalizeLang(lang)] as Copy;
+}
+
+/**
+ * Nombre visible de una categoría.
+ *
+ * `categories.name` está en español en la base (es el nombre comercial del
+ * producto), así que en inglés se traduce aquí por slug. Si no hay
+ * traducción se devuelve el nombre original.
+ */
+const CATEGORY_LABELS: Record<string, { es: string; en: string }> = {
+  camisas: { es: 'Camisas', en: 'Shirts' },
+  playeras: { es: 'Playeras', en: 'Tees' },
+  jeans: { es: 'Jeans', en: 'Jeans' },
+};
+
+export function categoryName(
+  lang: Lang | string | null | undefined,
+  category: { slug?: string | null; name?: string | null } | null | undefined
+): string | null {
+  if (!category) return null;
+
+  const dict = category.slug ? CATEGORY_LABELS[category.slug] : undefined;
+  if (dict) return dict[normalizeLang(lang)];
+
+  return category.name ?? null;
 }

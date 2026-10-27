@@ -10,7 +10,7 @@ const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 
 // Playera, jean, playera, jean…: el intercalado se hace en servidor.
-const slides = await getHomeSlides({ perCategory: 8, max: 12 });
+const slides = await getHomeSlides({ perCategory: 8, max: 12, lang });
 ---
 
 <BaseLayout homeScreen>
