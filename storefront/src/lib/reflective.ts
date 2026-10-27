@@ -26,9 +26,12 @@ export interface ReflectImagePlan {
 /**
  * Ordena la galería y localiza la toma con flash.
  *
- * Para una pieza reflectiva se muestran exactamente dos fotos: la portada
- * (sin flash) y la del reflejo. Meter espalda o fotos repetidas hace que el
- * cambio automático pierda el efecto de "encendido".
+ * Se **conservan todas las fotos** de la pieza (frente, espalda y sus tomas
+ * con flash): antes se quedaba solo con frente + flash y se perdía la
+ * espalda de los jeans, que sí existe en disco y en la base.
+ *
+ * El orden es: portada (sin flash) primero, la toma con flash justo después
+ * —así el cambio automático se lee como un encendido— y el resto al final.
  */
 export function planReflectImages(
   raw: Array<{ url: string; position?: number | null }> | null | undefined,
@@ -53,7 +56,15 @@ export function planReflectImages(
   }
 
   const front = plain[0] ?? flash[0];
-  const images = [front, flash[0]];
 
-  return { images, flashIndex: images.indexOf(flash[0]), animatable: images.length === 2 };
+  // Portada → toma con flash → el resto (espalda, etc.), sin repetir.
+  const images = [
+    front,
+    ...flash.filter((url) => url !== front),
+    ...urls.filter((url) => url !== front && !flash.includes(url)),
+  ];
+
+  const flashIndex = images.findIndex(isFlashUrl);
+
+  return { images, flashIndex, animatable: flashIndex > 0 };
 }

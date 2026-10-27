@@ -110,23 +110,32 @@ import { onTick, sync } from './reflect-clock';
       return;
     }
 
-    // Tarjetas y ficha: se pulsan sus miniaturas (misma pieza).
+    // Tarjetas y ficha: se pulsa el control del carrusel (misma pieza).
     //
-    // En la ficha el badge vive en `.pdp-reflect`, **fuera** del track, así que
-    // sus miniaturas son hermanas y no hijas: hay que buscarlas también en el
-    // carrusel que lo envuelve.
+    // Hay dos formas según el componente: miniaturas (`data-carousel-thumb`)
+    // en la ficha, y puntos (`data-carousel-dot`) en las tarjetas. Antes solo
+    // se buscaban miniaturas, así que **en /tienda no había ningún control que
+    // pulsar y las fotos nunca cambiaban**.
+    //
+    // Además, en la ficha el badge vive en `.pdp-reflect`, fuera del track:
+    // sus controles son hermanos y hay que buscarlos en el carrusel que lo
+    // envuelve.
     const host = root.closest<HTMLElement>('[data-carousel-scope]') ?? root;
 
-    const thumb =
-      root.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`) ??
-      host.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`);
+    const findControl = (sel: string) =>
+      root.querySelector<HTMLElement>(sel) ?? host.querySelector<HTMLElement>(sel);
 
-    if (thumb) {
-      (thumb as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
+    const control =
+      findControl(`[data-carousel-thumb="${index}"]`) ??
+      findControl(`[data-carousel-dot="${index}"]`) ??
+      findControl(`[data-carousel-dir="${Number(index) === 0 ? '-1' : '1'}"]`);
+
+    if (control) {
+      (control as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
       settling = true;
 
       try {
-        thumb.click();
+        control.click();
       } finally {
         window.setTimeout(() => {
           settling = false;
