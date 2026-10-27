@@ -25,6 +25,8 @@ type Carousel = {
   track: HTMLElement;
   slides: HTMLElement[];
   dots: HTMLElement[];
+  /** Última foto pintada, para detectar el cambio. */
+  lastIndex: number;
 };
 
 const registry = new Map<HTMLElement, Carousel>();
@@ -77,6 +79,15 @@ function goTo(carousel: Carousel, index: number, behavior: ScrollBehavior = 'smo
 function paint(carousel: Carousel) {
   const index = currentIndex(carousel);
 
+  // Avisa al reflejo cuando el carrusel cambia de foto, para que su cuenta
+  // atrás arranque de nuevo y no derive respecto al movimiento.
+  if (carousel.lastIndex !== index) {
+    carousel.lastIndex = index;
+    carousel.scope.dispatchEvent(
+      new CustomEvent('carousel:changed', { bubbles: true, detail: { index } })
+    );
+  }
+
   carousel.dots.forEach((dot, i) => dot.classList.toggle('is-active', i === index));
 
   // Las miniaturas marcan la activa con su propia clase: la clase dinámica
@@ -106,6 +117,7 @@ function register(scope: HTMLElement): Carousel | null {
     track,
     slides: [...track.querySelectorAll<HTMLElement>('[data-carousel-slide]')],
     dots: [...scope.querySelectorAll<HTMLElement>('[data-carousel-dot]')],
+    lastIndex: -1,
   };
 
   if (carousel.slides.length < 2) {

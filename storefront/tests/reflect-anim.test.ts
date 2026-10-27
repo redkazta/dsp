@@ -74,13 +74,14 @@ describe('reflect-anim', () => {
     expect(countOf(root)).not.toBeNull();
     expect(label.textContent).toBe('Reflectivo en…');
 
-    // Se queda encendido un momento…
+    // Se queda encendido: el encendido dura ~2.5 s (alineado con el
+    // intervalo de 4.5 s del carrusel).
     vi.advanceTimersByTime(1500);
     expect(badge.classList.contains('is-lit')).toBe(true);
     expect(root.querySelector('[data-reflect-count]')).not.toBeNull();
 
-    // …y vuelve a la portada reiniciando la cuenta.
-    vi.advanceTimersByTime(1000);
+    // …y al cumplirse vuelve a la portada reiniciando la cuenta.
+    vi.advanceTimersByTime(1500);
     expect(badge.classList.contains('is-lit')).toBe(false);
     expect(countOf(root)).toBe('2');
     expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(false);

@@ -89,7 +89,7 @@ describe('reflejo + hero', () => {
     expect(media.querySelectorAll('.hero-photo')[1].classList.contains('is-active')).toBe(true);
 
     // Al apagarse devuelve el control.
-    vi.advanceTimersByTime(2500);
+    vi.advanceTimersByTime(3000);
     expect(badge.classList.contains('is-lit')).toBe(false);
     expect(events).toContain('resume');
     expect(media.querySelectorAll('.hero-photo')[0].classList.contains('is-active')).toBe(true);

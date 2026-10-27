@@ -80,7 +80,7 @@ describe('reflejo dentro de un carrusel', () => {
     expect(badge.classList.contains('is-lit')).toBe(true);
 
     // Al apagarse vuelve a la portada y el autoplay recupera su ritmo.
-    vi.advanceTimersByTime(1200);
+    vi.advanceTimersByTime(2600);
     expect(badge.classList.contains('is-lit')).toBe(false);
   });
 

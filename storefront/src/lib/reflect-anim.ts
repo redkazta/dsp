@@ -39,8 +39,15 @@
   /** Margen tras una interacción manual antes de retomar el ciclo. */
   const RESUME_MS = 6000;
 
-  /** Cuánto se queda encendida la foto del reflejo antes de volver. */
-  const HOLD_MS = 2200;
+  /**
+   * Cuánto se queda encendida la foto del reflejo.
+   *
+   * Cuenta + encendido = 2 s + 2.5 s = 4.5 s, que es justo el intervalo
+   * del carrusel (`DEFAULT_INTERVAL` en `carousel.ts`). Así el reflejo se
+   * apaga justo cuando el carrusel pasa a la siguiente pieza, en vez de
+   * derivar y desincronizarse.
+   */
+  const HOLD_MS = 2500;
 
   /** Desde qué número arranca la cuenta. */
   const COUNT_FROM = 2;
@@ -60,6 +67,8 @@
     plainIndex: number;
     /** Segundos que faltan para encender; 0 = reflejo encendido. */
     remaining: number;
+    /** Ticks que le quedan al reflejo encendido antes de volver. */
+    holdLeft: number;
     /** 1 = mostrando el reflejo, 0 = foto normal. */
     flipped: boolean;
     timer?: number;
@@ -94,6 +103,7 @@
       flashIndex,
       plainIndex: Number.isInteger(plainRaw) && plainRaw >= 0 ? plainRaw : 0,
       remaining: 0,
+      holdLeft: 0,
       flipped: false,
     };
 
@@ -225,10 +235,16 @@
   }
 
   /**
-   * Ciclo: 2 → 1 → encendido → (espera) → vuelve a 2.
+   * Ciclo cerrado, una sola fase activa a la vez:
    *
-   * El `setInterval` corre un tick por segundo y cada tick decide qué toca
-   * según `remaining`; cuando el reflejo está encendido se pausa `HOLD_MS`.
+   *   t=0   "Reflectivo en… 2"   (foto normal)
+   *   t=1s  "Reflectivo en… 1"   (foto normal)
+   *   t=2s  ENCENDIDO            (foto con flash, badge dorado)
+   *   t=4.2s vuelve a t=0
+   *
+   * Antes el número se repintaba al arrancar y el primer tick lo bajaba
+   * enseguida: se veía un "2" suelto al encenderse y otro al reiniciar.
+   * Ahora cada fase dura `ms` y el encendido espera `HOLD_MS`.
    */
   function schedule(scope: ReflectScope) {
     window.clearInterval(scope.timer);
@@ -236,28 +252,34 @@
     scope.timer = window.setInterval(() => {
       if (busy() || !onScreen(scope.root)) return;
 
-      // Reflejo encendido: aún no toca volver.
-      if (scope.flipped) return;
-
       // Mientras el usuario interactúa con el carrusel no se le encima.
       if (scope.root.dataset.reflectUserHold) return;
 
+      // 1) Está encendido: ya cumplió su tiempo, vuelve a la portada.
+      if (scope.flipped) {
+        scope.holdLeft -= 1;
+        if (scope.holdLeft > 0) return;
+
+        reset(scope, false);
+        return;
+      }
+
+      // 2) Cuenta atrás: 2 → 1 → (encender en el siguiente paso).
       scope.remaining -= 1;
-      paintCount(scope, scope.remaining);
 
-      if (scope.remaining > 0) return;
+      if (scope.remaining > 0) {
+        paintCount(scope, scope.remaining);
+        return;
+      }
 
-      // Llegó a cero: se enciende la foto del reflejo y el carrusel se queda
-      // quieto para que el encendido se vea completo.
+      // 3) Llegó a cero: se enciende la foto del reflejo y el carrusel se
+      //    queda quieto para que el encendido se vea completo.
       scope.flipped = true;
+      scope.holdLeft = Math.max(1, Math.round(HOLD_MS / scope.ms));
+
       holdCarousel(scope, true);
       scope.badge?.classList.add('is-lit');
       showPhoto(scope, scope.flashIndex);
-
-      window.setTimeout(() => {
-        if (busy()) return;
-        reset(scope, true);
-      }, HOLD_MS);
     }, scope.ms);
   }
 
@@ -283,6 +305,24 @@
       schedule(scope);
     });
   }
+
+  /**
+   * El carrusel cambió de foto (autoplay, flecha o dedo).
+   *
+   * Se reinicia la cuenta en ese instante para que el reflejo arranque
+   * alineado con el movimiento y no con su propio reloj: antes ambos ciclos
+   * tenían periodos distintos y se iban separando poco a poco.
+   */
+  document.addEventListener('carousel:changed', (e) => {
+    const scopeEl = (e.target as HTMLElement | null)?.closest?.('[data-carousel-scope]');
+    if (!scopeEl) return;
+
+    scopes.forEach((scope, root) => {
+      if (!scopeEl.contains(root) && !root.contains(scopeEl)) return;
+      if (scope.flipped) return; // no cortar un encendido en curso
+      reset(scope, false);
+    });
+  });
 
   // Cambio manual de foto: se detiene el ciclo unos segundos para no pelearse
   // con quien está mirando la prenda.
