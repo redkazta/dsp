@@ -380,7 +380,7 @@ const plans = list.map((item) =>
 
 <script>
   import '../../lib/reflect-anim';
-  import { ROTATION_MS } from '../../lib/reflect-timing';
+  import { isRotationTick, onTick } from '../../lib/reflect-clock';
 
   const root = document.querySelector<HTMLElement>('[data-hero-carousel]');
 
@@ -470,11 +470,12 @@ const plans = list.map((item) =>
     }
 
     /**
-     * El avance de piezas lo dicta el badge del reflejo (`reflect:rotate`):
-     * un solo reloj para la foto y para el producto, nunca dos.
+     * El avance de piezas sale del **mismo reloj** que la cuenta del badge,
+     * así que foto y producto van siempre en fase.
      */
-    root.addEventListener('reflect:rotate', () => {
+    onTick((tick) => {
       if (document.hidden) return;
+      if (!isRotationTick(tick)) return;
       next();
     });
 

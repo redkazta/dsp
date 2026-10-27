@@ -18,6 +18,7 @@
  * del carrusel llegó en el SSR o se pintó después.
  */
 import { ROTATION_MS } from './reflect-timing';
+import { isRotationTick, onTick } from './reflect-clock';
 
 const DEFAULT_INTERVAL = ROTATION_MS;
 
@@ -138,27 +139,21 @@ function register(scope: HTMLElement): Carousel | null {
 
 function start() {
   window.clearInterval(timer);
-
-  // Sin reloj propio: el avance lo dicta el ciclo del reflejo
-  // (`reflect:rotate`). Dos intervalos separados se desincronizaban.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 }
 
 /**
- * Avance automático **dirigido por el badge del reflejo**.
+ * Avance de pieza, guiado por el **reloj compartido** (`reflect-clock`).
  *
- * El ciclo del reflejo (2 → 1 → cambio de foto) emite `reflect:rotate` al
- * cerrar su vuelta; aquí se pasa a la siguiente pieza de los carruseles que
- * no tienen su propio timer.
+ * El carrusel sigue siendo autónomo: escucha los latidos y, cuando toca
+ * cerrar la vuelta, pasa a la siguiente pieza. Antes dependía de un evento
+ * emitido desde un contenedor que a veces envolvía al carrusel, así que el
+ * aviso nunca llegaba.
  */
-document.addEventListener('reflect:rotate', (e) => {
+onTick((tick) => {
   if (focused || hovering > 0 || document.hidden) return;
-
-  const origin = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-carousel-scope]');
+  if (!isRotationTick(tick)) return;
 
   document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach((scope) => {
-    // Solo responde el carrusel de la pieza que marcó el compás.
-    if (origin && origin !== scope) return;
     if (paused.has(scope)) return;
 
     const carousel = registry.get(scope) ?? register(scope);

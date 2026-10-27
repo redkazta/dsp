@@ -7,13 +7,13 @@ import {
   PHASE_MS,
   ROTATION_MS,
 } from '../src/lib/reflect-timing';
+import { TICKS_PER_ROTATION, isRotationTick } from '../src/lib/reflect-clock';
 
 /**
- * Un solo reloj para todo.
+ * Una sola variable de tiempo, compartida.
  *
- * Antes el carrusel y el hero tenían su propio `setInterval` y el reflejo
- * otro más: tres relojes que derivaban entre sí. Ahora el badge marca el
- * compás y los demás le obedecen.
+ * Antes había tres `setInterval` (carrusel, hero, reflejo) que derivaban.
+ * Ahora `reflect-clock` late cada segundo y todos leen el mismo contador.
  */
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 
@@ -26,29 +26,42 @@ describe('reflect-timing', () => {
 
   it('la vuelta completa son dos fases', () => {
     expect(ROTATION_MS).toBe(PHASE_MS * 2);
+    expect(TICKS_PER_ROTATION).toBe(4);
+  });
+
+  it('toca avanzar de pieza una vez por vuelta', () => {
+    expect(isRotationTick(0)).toBe(false);
+    expect(isRotationTick(1)).toBe(false);
+    expect(isRotationTick(2)).toBe(false);
+    expect(isRotationTick(3)).toBe(false);
+    expect(isRotationTick(4)).toBe(true);
+    expect(isRotationTick(8)).toBe(true);
   });
 });
 
-describe('un solo reloj', () => {
-  it('el carrusel no tiene autoavance propio', () => {
+describe('todos leen el mismo reloj', () => {
+  it('el carrusel se suscribe al reloj compartido', () => {
     const source = read('src/lib/carousel.ts');
-
-    // El avance llega por `reflect:rotate`, no por un intervalo.
-    expect(source).toContain('reflect:rotate');
-    expect(source).not.toMatch(/setInterval\(\(\) => \{\s*if \(focused/);
+    expect(source).toContain('onTick');
+    expect(source).toContain('isRotationTick');
   });
 
-  it('el hero no tiene avance propio', () => {
+  it('el hero se suscribe al reloj compartido', () => {
     const source = read('src/components/hero/HeroCarousel.astro');
-
-    expect(source).toContain('reflect:rotate');
-    expect(source).not.toMatch(/setInterval\(next/);
+    expect(source).toContain('onTick');
+    expect(source).toContain('isRotationTick');
   });
 
-  it('el reflejo es el único que marca el ritmo', () => {
+  it('el reflejo se suscribe al reloj compartido', () => {
     const source = read('src/lib/reflect-anim.ts');
+    expect(source).toContain('onTick');
+    // Ya no abre intervalos propios.
+    expect(source).not.toMatch(/setInterval\(/);
+  });
 
-    expect(source).toContain('reflect:rotate');
-    expect(source).toContain('COUNT_STEP_MS');
+  it('nadie más tiene un intervalo de rotación', () => {
+    for (const rel of ['src/lib/carousel.ts', 'src/components/hero/HeroCarousel.astro']) {
+      expect(read(rel), rel).not.toMatch(/setInterval\(\s*(next|tick)/);
+    }
   });
 });

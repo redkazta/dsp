@@ -27,7 +27,8 @@
  * - `data-reflect-flash` = índice de la foto con reflejo.
  * - `data-reflect-rotates` = al cerrar la fase, avisa para pasar de pieza.
  */
-import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
+import { COUNT_FROM, RESUME_MS } from './reflect-timing';
+import { onTick, sync } from './reflect-clock';
 
 (() => {
   const FLAG = '__dspReflectAnim';
@@ -54,7 +55,8 @@ import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
     remaining: number;
     /** Si al cerrar la fase avisa al carrusel para pasar de pieza. */
     rotates: boolean;
-    timer?: number;
+    /** Cancela la suscripción al reloj compartido. */
+    unsubscribe?: () => void;
   };
 
   const scopes = new Map<HTMLElement, ReflectScope>();
@@ -95,6 +97,9 @@ import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
 
   /** Cambia la foto **dentro de la pieza**. */
   function showPhoto(scope: ReflectScope, index: number) {
+    // El click del thumb vuelve a entrar aquí: se corta la recursión.
+    if (settling) return;
+
     const { root } = scope;
 
     // Hero: las fotos están apiladas en el propio `.hero-media`.
@@ -170,10 +175,15 @@ import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
    *
    *   2 → 1 → (cambia de fase y de foto)
    */
+  /**
+   * El badge ya no tiene reloj propio: se suscribe al **mismo** reloj que el
+   * carrusel, así que la cuenta y el avance de piezas no pueden derivar.
+   */
   function schedule(scope: ReflectScope) {
-    window.clearInterval(scope.timer);
+    // Una sola suscripción por pieza.
+    scope.unsubscribe?.();
 
-    scope.timer = window.setInterval(() => {
+    scope.unsubscribe = onTick(() => {
       if (document.hidden) return;
 
       const rect = scope.root.getBoundingClientRect();
@@ -199,19 +209,13 @@ import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
         return;
       }
 
-      // Normal → reflejo: vuelve la portada. Aquí cierra la vuelta.
+      // Normal → reflejo: vuelve la portada. Cierra la vuelta; el carrusel
+      // avanza por su cuenta al oír el mismo latido.
       scope.phase = 'reflect';
       scope.remaining = COUNT_FROM;
       showPhoto(scope, scope.plainIndex);
       paint(scope);
-
-      // El mismo reloj avanza el carrusel de piezas.
-      if (scope.rotates) {
-        scope.root.dispatchEvent(
-          new CustomEvent('reflect:rotate', { bubbles: true, detail: scope.root })
-        );
-      }
-    }, COUNT_STEP_MS);
+    });
   }
 
   function init() {
@@ -243,17 +247,21 @@ import { COUNT_FROM, COUNT_STEP_MS, RESUME_MS } from './reflect-timing';
     if (!target?.closest('[data-reflect]')) return;
     if (!target.closest('[data-carousel-dir], [data-carousel-dot], [data-carousel-thumb]')) return;
 
-    if (target.__reflectAuto) {
+    // El propio ciclo acaba de pulsar ese control: no es el usuario.
+    if (target.__reflectAuto || settling) {
       target.__reflectAuto = false;
       return;
     }
 
+    // El usuario navegó: se reinicia el ciclo común para que badge y
+    // carrusel vuelvan a empezar juntos.
+    sync();
+
     scopes.forEach((scope) => {
-      window.clearInterval(scope.timer);
-      window.setTimeout(() => {
-        restart(scope);
-        schedule(scope);
-      }, RESUME_MS);
+      scope.unsubscribe?.();
+      restart(scope);
+
+      window.setTimeout(() => schedule(scope), RESUME_MS);
     });
   });
 

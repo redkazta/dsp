@@ -83,20 +83,24 @@ describe('ciclo del badge', () => {
     expect(root.classList.contains('is-flash-photo')).toBe(false);
   });
 
-  it('avisa para que el carrusel pase de pieza al cerrar la vuelta', async () => {
-    const rotates: number[] = [];
-    document.addEventListener('reflect:rotate', () => rotates.push(Date.now()));
-
+  it('al cerrar la vuelta el reloj marca un tick de rotación', async () => {
+    const { isRotationTick, onTick } = await import('../src/lib/reflect-clock');
     await import('../src/lib/reflect-anim');
 
-    // Rota 1 vez por vuelta completa, no en cada cambio de foto.
-    vi.advanceTimersByTime(2000);
-    expect(rotates).toHaveLength(0);
+    const rotations: number[] = [];
+    onTick((tick) => {
+      if (isRotationTick(tick)) rotations.push(tick);
+    });
 
+    // Media vuelta: todavía no rota.
     vi.advanceTimersByTime(2000);
-    expect(rotates).toHaveLength(1);
+    expect(rotations).toHaveLength(0);
+
+    // Vuelta completa: exactamente una rotación.
+    vi.advanceTimersByTime(2000);
+    expect(rotations).toHaveLength(1);
 
     vi.advanceTimersByTime(4000);
-    expect(rotates).toHaveLength(2);
+    expect(rotations).toHaveLength(2);
   });
 });
