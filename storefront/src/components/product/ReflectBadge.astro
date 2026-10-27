@@ -18,11 +18,13 @@ import { getCopy, type Lang } from '../../lib/i18n';
 export interface Props {
   /** true = la prenda tiene reflejo y se anima. Normalmente `product.is_reflective`. */
   reflective: boolean;
+  /** Desde qué número arranca la cuenta (debe coincidir con `COUNT_FROM`). */
+  seconds?: number;
   /** Clases extra del contenedor (p. ej. `is-lowered` si hay badge de agotado). */
   class?: string;
 }
 
-const { reflective, class: className = '' } = Astro.props;
+const { reflective, seconds = 2, class: className = '' } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -35,8 +37,14 @@ const label = reflective ? t.product.reflective : t.product.notReflective;
   class:list={['reflect-badge', { 'is-plain': !reflective }, className]}
   data-reflect-badge
   data-label={t.product.reflective}
-  data-label-off={t.product.notReflective}
 >
   <span class="reflect-badge-label" data-reflect-label>{label}</span>
+  {
+    reflective && (
+      <span class="reflect-badge-count" data-reflect-count>
+        {seconds}
+      </span>
+    )
+  }
   <span class="reflect-badge-dot" aria-hidden="true"></span>
 </span>

@@ -239,6 +239,9 @@
   justify-content: center;
   gap: 3px;
   min-width: 104px;
+  /* Alto fijo reservado para palabra + número + punto: así el badge no
+     cambia de tamaño entre "2", "1" y el estado encendido. */
+  min-height: 72px;
   padding: 7px 12px 6px;
   background: rgba(6, 6, 6, 0.9);
   border: 1.5px solid rgba(255, 226, 138, 0.6);
@@ -279,6 +282,9 @@
   line-height: 1;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
+  /* Ancho fijo: al pasar de 2 a 1 no se mueve nada. */
+  min-width: 1.2ch;
+  text-align: center;
 }
 
 .reflect-badge-count.is-ticking {
@@ -362,6 +368,7 @@ img.is-flash-photo {
     top: 8px;
     left: 8px;
     min-width: 74px;
+    min-height: 52px;
     padding: 5px 8px 4px;
     gap: 2px;
   }

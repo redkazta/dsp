@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 /**
- * Cuenta atrás del reflejo: "Reflectivo en… 2" → "1" → enciende la foto del
- * flash → vuelve a la portada y arranca otra vez.
+ * Cuenta atrás del reflejo. El badge se ve igual en los tres estados:
+ *
+ *     Reflectivo en…      Reflectivo en…      Reflectivo en…
+ *           2                   1                  (dorado)
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
@@ -9,8 +11,9 @@ function mountCard() {
   document.body.innerHTML = `
     <div class="product-frame" data-reflect data-reflect-flash="1" data-reflect-ms="1000">
       <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
-        <span class="reflect-badge-dot"></span>
         <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
+        <span class="reflect-badge-count" data-reflect-count>2</span>
+        <span class="reflect-badge-dot"></span>
       </span>
       <div class="card-carousel" data-carousel-scope>
         <div class="card-track" data-carousel-track>
@@ -24,7 +27,7 @@ function mountCard() {
 }
 
 const countOf = (root: HTMLElement) =>
-  root.querySelector('.reflect-badge-count')?.textContent ?? null;
+  root.querySelector('[data-reflect-count]')?.textContent ?? null;
 
 beforeEach(() => {
   vi.resetModules();
@@ -40,17 +43,18 @@ afterEach(() => {
 });
 
 describe('reflect-anim', () => {
-  it('cuenta 2 → 1 y enciende la foto con destello', async () => {
+  it('cuenta 2 → 1 → encendido manteniendo el número visible', async () => {
     await import('../src/lib/reflect-anim');
 
     const root = document.querySelector<HTMLElement>('[data-reflect]')!;
     const badge = root.querySelector('.reflect-badge')!;
+    const label = root.querySelector('[data-reflect-label]')!;
     const clicked: number[] = [];
     root
       .querySelectorAll<HTMLElement>('[data-carousel-dot]')
       .forEach((dot, i) => dot.addEventListener('click', () => clicked.push(i)));
 
-    // Arranca mostrando la cuenta, no encendido.
+    // Arranca en 2, sin encender.
     expect(countOf(root)).toBe('2');
     expect(badge.classList.contains('is-lit')).toBe(false);
 
@@ -58,15 +62,22 @@ describe('reflect-anim', () => {
     expect(countOf(root)).toBe('1');
     expect(badge.classList.contains('is-lit')).toBe(false);
 
-    // Al llegar a cero: foto del reflejo + badge encendido.
+    // Al llegar a cero: foto del reflejo y badge encendido.
     vi.advanceTimersByTime(1000);
     expect(clicked).toContain(1);
     expect(badge.classList.contains('is-lit')).toBe(true);
     expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(true);
 
+    // El número SIGUE visible mientras está encendido (no desaparece) y la
+    // etiqueta no cambia: el badge mide exactamente igual en los 3 estados.
+    expect(root.querySelector('[data-reflect-count]')).not.toBeNull();
+    expect(countOf(root)).not.toBeNull();
+    expect(label.textContent).toBe('Reflectivo en…');
+
     // Se queda encendido un momento…
     vi.advanceTimersByTime(1500);
     expect(badge.classList.contains('is-lit')).toBe(true);
+    expect(root.querySelector('[data-reflect-count]')).not.toBeNull();
 
     // …y vuelve a la portada reiniciando la cuenta.
     vi.advanceTimersByTime(1000);

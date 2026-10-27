@@ -52,8 +52,6 @@
     /** Número del cuenta atrás (se crea una vez). */
     count: HTMLElement | null;
     label: string;
-    /** "Reflectivo" sin el "en…", para cuando está encendido. */
-    shortLabel: string;
     /** Un segundo de la cuenta. */
     ms: number;
     /** Desde cuántos segundos arranca ("Reflectivo en… 3 · 2 · 1"). */
@@ -82,18 +80,15 @@
     const badge = root.querySelector<HTMLElement>('[data-reflect-badge]');
     const text = badge?.querySelector<HTMLElement>('[data-reflect-label]') ?? null;
 
-    // "Reflectivo en…" mientras cuenta; "Reflectivo" al encenderse.
-    const longLabel = badge?.dataset.label ?? '';
-    const shortLabel =
-      badge?.dataset.labelShort || longLabel.replace(/\s*en[….]+\s*$/i, '').trim();
+    // El número viene ya en el HTML (evita el salto al hidratar).
+    const count = badge?.querySelector<HTMLElement>('[data-reflect-count]') ?? null;
 
     const scope: ReflectScope = {
       root,
       badge,
       text,
-      count: null,
-      label: longLabel,
-      shortLabel,
+      count,
+      label: badge?.dataset.label ?? '',
       ms: Number.isFinite(ms) && ms > 0 ? ms : DEFAULT_MS,
       seconds: COUNT_FROM,
       flashIndex,
@@ -137,43 +132,40 @@
   }
 
   /**
-   * Pinta el número del cuenta atrás bajo la palabra.
+   * Pinta el cuenta atrás. La estructura es siempre la misma:
    *
-   *   Reflectivo en…
-   *         2
+   *   Reflectivo en…        ← etiqueta
+   *         2               ← número
    *
-   * `0` = el reflejo ya está encendido: se quita el número y la palabra
-   * vuelve a su forma corta.
+   * El número NO se quita al encenderse: el badge se ve igual en los tres
+   * estados (2 → 1 → encendido), solo cambia el color. Antes el número
+   * desaparecía al llegar a cero y el badge quedaba más bajo, lo que hacía
+   * que "Reflectivo" se viera distinto.
    */
   function paintCount(scope: ReflectScope, value: number, animate = true) {
-    const { badge, text, label } = scope;
+    const { badge, text } = scope;
     if (!badge || !text) return;
 
-    if (value <= 0) {
-      badge.classList.remove('is-counting');
-      if (scope.count) scope.count.remove();
-      scope.count = null;
-      // La palabra sola se usa cuando el reflejo ya está encendido.
-      if (scope.shortLabel) text.textContent = scope.shortLabel;
-      return;
-    }
-
     badge.classList.add('is-counting');
-    text.textContent = label;
+    text.textContent = scope.label;
 
-    // El número es hermano de la palabra: va en su propia fila, centrado.
+    // El número viene del HTML; si no está (favoritos, carrito) se crea.
     if (!scope.count) {
       scope.count = document.createElement('span');
       scope.count.className = 'reflect-badge-count';
-      badge.appendChild(scope.count);
+      scope.count.dataset.reflectCount = '';
+      badge.insertBefore(scope.count, badge.querySelector('.reflect-badge-dot'));
     }
 
-    scope.count.textContent = String(value);
+    const seconds = value > 0 ? value : scope.seconds;
+    if (scope.count.textContent !== String(seconds)) {
+      scope.count.textContent = String(seconds);
 
-    if (animate) {
-      scope.count.classList.remove('is-ticking');
-      void scope.count.offsetWidth; // reinicia la animación en cada número
-      scope.count.classList.add('is-ticking');
+      if (animate) {
+        scope.count.classList.remove('is-ticking');
+        void scope.count.offsetWidth; // reinicia la animación en cada número
+        scope.count.classList.add('is-ticking');
+      }
     }
   }
 
@@ -254,7 +246,7 @@
       if (reduce) {
         scope.flipped = true;
         scope.badge?.classList.add('is-lit');
-        paintCount(scope, 0, false);
+        paintCount(scope, scope.seconds, false);
         showPhoto(scope, scope.flashIndex);
         return;
       }

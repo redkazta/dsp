@@ -144,16 +144,21 @@ const ui = {
             <div>
               {images.length > 1 ? (
                 <div class="pdp-carousel" data-carousel-scope>
+                  {/* El badge va una sola vez, encima del carrusel: dentro de
+                      cada slide se repetiría en cada foto. */}
+                  <div
+                    class="pdp-reflect"
+                    data-reflect={reflectPlan.animatable ? '' : undefined}
+                    data-reflect-flash={reflectPlan.animatable ? reflectFlash : undefined}
+                    data-reflect-ms={reflectPlan.animatable ? 1000 : undefined}
+                  >
+                    <ReflectBadge reflective={reflectPlan.animatable} />
+                  </div>
+
                   <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${product.name}: ${t.product.photos}`}>
                     {images.map((img: any, i: number) => (
                       <div class="pdp-slide" data-carousel-slide>
-                        <div
-                          class="product-frame border-2 border-white/25"
-                          data-reflect={reflectPlan.animatable ? '' : undefined}
-                          data-reflect-flash={reflectPlan.animatable ? reflectFlash : undefined}
-                          data-reflect-ms={reflectPlan.animatable ? 1000 : undefined}
-                        >
-                          <ReflectBadge reflective={reflectPlan.animatable} />
+                        <div class="product-frame border-2 border-white/25">
                           <img
                             src={img.url}
                             alt={img.alt_text ?? product.name}
@@ -370,6 +375,16 @@ const ui = {
     /* ---------- Carrusel de la ficha ---------- */
     .pdp-carousel {
       position: relative;
+    }
+
+    /* Contenedor del badge: no ocupa espacio, solo ancla el aviso sobre el
+       marco. Así el badge va una sola vez y no se repite en cada slide. */
+    .pdp-reflect {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 8;
+      pointer-events: none;
     }
 
     .pdp-track {
