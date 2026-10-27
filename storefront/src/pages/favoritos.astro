@@ -217,6 +217,10 @@ const available = items.filter((i) => !stale.includes(i.productId));
       empty.classList.add('hidden');
       grid.innerHTML = items.map(card).join('');
 
+      // El controlador del reflejo se registra al cargar la página: avisarle
+      // de las tarjetas repintadas para que también se animen.
+      document.dispatchEvent(new CustomEvent('reflect:refresh'));
+
       grid.querySelectorAll<HTMLButtonElement>('[data-wish-remove]').forEach((b) =>
         b.addEventListener('click', async () => {
           b.disabled = true;

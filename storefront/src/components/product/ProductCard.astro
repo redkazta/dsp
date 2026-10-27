@@ -106,15 +106,6 @@ void trackId;
                       loading={i === 0 ? 'eager' : 'lazy'}
                       decoding="async"
                     />
-                    {reflect && (
-                      <button
-                        type="button"
-                        class="reflect-target"
-                        data-reflect-target={i}
-                        tabindex="-1"
-                        aria-hidden="true"
-                      />
-                    )}
                   </div>
                 ))}
               </div>
@@ -374,15 +365,17 @@ void trackId;
     top: 46px;
   }
 
-  /* Botón invisible que dispara el cambio de foto (lo pulsa el controlador). */
-  .card-slide .reflect-target {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    border: 0;
-    opacity: 0;
-    pointer-events: none;
+  /* Destello de la foto al encenderse el reflejo.
+     Va con clase en el <img> porque el CSS scoped no puede leer
+     `[data-reflect-state]` (lo pone el JS en tiempo de ejecución). */
+  .card-slide img.is-flash-photo {
+    animation: reflect-flash 0.65s ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-slide img.is-flash-photo {
+      animation: none;
+    }
   }
 </style>
 

@@ -347,19 +347,22 @@ const plans = list.map((item) =>
     transition: background 0.25s ease;
   }
 
-  /* Reflejo encendido: badge dorado + destello en la foto. */
-  [data-reflect-state='on'] .hero-reflect {
+  /* Reflejo encendido.
+     Se marca con clases en el propio elemento (no con un selector del tipo
+     `[data-reflect-state] .hero-reflect`: Astro le añade su cid al atributo
+     del padre y el selector nunca llega a coincidir). */
+  .hero-reflect.is-lit {
     background: #ffe28a;
     border-color: #ffe28a;
     color: #000000;
   }
 
-  [data-reflect-state='on'] .hero-reflect-dot {
+  .hero-reflect.is-lit .hero-reflect-dot {
     background: #000000;
     animation: reflect-pulse 2s ease-out infinite;
   }
 
-  [data-reflect-state='on'] .hero-photo.is-active {
+  .hero-media.is-flash-photo .hero-photo.is-active {
     animation: reflect-flash 0.65s ease-out;
   }
 
@@ -416,8 +419,8 @@ const plans = list.map((item) =>
       transition: none;
     }
 
-    [data-reflect-state='on'] .hero-reflect-dot,
-    [data-reflect-state='on'] .hero-photo.is-active {
+    .hero-reflect.is-lit .hero-reflect-dot,
+    .hero-media.is-flash-photo .hero-photo.is-active {
       animation: none;
     }
   }
@@ -456,6 +459,11 @@ const plans = list.map((item) =>
       if (photos.length < 2) return;
 
       photos.forEach((photo, i) => photo.classList.toggle('is-active', i === target));
+
+      // Clases en el propio componente: el CSS scoped las sí reconoce.
+      const lit = target === Number(media.dataset.reflectFlash ?? -1);
+      media.classList.toggle('is-flash-photo', lit);
+      media.querySelector('.hero-reflect')?.classList.toggle('is-lit', lit);
 
       const slide = media.closest('[data-hero-slide]');
       slide?.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb, i) => {

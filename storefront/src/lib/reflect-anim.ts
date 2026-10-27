@@ -23,8 +23,16 @@
  */
 
 // Los scripts de Astro comparten el scope del bundle: el IIFE evita
-// colisiones con `carousel.ts` (mismo `focused`, `scopes`…).
+// colisiones con `carousel.ts`. Además el mismo módulo se importa desde
+// varios componentes (hero, tarjetas, ficha): sin este candado se
+// ejecutaba dos veces y cada copia abría su propio intervalo, alternando
+// las fotos entre sí y dejando el badge encendido.
 (() => {
+  const FLAG = '__dspReflectAnim';
+  const w = window as unknown as Record<string, boolean>;
+  if (w[FLAG]) return;
+  w[FLAG] = true;
+
   const DEFAULT_MS = 2000;
 
   /** Margen tras una interacción manual antes de retomar el ciclo. */
@@ -41,8 +49,6 @@
   };
 
   const scopes = new Map<HTMLElement, ReflectScope>();
-  let hoverCount = 0;
-  let focused = false;
 
   function register(root: HTMLElement): ReflectScope | null {
     const existing = scopes.get(root);
@@ -70,12 +76,31 @@
   function showPhoto(scope: ReflectScope, index: number) {
     const { root } = scope;
 
+    // Solo controles que el carrusel ya escucha (`lib/carousel.ts`).
+    // Un botón inventado no dispara nada.
     const target = root.querySelector<HTMLElement>(
-      `[data-reflect-target="${index}"], [data-carousel-thumb="${index}"], [data-carousel-dot="${index}"]`
+      `[data-carousel-dot="${index}"], [data-carousel-thumb="${index}"]`
     );
 
     if (target) {
+      // `programmatic` evita que el listener de abajo confunda este click
+      // con uno del usuario y detenga el ciclo.
+      (target as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
       target.click();
+
+      // El CSS scoped no puede leer `[data-reflect-state]` (lo pone el JS),
+      // así que el destello va con una clase en la foto visible.
+      root.querySelectorAll<HTMLElement>('img, .reflect-badge').forEach((el) => {
+        el.classList.remove('is-flash-photo', 'is-lit');
+      });
+
+      if (index === scope.flashIndex) {
+        const photo = root.querySelector<HTMLElement>(
+          `.card-slide:nth-child(${index + 1}) img`
+        );
+        photo?.classList.add('is-flash-photo');
+        root.querySelector('.reflect-badge')?.classList.add('is-lit');
+      }
       return;
     }
 
@@ -83,13 +108,29 @@
     root.dispatchEvent(new CustomEvent('reflect:photo', { detail: { index }, bubbles: true }));
   }
 
+  /**
+   * ¿La pieza está en pantalla?
+   *
+   * Un rect en cero (imagen aún sin cargar, altura sin resolver, contenedor
+   * oculto) NO significa "fuera de pantalla": antes se descartaba y el
+   * carrusel nunca arrancaba. En ese caso se considera visible.
+   */
   function onScreen(el: HTMLElement) {
     const rect = el.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return true;
+    if (rect.bottom === 0 && rect.top === 0) return true;
     return rect.bottom > 0 && rect.top < window.innerHeight;
   }
 
+  /**
+   * El ciclo solo se detiene si la pestaña está oculta.
+   *
+   * Antes también se pausaba con el hover, pero en escritorio el puntero
+   * está sobre alguna tarjeta casi siempre: esa pieza nunca se encendía.
+   * El reflejo dura 2 s y no impide leer, así que ya no frena por hover.
+   */
   function busy() {
-    return focused || hoverCount > 0 || document.hidden;
+    return document.hidden;
   }
 
   function schedule(scope: ReflectScope) {
@@ -99,8 +140,6 @@
       if (busy() || !onScreen(scope.root)) return;
 
       scope.flipped = !scope.flipped;
-      scope.root.dataset.reflectState = scope.flipped ? 'on' : 'off';
-
       showPhoto(scope, scope.flipped ? scope.flashIndex : scope.plainIndex);
     }, scope.ms);
   }
@@ -114,48 +153,27 @@
 
       // Con movimiento reducido queda fija la toma con el reflejo encendido.
       if (reduce) {
-        root.dataset.reflectState = 'on';
         showPhoto(scope, scope.flashIndex);
         return;
       }
 
+      // `schedule` ya limpia el intervalo previo: un refresh no duplica.
       schedule(scope);
     });
   }
 
-  // ---------- Interacción ----------
-  document.addEventListener(
-    'pointerenter',
-    (e) => {
-      if ((e.target as HTMLElement | null)?.closest('[data-reflect]')) hoverCount++;
-    },
-    true
-  );
-
-  document.addEventListener(
-    'pointerleave',
-    (e) => {
-      if ((e.target as HTMLElement | null)?.closest('[data-reflect]')) {
-        hoverCount = Math.max(0, hoverCount - 1);
-      }
-    },
-    true
-  );
-
-  document.addEventListener('focusin', (e) => {
-    if ((e.target as HTMLElement | null)?.closest('[data-reflect]')) focused = true;
-  });
-
-  document.addEventListener('focusout', () => {
-    focused = false;
-  });
-
   // Cambio manual de foto: se detiene el ciclo unos segundos para no pelearse
   // con quien está mirando la prenda.
   document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement | null;
+    const target = e.target as (HTMLElement & { __reflectAuto?: boolean }) | null;
     if (!target?.closest('[data-reflect]')) return;
     if (!target.closest('[data-carousel-dir], [data-carousel-dot], [data-carousel-thumb]')) return;
+
+    // El controlador también pulsa esos botones: no es el usuario.
+    if (target.__reflectAuto) {
+      target.__reflectAuto = false;
+      return;
+    }
 
     document.querySelectorAll<HTMLElement>('[data-reflect]').forEach((root) => {
       const scope = scopes.get(root);

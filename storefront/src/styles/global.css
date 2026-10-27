@@ -203,89 +203,6 @@
     display: none;
   }
 
-  /* ============================================
-     Reflejo en piezas reflectivas
-     ============================================
-     Badge arriba a la izquierda del marco. Lo usan las tarjetas del
-     catálogo, la ficha y los favoritos: por eso vive en global (algunas
-     listas se pintan con innerHTML y no reciben el scope de Astro).
-     El encendido lo controla `lib/reflect-anim.ts` con
-     `data-reflect-state="on"`. */
-  .reflect-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 9;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 8px 3px 6px;
-    background: #0b0b0b;
-    border: 1px solid rgba(255, 226, 138, 0.55);
-    color: #ffe28a;
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    line-height: 1;
-    pointer-events: none;
-    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-  }
-
-  .reflect-badge-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 999px;
-    background: #b9c3cc;
-    transition: background 0.25s ease;
-  }
-
-  [data-reflect-state='on'] .reflect-badge {
-    background: #ffe28a;
-    border-color: #ffe28a;
-    color: #000000;
-  }
-
-  [data-reflect-state='on'] .reflect-badge-dot {
-    background: #000000;
-    animation: reflect-pulse 2s ease-out infinite;
-  }
-
-  [data-reflect-state='on'] .product-frame img {
-    animation: reflect-flash 0.65s ease-out;
-  }
-
-  @keyframes reflect-pulse {
-    0% {
-      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.45);
-    }
-    70% {
-      box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
-    }
-  }
-
-  @keyframes reflect-flash {
-    0% {
-      filter: brightness(1);
-    }
-    30% {
-      filter: brightness(1.2) saturate(1.15);
-    }
-    100% {
-      filter: brightness(1);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    [data-reflect-state='on'] .reflect-badge-dot,
-    [data-reflect-state='on'] .product-frame img {
-      animation: none;
-    }
-  }
 
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -296,5 +213,89 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* ============================================
+   Reflejo en piezas reflectivas
+   ============================================
+   Badge arriba a la izquierda del marco. Lo usan las tarjetas del
+   catálogo, la ficha y los favoritos: por eso vive en global (algunas
+   listas se pintan con innerHTML y no reciben el scope de Astro).
+   Fuera de @layer para que el selector no se colapse, y el encendido se
+   marca con `.is-lit` / `.is-flash-photo` desde `lib/reflect-anim.ts`. */
+.reflect-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 9;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  background: #0b0b0b;
+  border: 1px solid rgba(255, 226, 138, 0.55);
+  color: #ffe28a;
+  font-family: 'Space Grotesk', Inter, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1;
+  pointer-events: none;
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.reflect-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #b9c3cc;
+  transition: background 0.25s ease;
+}
+
+.reflect-badge.is-lit {
+  background: #ffe28a;
+  border-color: #ffe28a;
+  color: #000000;
+}
+
+.reflect-badge.is-lit .reflect-badge-dot {
+  background: #000000;
+  animation: reflect-pulse 2s ease-out infinite;
+}
+
+img.is-flash-photo {
+  animation: reflect-flash 0.65s ease-out;
+}
+
+@keyframes reflect-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes reflect-flash {
+  0% {
+    filter: brightness(1);
+  }
+  30% {
+    filter: brightness(1.2) saturate(1.15);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reflect-badge.is-lit .reflect-badge-dot,
+  img.is-flash-photo {
+    animation: none;
   }
 }
