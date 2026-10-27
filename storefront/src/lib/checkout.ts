@@ -335,6 +335,8 @@ export interface StartCheckoutInput {
   origin: string;
   /** Destino tras pagar; por defecto la confirmación del pedido. */
   returnPath?: string | null;
+  /** Idioma de la tienda: la etiqueta de envío se manda a Stripe traducida. */
+  lang?: 'es' | 'en';
 }
 
 export type StartCheckoutResult =
@@ -352,6 +354,7 @@ export async function startStripeCheckout({
   requestedItems,
   origin,
   returnPath,
+  lang = 'es',
 }: StartCheckoutInput): Promise<StartCheckoutResult> {
   if (!isStripeConfigured()) {
     return {
@@ -408,7 +411,7 @@ export async function startStripeCheckout({
         image: i.image,
       })),
       shipping,
-      shippingLabel: 'Envío estándar',
+      shippingLabel: lang === 'en' ? 'Standard shipping' : 'Envío estándar',
       clientReference: order.id,
       customerEmail: customer.email,
       successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return`,

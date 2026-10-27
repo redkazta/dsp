@@ -39,10 +39,12 @@ export const POST: APIRoute = async ({
   request,
   cookies,
   url,
+  locals,
 }: {
   request: Request;
   cookies: AstroCookies;
   url: URL;
+  locals: App.Locals;
 }) => {
   const sessionClient = createSupabaseServerClient(request, cookies);
   const {
@@ -73,6 +75,7 @@ export const POST: APIRoute = async ({
     requestedItems: payload?.items,
     origin: url.origin,
     returnPath: typeof payload?.returnPath === 'string' ? payload.returnPath : null,
+    lang: locals.lang === 'en' ? 'en' : 'es',
   });
 
   if (!result.ok) return error(result.code, result.message, result.status);

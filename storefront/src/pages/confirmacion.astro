@@ -92,8 +92,8 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
           <div class="gold-line mx-auto mb-8"></div>
           <p class="text-base text-white/80 leading-relaxed mb-10">
             {user && orderParam
-              ? 'No encontramos este pedido en tu cuenta. Verifica el número o revisa tus pedidos.'
-              : 'Entra a tu cuenta para ver el detalle completo de tus pedidos.'}
+              ? t.account.orderNotFound
+              : t.account.orderSignIn}
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <a href="/cuenta#pedidos" class="btn-gold">{t.account.myOrders}</a>
@@ -110,9 +110,9 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
                 {isPaid ? <path d="m5 13 4 4L19 7" /> : <circle cx="12" cy="12" r="9" />}
               </svg>
             </div>
-            <p class="section-label mb-4">{isPaid ? 'Pago aprobado' : 'Pago en proceso'}</p>
+            <p class="section-label mb-4">{isPaid ? t.account.paidApproved : t.account.paidPending}</p>
             <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
-              {isPaid ? `Gracias, ${(order.contact_name ?? 'cliente').split(' ')[0]}` : 'Estamos confirmando tu pago'}
+              {isPaid ? `${t.account.thankYou}, ${(order.contact_name ?? t.account.customerFallback).split(' ')[0]}` : t.account.confirmingPayment}
             </h1>
             <div class="gold-line mx-auto mb-6"></div>
             <p class="text-base text-white/80">
@@ -214,7 +214,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
                       )}
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="font-acentos text-base text-blancoRoto">{i.product_name ?? 'Pieza'}</p>
+                      <p class="font-acentos text-base text-blancoRoto">{i.product_name ?? t.common.piece}</p>
                       <p class="text-sm text-white/80">
                         {[i.size, i.color].filter(Boolean).join(' · ') || i.variant_name || ''} · Cantidad {i.quantity}
                       </p>
@@ -238,7 +238,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
                   <div class="flex justify-between">
                     <span class="text-white/80">{t.cart.shipping}</span>
                     <span class="text-blancoRoto">
-                      {shipping === 0 ? 'Gratis' : formatOrderMoney(shipping)}
+                      {shipping === 0 ? t.account.free : formatOrderMoney(shipping)}
                     </span>
                   </div>
                   <div class="flex justify-between pt-3 border-t-2 border-white/25">

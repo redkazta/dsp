@@ -25,6 +25,19 @@ const GOOGLE_CLIENT_ID =
   '487574117831-d497l5eneq6sn1rm0ouigimaet76frb9.apps.googleusercontent.com';
 ---
 
+<script
+  type="application/json"
+  id="google-ui"
+  set:html={JSON.stringify({
+    noCredential: t.account.googleNoCredential,
+    signInFailed: t.account.googleSignInFailed,
+    unavailable: t.account.googleUnavailable,
+    loadFailed: t.account.googleLoadFailed,
+    first: t.account.firstName,
+    last: t.account.lastName,
+  })}
+/>
+
 <div id="google-auth" class="w-full" data-client-id={GOOGLE_CLIENT_ID}>
   <button type="button" id="google-btn" class="google-btn" aria-label={t.account.continueGoogle}>
     <span class="google-icon" aria-hidden="true">
@@ -118,6 +131,12 @@ const GOOGLE_CLIENT_ID =
 <script>
   import { supabase } from '../../lib/supabase';
 
+  /** Textos resueltos en servidor (i18n). */
+  const ui = JSON.parse(document.getElementById('google-ui')?.textContent || '{}') as Record<
+    string,
+    string
+  >;
+
   const GSI_SRC = 'https://accounts.google.com/gsi/client';
 
   const root = document.getElementById('google-auth');
@@ -206,7 +225,7 @@ const GOOGLE_CLIENT_ID =
     const credential = response?.credential as string | undefined;
 
     if (!credential) {
-      showError('Google no devolvió credenciales. Intenta de nuevo.');
+      showError(ui.noCredential);
       return;
     }
 
@@ -225,7 +244,7 @@ const GOOGLE_CLIENT_ID =
 
     if (error) {
       console.error('[google] signInWithIdToken:', error.message, error.status);
-      showError('No pudimos iniciar sesión con Google. Intenta de nuevo.');
+      showError(ui.signInFailed);
       return;
     }
 
@@ -237,7 +256,7 @@ const GOOGLE_CLIENT_ID =
 
     const google = (window as any).google;
     if (!google?.accounts?.id) {
-      showError('Google no está disponible en este navegador.');
+      showError(ui.unavailable);
       return;
     }
 
@@ -281,7 +300,7 @@ const GOOGLE_CLIENT_ID =
     } catch (err: any) {
       setLoading(false);
       console.error('[google] renderGoogle', err?.message);
-      showError('No se pudo cargar Google. Revisa tu conexión.');
+      showError(ui.loadFailed);
       return;
     }
 

@@ -69,6 +69,7 @@ const ordersView = orders.map((o) => ({
     id="account-ui"
     set:html={JSON.stringify({
       noSavedWish: t.common.noSavedWish,
+      saveError: t.account.saveError,
       view: t.common.view,
       remove: t.common.remove,
     })}
@@ -173,7 +174,7 @@ const ordersView = orders.map((o) => ({
                           {o.order_items.map((i) => (
                             <li class="flex justify-between gap-3 text-sm">
                               <span class="text-white/80 min-w-0">
-                                {i.quantity} × {i.product_name ?? 'Pieza'}
+                                {i.quantity} × {i.product_name ?? t.common.piece}
                                 {i.size || i.color ? ` (${[i.size, i.color].filter(Boolean).join(' · ')})` : ''}
                               </span>
                               <span class="text-blancoRoto whitespace-nowrap">
@@ -357,7 +358,7 @@ const ordersView = orders.map((o) => ({
       submit.disabled = false;
 
       if (error || !first) {
-        saveError.textContent = 'No pudimos guardar tus datos. Revisa el nombre e intenta de nuevo.';
+        saveError.textContent = labels.saveError ?? '';
         saveError.classList.remove('hidden');
         return;
       }

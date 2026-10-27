@@ -301,7 +301,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       .then(({ removed }) => {
         if (removed.length > 0) {
           showNotices([
-            `Quitamos ${removed.length} ${removed.length === 1 ? 'pieza' : 'piezas'} que ya no están disponibles.`,
+            uiText('unavailableRemoved') + ` (${removed.length})`,
           ]);
         }
         render();
