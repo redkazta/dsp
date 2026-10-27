@@ -1,5 +1,5 @@
 /**
- * Carrusel de imágenes reutilizable.
+ * Carrusel de fotos de una pieza.
  *
  * Funciona con cualquier contenedor que tenga:
  *   <div data-carousel-scope>
@@ -7,20 +7,18 @@
  *     <button data-carousel-dir="-1"> …
  *     <button data-carousel-dir="1">  …
  *     <span data-carousel-dot="0"> …
+ *     <button data-carousel-thumb="0"> …
  *   </div>
  *
- * - Flechas y puntos NO navegan cuando el carrusel está dentro de un <a>.
- * - Avanza solo cada `interval` ms; se pausa al interactuar (hover, touch,
- *   teclado, o cuando la pestaña no está visible).
- * - Respeta `prefers-reduced-motion`.
+ * **No tiene reloj propio.** El cambio automático de foto lo manda el badge
+ * del reflejo (`lib/reflect-anim.ts`), que pulsa los mismos controles. Antes
+ * este archivo abría su propio `setInterval` y los dos se peleaban: las
+ * fotos se movían de más y sin relación con la cuenta del badge.
  *
- * Se inicializa por delegación en el documento, así que da igual si el HTML
- * del carrusel llegó en el SSR o se pintó después.
+ * - Flechas y puntos NO navegan cuando el carrusel está dentro de un <a>.
+ * - Se inicializa por delegación, así que da igual si el HTML llegó en el
+ *   SSR o se pintó después.
  */
-import { ROTATION_MS } from './reflect-timing';
-import { isRotationTick, onTick } from './reflect-clock';
-
-const DEFAULT_INTERVAL = ROTATION_MS;
 
 type Carousel = {
   scope: HTMLElement;
@@ -32,32 +30,6 @@ type Carousel = {
 };
 
 const registry = new Map<HTMLElement, Carousel>();
-let focused = false;
-let hovering = 0;
-let timer: number | undefined;
-
-/**
- * Scopes cuyo autoplay está en pausa (por ejemplo, mientras el reflejo
- * muestra la foto con flash). Sin esto, el avance automático y el reflejo
- * pulsaban los mismos puntos y se peleaban.
- */
-const paused = new Set<HTMLElement>();
-
-/**
- * Detiene/reanuda el avance automático de un carrusel concreto.
- *
- * Se expone por evento (`storefront` no puede importar funciones entre
- * scripts de navegador: cada uno es un módulo aparte).
- */
-document.addEventListener('carousel:pause', (e) => {
-  const scope = (e as CustomEvent<HTMLElement>).detail;
-  if (scope instanceof HTMLElement) paused.add(scope);
-});
-
-document.addEventListener('carousel:resume', (e) => {
-  const scope = (e as CustomEvent<HTMLElement>).detail;
-  if (scope instanceof HTMLElement) paused.delete(scope);
-});
 
 function readSlideWidth(track: HTMLElement) {
   return Math.max(track.clientWidth, 1);
@@ -81,8 +53,7 @@ function goTo(carousel: Carousel, index: number, behavior: ScrollBehavior = 'smo
 function paint(carousel: Carousel) {
   const index = currentIndex(carousel);
 
-  // Avisa al reflejo cuando el carrusel cambia de foto, para que su cuenta
-  // atrás arranque de nuevo y no derive respecto al movimiento.
+  // Avisa cuando cambia la foto, para que el badge sepa en cuál está.
   if (carousel.lastIndex !== index) {
     carousel.lastIndex = index;
     carousel.scope.dispatchEvent(
@@ -122,51 +93,12 @@ function register(scope: HTMLElement): Carousel | null {
     lastIndex: -1,
   };
 
-  // El reflejo lee este valor para ajustar su cuenta al mismo periodo.
-  scope.dataset.carouselInterval = String(DEFAULT_INTERVAL);
-
-  if (carousel.slides.length < 2) {
-    registry.set(scope, carousel);
-    return carousel;
-  }
-
   track.addEventListener('scroll', () => paint(carousel), { passive: true });
   paint(carousel);
 
   registry.set(scope, carousel);
   return carousel;
 }
-
-function start() {
-  window.clearInterval(timer);
-}
-
-/**
- * Avance de pieza, guiado por el **reloj compartido** (`reflect-clock`).
- *
- * El carrusel sigue siendo autónomo: escucha los latidos y, cuando toca
- * cerrar la vuelta, pasa a la siguiente pieza. Antes dependía de un evento
- * emitido desde un contenedor que a veces envolvía al carrusel, así que el
- * aviso nunca llegaba.
- */
-onTick((tick) => {
-  if (focused || hovering > 0 || document.hidden) return;
-  if (!isRotationTick(tick)) return;
-
-  document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach((scope) => {
-    if (paused.has(scope)) return;
-
-    const carousel = registry.get(scope) ?? register(scope);
-    if (!carousel || carousel.slides.length < 2) return;
-
-    const rect = scope.getBoundingClientRect();
-    const visible = rect.bottom > 0 && rect.top < window.innerHeight;
-    if (!visible) return;
-
-    const next = (currentIndex(carousel) + 1) % carousel.slides.length;
-    goTo(carousel, next);
-  });
-});
 
 // ---------- Interacción (delegada) ----------
 document.addEventListener(
@@ -196,13 +128,14 @@ document.addEventListener(
       const total = carousel.slides.length;
       const next = (currentIndex(carousel) + dir + total) % total;
       goTo(carousel, next);
+      paint(carousel);
       return;
     }
 
     if (dot) {
       goTo(carousel, Number(dot.dataset.carouselDot ?? '0'));
       // `scroll` puede no dispararse (scroll instantáneo o ya en posición):
-      // se repinta igual para que los puntos y el reflejo no se queden atrás.
+      // se repinta igual para que puntos y miniaturas no se queden atrás.
       paint(carousel);
       return;
     }
@@ -215,31 +148,5 @@ document.addEventListener(
   true // captura: se ejecuta antes de que el <a> navegue
 );
 
-// Pausa solo mientras el puntero está sobre un carrusel
-document.addEventListener(
-  'pointerenter',
-  (e) => {
-    if ((e.target as HTMLElement | null)?.closest('[data-carousel-scope]')) hovering++;
-  },
-  true
-);
-
-document.addEventListener(
-  'pointerleave',
-  (e) => {
-    if ((e.target as HTMLElement | null)?.closest('[data-carousel-scope]')) hovering = Math.max(0, hovering - 1);
-  },
-  true
-);
-
-document.addEventListener('focusin', () => (focused = true));
-document.addEventListener('focusout', () => (focused = false));
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) window.clearInterval(timer);
-  else start();
-});
-
 // Registra lo que ya está en el DOM
 document.querySelectorAll<HTMLElement>('[data-carousel-scope]').forEach(register);
-
-start();

@@ -10,10 +10,12 @@ import {
 import { TICKS_PER_ROTATION, isRotationTick } from '../src/lib/reflect-clock';
 
 /**
- * Una sola variable de tiempo, compartida.
+ * Reparto de responsabilidades:
  *
- * Antes había tres `setInterval` (carrusel, hero, reflejo) que derivaban.
- * Ahora `reflect-clock` late cada segundo y todos leen el mismo contador.
+ *   reflect-clock     el único `setInterval`; una variable compartida
+ *   reflect-anim      el badge: cuenta y cambia la foto de la pieza
+ *   HeroCarousel      avanza las piezas, leyendo el mismo reloj
+ *   carousel          sin reloj: solo flechas, puntos y miniaturas
  */
 const read = (rel: string) => readFileSync(join(process.cwd(), rel), 'utf8');
 
@@ -30,38 +32,58 @@ describe('reflect-timing', () => {
   });
 
   it('toca avanzar de pieza una vez por vuelta', () => {
-    expect(isRotationTick(0)).toBe(false);
-    expect(isRotationTick(1)).toBe(false);
-    expect(isRotationTick(2)).toBe(false);
-    expect(isRotationTick(3)).toBe(false);
+    expect([0, 1, 2, 3].map(isRotationTick)).toEqual([false, false, false, false]);
     expect(isRotationTick(4)).toBe(true);
     expect(isRotationTick(8)).toBe(true);
   });
 });
 
-describe('todos leen el mismo reloj', () => {
-  it('el carrusel se suscribe al reloj compartido', () => {
-    const source = read('src/lib/carousel.ts');
-    expect(source).toContain('onTick');
-    expect(source).toContain('isRotationTick');
-  });
+describe('un solo reloj en toda la app', () => {
+  it('solo reflect-clock abre un intervalo', () => {
+    const files = [
+      'src/lib/carousel.ts',
+      'src/lib/reflect-anim.ts',
+      'src/components/hero/HeroCarousel.astro',
+    ];
 
-  it('el hero se suscribe al reloj compartido', () => {
-    const source = read('src/components/hero/HeroCarousel.astro');
-    expect(source).toContain('onTick');
-    expect(source).toContain('isRotationTick');
-  });
+    for (const rel of files) {
+      const code = read(rel)
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
 
-  it('el reflejo se suscribe al reloj compartido', () => {
-    const source = read('src/lib/reflect-anim.ts');
-    expect(source).toContain('onTick');
-    // Ya no abre intervalos propios.
-    expect(source).not.toMatch(/setInterval\(/);
-  });
-
-  it('nadie más tiene un intervalo de rotación', () => {
-    for (const rel of ['src/lib/carousel.ts', 'src/components/hero/HeroCarousel.astro']) {
-      expect(read(rel), rel).not.toMatch(/setInterval\(\s*(next|tick)/);
+      expect(code, `${rel} no debe abrir su propio setInterval`).not.toMatch(
+        /setInterval\(/
+      );
     }
+
+    expect(read('src/lib/reflect-clock.ts')).toMatch(/setInterval\(/);
+  });
+
+  it('el carrusel de fotos no tiene reloj ni avance automático', () => {
+    const source = read('src/lib/carousel.ts');
+
+    // Se ignoran los comentarios: el archivo puede mencionar `setInterval`
+    // explicando por qué ya no lo usa.
+    const code = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+
+    expect(code).not.toMatch(/onTick/);
+    expect(code).not.toMatch(/setInterval/);
+    expect(code).not.toMatch(/clearInterval/);
+  });
+
+  it('el hero avanza las piezas leyendo el reloj compartido', () => {
+    const source = read('src/components/hero/HeroCarousel.astro');
+
+    expect(source).toContain('onTick');
+    expect(source).toContain('isRotationTick');
+  });
+
+  it('el badge manda el cambio de foto y lee el mismo reloj', () => {
+    const source = read('src/lib/reflect-anim.ts');
+
+    expect(source).toContain('onTick');
+    expect(source).toContain('showPhoto');
   });
 });
