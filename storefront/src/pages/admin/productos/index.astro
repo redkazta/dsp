@@ -24,7 +24,18 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
       <form id="product-form" class="grid sm:grid-cols-2 gap-4">
         <input name="name" placeholder="Nombre *" required class="input-dark sm:col-span-2" />
+        <input
+          name="name_en"
+          placeholder="Name (English) — opcional"
+          class="input-dark sm:col-span-2"
+        />
         <textarea name="description" placeholder="Descripción" rows="3" class="input-dark sm:col-span-2"></textarea>
+        <textarea
+          name="description_en"
+          placeholder="Description (English) — opcional"
+          rows="3"
+          class="input-dark sm:col-span-2"
+        ></textarea>
 
         <input name="price" type="number" min="0" step="0.01" placeholder="Precio USD *" required class="input-dark" />
 
@@ -222,7 +233,9 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
           await createProduct(TENANT_ID, {
             name,
+            name_en: String(fd.get('name_en') ?? ''),
             description: String(fd.get('description') ?? ''),
+            description_en: String(fd.get('description_en') ?? ''),
             price: Number(fd.get('price')),
             categoryId: (fd.get('categoryId') as string) || null,
             sizes,

@@ -12,6 +12,7 @@ import {
 import { getCopy, categoryName, type Lang } from '../../lib/i18n';
 import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 import ReflectBadge from '../../components/product/ReflectBadge.astro';
+import { productName, productDescription } from '../../lib/product-texts';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -28,6 +29,10 @@ const canonicalSlug = (product as any)?.slug ?? param;
 const related = product
   ? await getRelatedProducts(TENANT_SLUG, (product as any).category_id ?? null, (product as any).id, 4)
   : [];
+
+// Nombre y descripción en el idioma activo (cae al español si falta).
+const title = productName(product as any, lang);
+const blurb = productDescription(product as any, lang);
 
 const rawImages = product?.product_images ?? [];
 
@@ -74,7 +79,7 @@ const breadcrumbLd = product
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: t.shop.breadcrumbHome, item: Astro.site },
         { '@type': 'ListItem', position: 2, name: t.shop.breadcrumb, item: new URL('/tienda', Astro.site ?? Astro.url.origin).toString() },
-        { '@type': 'ListItem', position: 3, name: product.name },
+        { '@type': 'ListItem', position: 3, name: title },
       ],
     }
   : null;
@@ -83,8 +88,8 @@ const productLd = product
   ? {
       '@context': 'https://schema.org',
       '@type': 'Product',
-      name: product.name,
-      description: product.description,
+      name: title,
+      description: blurb,
       sku: product.sku,
       image: images.map((i: any) => i.url),
       offers: {
@@ -109,8 +114,8 @@ const ui = {
 ---
 
 <BaseLayout
-  title={product ? `${product.name} | Dinero Sobre Problemas` : t.product.notFoundTitle}
-  description={product?.description ?? t.product.notFoundText}
+  title={product ? `${title} | Dinero Sobre Problemas` : t.product.notFoundTitle}
+  description={blurb || t.product.notFoundText}
   image={images[0]?.url}
 >
   {breadcrumbLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />}
@@ -133,7 +138,7 @@ const ui = {
             <li>/</li>
             <li><a href="/tienda" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumb}</a></li>
             <li>/</li>
-            <li class="text-oro-brillo truncate max-w-[200px]">{product.name}</li>
+            <li class="text-oro-brillo truncate max-w-[200px]">{title}</li>
           </ol>
         </div>
 
@@ -155,13 +160,13 @@ const ui = {
                     <ReflectBadge reflective={reflectPlan.animatable} />
                   </div>
 
-                  <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${product.name}: ${t.product.photos}`}>
+                  <div class="pdp-track" id="pdp-track" data-carousel-track tabindex="0" aria-label={`${title}: ${t.product.photos}`}>
                     {images.map((img: any, i: number) => (
                       <div class="pdp-slide" data-carousel-slide>
                         <div class="product-frame border-2 border-white/25">
                           <img
                             src={img.url}
-                            alt={img.alt_text ?? product.name}
+                            alt={img.alt_text ?? title}
                             loading={i === 0 ? 'eager' : 'lazy'}
                           />
                         </div>
@@ -212,7 +217,7 @@ const ui = {
                 <div class="product-frame border-2 border-white/25">
                   <ReflectBadge reflective={false} />
                   {images.length > 0 ? (
-                    <img src={images[0].url} alt={images[0].alt_text ?? product.name} loading="eager" />
+                    <img src={images[0].url} alt={images[0].alt_text ?? title} loading="eager" />
                   ) : (
                     <div class="absolute inset-0 flex items-center justify-center">
                       <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
@@ -233,7 +238,7 @@ const ui = {
               )}
 
               <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-6 leading-tight">
-                {product.name}
+                {title}
               </h1>
 
               <div class="flex items-center gap-4 mb-8">
@@ -247,7 +252,7 @@ const ui = {
                   class="ml-auto inline-flex items-center justify-center gap-2 min-h-[48px] px-4 border-2 border-white/40 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors font-acentos text-xs uppercase tracking-[0.18em]"
                   data-wish-id={product.id}
                   data-wish-slug={product.slug ?? ''}
-                  data-wish-name={product.name}
+                  data-wish-name={title}
                   data-wish-price={price}
                   data-wish-image={images[0]?.url ?? ''}
                   aria-pressed="false"
@@ -263,7 +268,7 @@ const ui = {
               <div class="gold-line mb-8" style="margin-left: 0"></div>
 
               <p class="text-white/80 leading-relaxed mb-8 whitespace-pre-line">
-                {product.description ?? t.product.defaultDescription}
+                {blurb || t.product.defaultDescription}
               </p>
 
               <!-- Tallas -->
@@ -311,7 +316,7 @@ const ui = {
                 <button
                   id="add-to-cart"
                   data-product-id={product.id}
-                  data-product-name={product.name}
+                  data-product-name={title}
                   data-image={images[0]?.url ?? ''}
                   data-variants={JSON.stringify(variants)}
                   class:list={[

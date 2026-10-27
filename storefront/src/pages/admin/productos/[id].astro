@@ -9,6 +9,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { getProduct, getCategories } from '../../../lib/admin';
 import { TENANT_ID } from '../../../lib/constants';
 import { createSupabaseServerClient } from '../../../lib/supabase-server';
+import { missingEnglish } from '../../../lib/product-texts';
 
 const id = Astro.params.id ?? '';
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
@@ -32,6 +33,9 @@ const soldUnits = sales.reduce((n, r) => n + Number(r.quantity ?? 0), 0);
 const variants = product.product_variants ?? [];
 const images = product.product_images ?? [];
 const totalStock = variants.reduce((n, v) => n + (v.stock ?? 0), 0);
+
+// Aviso de traducciones pendientes (tienda bilingüe).
+const missing = missingEnglish(product as any);
 
 const money = (n: number) =>
   `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -94,10 +98,46 @@ const money = (n: number) =>
             </label>
 
             <label class="block sm:col-span-2">
+              <span class="field-label">
+                Name (English)
+                {!missing.name && <span class="text-oro-brillo">· traducido</span>}
+              </span>
+              <input
+                name="name_en"
+                class:list={['input-dark', { 'ring-2 ring-oro-brillo/50': missing.name }]}
+                value={product.name_en ?? ''}
+                placeholder={product.name}
+              />
+              <span class="mt-1 block text-xs text-white/60">
+                {missing.name
+                  ? 'Vacío: la tienda en inglés muestra el nombre en español.'
+                  : 'Se usa en la versión en inglés.'}
+              </span>
+            </label>
+
+            <label class="block sm:col-span-2">
               <span class="field-label">Descripción</span>
               <textarea name="description" rows="4" class="input-dark !min-h-[110px] py-3">
                 {product.description ?? ''}
               </textarea>
+            </label>
+
+            <label class="block sm:col-span-2">
+              <span class="field-label">
+                Description (English)
+                {!missing.description && <span class="text-oro-brillo">· traducido</span>}
+              </span>
+              <textarea
+                name="description_en"
+                rows="4"
+                class:list={['input-dark !min-h-[110px] py-3', { 'ring-2 ring-oro-brillo/50': missing.description }]}
+                placeholder={product.description ?? ''}
+              >{product.description_en ?? ''}</textarea>
+              <span class="mt-1 block text-xs text-white/60">
+                {missing.description
+                  ? 'Vacío: la tienda en inglés muestra la descripción en español.'
+                  : 'Se usa en la versión en inglés.'}
+              </span>
             </label>
 
             <label class="block">
@@ -344,7 +384,10 @@ const money = (n: number) =>
       try {
         await updateProduct(productId, {
           name: String(fd.get('name') ?? '').trim(),
+          name: String(fd.get('name') ?? '').trim(),
+          name_en: String(fd.get('name_en') ?? '').trim() || null,
           description: String(fd.get('description') ?? '').trim() || null,
+          description_en: String(fd.get('description_en') ?? '').trim() || null,
           base_price: Number(fd.get('base_price')),
           category_id: (fd.get('category_id') as string) || null,
         });

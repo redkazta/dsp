@@ -8,6 +8,7 @@
 
 import { supabase, TENANT_ID } from './supabase';
 import { categoryName, type Lang } from './i18n';
+import { productName } from './product-texts';
 
 export interface HomeSlide {
   id: string;
@@ -41,7 +42,7 @@ export async function getHomeSlides(
   const { data, error } = await supabase
     .from('products')
     .select(
-      'id, name, slug, base_price, is_reflective, created_at, categories(id, name, slug), product_variants(price), product_images(url, position)'
+      'id, name, name_en, slug, base_price, is_reflective, created_at, categories(id, name, slug), product_variants(price), product_images(url, position)'
     )
     .eq('tenant_id', TENANT_ID)
     .eq('is_active', true)
@@ -61,7 +62,7 @@ export async function getHomeSlides(
       return {
         id: p.id,
         slug: p.slug ?? p.id,
-        name: p.name,
+        name: productName(p, lang),
         price,
         category: categoryName(lang, category),
         isReflective: Boolean(p.is_reflective),

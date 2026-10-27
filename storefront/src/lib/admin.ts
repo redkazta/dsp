@@ -8,8 +8,12 @@ import { supabase } from './supabase';
 export interface AdminProduct {
   id: string;
   name: string;
+  /** Nombre en inglés (vacío = se usa el español). */
+  name_en?: string | null;
   slug: string | null;
   description: string | null;
+  /** Descripción en inglés (vacía = se usa la española). */
+  description_en?: string | null;
   base_price: number;
   cost: number;
   sku: string | null;
@@ -74,7 +78,11 @@ export async function createProduct(
   tenantId: string,
   input: {
     name: string;
+    /** Nombre en inglés (vacío = se usa el español). */
+    name_en?: string;
     description: string;
+    /** Descripción en inglés (vacía = se usa la española). */
+    description_en?: string;
     price: number;
     categoryId: string | null;
     sizes: string[]; // ['S','M','L']
@@ -95,8 +103,10 @@ export async function createProduct(
     .insert({
       tenant_id: tenantId,
       name: input.name,
+      name_en: input.name_en?.trim() || null,
       slug,
       description: input.description || null,
+      description_en: input.description_en?.trim() || null,
       base_price: input.price,
       category_id: input.categoryId,
       sku: `DSP-${Date.now().toString().slice(-6)}`,
@@ -137,7 +147,9 @@ export async function updateProduct(
   id: string,
   patch: {
     name?: string;
+    name_en?: string | null;
     description?: string | null;
+    description_en?: string | null;
     base_price?: number;
     category_id?: string | null;
     is_active?: boolean;

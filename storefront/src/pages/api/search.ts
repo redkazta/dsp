@@ -6,6 +6,8 @@ import type { APIRoute } from 'astro';
 import type { AstroCookies } from 'astro';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
+import { categoryName, type Lang } from '../../lib/i18n';
+import { productName } from '../../lib/product-texts';
 
 export const prerender = false;
 
@@ -15,7 +17,16 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 
-export const GET: APIRoute = async ({ request, cookies }: { request: Request; cookies: AstroCookies }) => {
+export const GET: APIRoute = async ({
+  request,
+  cookies,
+  locals,
+}: {
+  request: Request;
+  cookies: AstroCookies;
+  locals: App.Locals;
+}) => {
+  const lang = (locals?.lang ?? 'es') as Lang;
   const q = (new URL(request.url).searchParams.get('q') ?? '').trim().slice(0, 60);
   if (q.length < 2) return json({ results: [] });
 
@@ -26,7 +37,7 @@ export const GET: APIRoute = async ({ request, cookies }: { request: Request; co
 
   const { data, error } = await supabase
     .from('products')
-    .select('id, name, slug, base_price, categories(name), product_variants(price), product_images(url, position)')
+    .select('id, name, name_en, slug, base_price, categories(name, slug), product_variants(price), product_images(url, position)')
     .eq('tenant_id', TENANT_ID)
     .eq('is_active', true)
     .eq('is_deleted', false)
@@ -44,9 +55,9 @@ export const GET: APIRoute = async ({ request, cookies }: { request: Request; co
 
     return {
       id: p.id,
-      name: p.name,
+      name: productName(p, lang),
       slug: p.slug ?? p.id,
-      category: p.categories?.name ?? null,
+      category: categoryName(lang, p.categories),
       price: Number(variants[0]?.price ?? p.base_price ?? 0),
       image: images[0]?.url ?? null,
     };

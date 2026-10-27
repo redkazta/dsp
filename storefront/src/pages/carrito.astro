@@ -5,6 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
 import { getCopy, categoryName, type Lang } from '../lib/i18n';
+import { productName } from '../lib/product-texts';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -27,7 +28,7 @@ const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
 const featured = await supabase
   .from('products')
-  .select('id, name, slug, base_price, is_reflective, categories(name), product_variants(price), product_images(url, position)')
+  .select('id, name, name_en, slug, base_price, is_reflective, categories(name, slug), product_variants(price), product_images(url, position)')
   .eq('is_active', true)
   .eq('is_deleted', false)
   .order('created_at', { ascending: false })
@@ -39,7 +40,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
   );
   return {
     id: p.id,
-    name: p.name,
+    name: productName(p as any, lang),
     slug: p.slug ?? p.id,
     category: categoryName(lang, p.categories),
     price: Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0),

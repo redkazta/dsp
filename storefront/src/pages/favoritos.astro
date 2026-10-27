@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '../lib/supabase-server';
 import { TENANT_ID } from '../lib/constants';
 import type { WishlistItem } from '../lib/wishlist-local';
 import { getCopy, type Lang } from '../lib/i18n';
+import { productName } from '../lib/product-texts';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -57,7 +58,7 @@ const stale: string[] = [];
 if (items.length > 0) {
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, slug, base_price, is_reflective, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
+    .select('id, name, name_en, slug, base_price, is_reflective, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
     .in('id', items.map((i) => i.productId));
 
   const byId = new Map((products ?? []).map((p: any) => [p.id, p]));
@@ -74,7 +75,7 @@ if (items.length > 0) {
       (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
     );
 
-    item.name = p.name;
+    item.name = productName(p, lang);
     item.slug = p.slug ?? item.slug;
     item.price = Number(p.product_variants?.[0]?.price ?? p.base_price ?? item.price);
     item.image = images[0]?.url ?? item.image;
