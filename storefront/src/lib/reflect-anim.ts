@@ -129,44 +129,50 @@ import {
   }
 
   /**
-   * Detiene el avance automático del carrusel mientras el reflejo cambia la
-   * foto. Sin esto, `carousel.ts` y el hero movían el carrusel por debajo y
-   * el reflejo aterrizaba en la foto equivocada.
+   * El reflejo **no** toca el avance del carrusel de productos.
+   *
+   * Antes se pausaba y reanudaba desde cada pieza: con 10 slides en el hero
+   * eso desbalanceaba el contador y el carrusel de productos se movía a
+   * destiempo, como si cambiara cada segundo. El reflejo solo cambia la foto
+   * dentro de la misma pieza; el avance sigue su propio ritmo.
+   */
+
+  /**
+   * Cambia la foto **dentro de la pieza**. Nunca mueve el carrusel de
+   * productos: el reflejo solo alterna entre la portada y la toma con flash
+   * del mismo artículo.
    */
-  function holdCarousel(scope: ReflectScope, hold: boolean) {
-    const event = hold ? 'carousel:pause' : 'carousel:resume';
-
-    // El carrusel del catálogo escucha el evento con el scope como detalle.
-    scope.root.dispatchEvent(
-      new CustomEvent(event, { bubbles: true, detail: scope.root })
-    );
-
-    // El hero tiene su propio avance (`hero:pause` / `hero:resume`).
-    scope.root.dispatchEvent(
-      new CustomEvent(hold ? 'hero:pause' : 'hero:resume', { bubbles: true })
-    );
-  }
-
-  /** Lleva el carrusel a la foto `index`. */
   function showPhoto(scope: ReflectScope, index: number) {
     const { root } = scope;
 
-    // Solo controles que el carrusel ya escucha (`lib/carousel.ts`).
-    const target = root.querySelector<HTMLElement>(
-      `[data-carousel-dot="${index}"], [data-carousel-thumb="${index}"]`
-    );
+    // 1) El hero: las fotos están apiladas en el propio `.hero-media`.
+    const stacked = [...root.querySelectorAll<HTMLElement>('[data-hero-photo]')];
+    if (stacked.length > 1) {
+      stacked.forEach((photo, i) => photo.classList.toggle('is-active', i === index));
 
-    if (target) {
-      // Evita que los listeners confundan este click con uno del usuario o
-      // con un cambio de pieza ajeno.
-      (target as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
+      const media = root.classList.contains('hero-media')
+        ? root
+        : root.querySelector<HTMLElement>('.hero-media');
+
+      media?.querySelectorAll<HTMLElement>('[data-hero-thumb]').forEach((thumb, i) => {
+        const active = i === index;
+        thumb.classList.toggle('is-active', active);
+        thumb.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+
+      root.classList.toggle('is-flash-photo', index === scope.flashIndex);
+      return;
+    }
+
+    // 2) Tarjetas y ficha: se pulsan sus miniaturas, que sí cambian de foto.
+    const thumb = root.querySelector<HTMLElement>(`[data-carousel-thumb="${index}"]`);
+    if (thumb) {
+      (thumb as HTMLElement & { __reflectAuto?: boolean }).__reflectAuto = true;
       settling = true;
 
       try {
-        target.click();
+        thumb.click();
       } finally {
-        // El carrusel pinta el índice de forma síncrona, pero el `scroll`
-        // suave puede llegar después: se libera en el siguiente frame.
         window.setTimeout(() => {
           settling = false;
         }, 0);
@@ -178,13 +184,13 @@ import {
 
       if (index === scope.flashIndex) {
         root
-          .querySelector<HTMLElement>(`.card-slide:nth-child(${index + 1}) img`)
+          .querySelector<HTMLElement>(`.card-slide:nth-child(${index + 1}) img, .pdp-slide:nth-child(${index + 1}) img`)
           ?.classList.add('is-flash-photo');
       }
       return;
     }
 
-    // Carruseles con control propio (hero): el componente escucha este evento.
+    // 3) Carrusel propio del componente: se le avisa por evento.
     root.dispatchEvent(new CustomEvent('reflect:photo', { detail: { index }, bubbles: true }));
   }
 
@@ -233,8 +239,7 @@ import {
     scope.badge?.classList.remove('is-lit');
     showPhoto(scope, scope.plainIndex);
     paintCount(scope, scope.remaining, animate);
-    // El carrusel recupera su avance automático.
-    holdCarousel(scope, false);
+    // El carrusel recupera su avance automático.
   }
 
   /**
@@ -306,9 +311,7 @@ import {
 
       // El encendido ocupa lo que resta de la vuelta del carrusel.
       scope.holdMs = holdFor(scope);
-      scope.holdLeft = Math.max(1, Math.round(scope.holdMs / scope.ms));
-
-      holdCarousel(scope, true);
+      scope.holdLeft = Math.max(1, Math.round(scope.holdMs / scope.ms));
       scope.badge?.classList.add('is-lit');
       showPhoto(scope, scope.flashIndex);
     }, scope.ms);

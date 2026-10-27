@@ -1,36 +1,36 @@
 // @vitest-environment happy-dom
 /**
- * Coordinación del reflejo con el avance de tanda del hero.
+ * El reflejo cambia **la foto dentro de la pieza**, nunca el producto.
  *
- * El hero no usa `carousel.ts`: mueve el track con `translateX` cada 5 s.
- * Mientras una pieza está encendida, ese avance debe detenerse para que el
- * flash no aterrice en otra pieza.
+ * Antes pulsaba los puntos del carrusel, que en el hero equivalen al
+ * carrusel de productos: con varias piezas contando a la vez, el hero
+ * parecía cambiar de artículo cada segundo.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 function mountHero() {
   document.body.innerHTML = `
-    <div class="hero-carousel" data-hero-carousel data-hero-loop="0">
+    <div class="hero-carousel" data-hero-carousel data-carousel-interval="4500">
       <div class="hero-track" data-hero-track>
         <article class="hero-slide" data-hero-slide>
           <div class="hero-media" data-reflect="1" data-reflect-flash="1" data-reflect-ms="1000">
             <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
               <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
               <span class="reflect-badge-count" data-reflect-count>2</span>
-              <span class="reflect-badge-dot"></span>
             </span>
-            <img class="hero-photo is-active" data-hero-photo="0" src="plain.jpg">
-            <img class="hero-photo" data-hero-photo="1" src="flash.jpg">
+            <img class="hero-photo is-active" data-hero-photo="0" src="a-plain.jpg">
+            <img class="hero-photo" data-hero-photo="1" src="a-flash.jpg">
           </div>
         </article>
+
         <article class="hero-slide" data-hero-slide>
-          <div class="hero-media">
-            <img class="hero-photo is-active" data-hero-photo="0" src="other.jpg">
-          </div>
-        </article>
-        <article class="hero-slide" data-hero-slide>
-          <div class="hero-media">
-            <img class="hero-photo is-active" data-hero-photo="0" src="third.jpg">
+          <div class="hero-media" data-reflect="1" data-reflect-flash="1" data-reflect-ms="1000">
+            <span class="reflect-badge" data-reflect-badge data-label="Reflectivo en…">
+              <span class="reflect-badge-label" data-reflect-label>Reflectivo en…</span>
+              <span class="reflect-badge-count" data-reflect-count>2</span>
+            </span>
+            <img class="hero-photo is-active" data-hero-photo="0" src="b-plain.jpg">
+            <img class="hero-photo" data-hero-photo="1" src="b-flash.jpg">
           </div>
         </article>
       </div>
@@ -43,9 +43,9 @@ beforeEach(() => {
   delete (window as any).__dspReflectAnim;
   mountHero();
 
-  Element.prototype.getBoundingClientRect = () =>
-    ({ top: 10, bottom: 400, left: 0, right: 300, width: 300, height: 390, x: 0, y: 10,
-       toJSON: () => ({}) }) as DOMRect;
+  Element.prototype.getBoundingClientRect = function () {
+    return { top: 10, bottom: 400, left: 0, right: 300, width: 300, height: 390, x: 0, y: 10, toJSON: () => ({}) } as any;
+  };
 });
 
 afterEach(() => {
@@ -53,45 +53,42 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('reflejo + hero', () => {
-  it('el badge cuenta y el hero recibe la pausa al encenderse', async () => {
-    const events: string[] = [];
-    document.addEventListener('hero:pause', () => events.push('pause'));
-    document.addEventListener('hero:resume', () => events.push('resume'));
+describe('reflejo en el hero', () => {
+  it('cambia la foto de la misma pieza y no mueve el carrusel', async () => {
+    const moved: string[] = [];
+    document.addEventListener('reflect:photo', () => moved.push('photo'));
+    document.addEventListener('hero:pause', () => moved.push('pause'));
+    document.addEventListener('carousel:pause', () => moved.push('pause-carousel'));
 
     await import('../src/lib/reflect-anim');
 
-    const media = document.querySelector<HTMLElement>('[data-reflect]')!;
-    const badge = media.querySelector('.reflect-badge')!;
-    const count = media.querySelector('[data-reflect-count]')!;
+    const [first, second] = [...document.querySelectorAll<HTMLElement>('[data-reflect]')];
 
-    // El componente del hero escucha `reflect:photo` (aquí se replica el
-    // listener real de HeroCarousel.astro).
-    document.querySelector('.hero-carousel')!.addEventListener('reflect:photo', (e) => {
-      const target = Number((e as CustomEvent<{ index?: number }>).detail?.index);
-      const box = (e.target as HTMLElement).closest('.hero-media');
-      if (!box) return;
-      const photos = [...box.querySelectorAll<HTMLElement>('[data-hero-photo]')];
-      photos.forEach((p, i) => p.classList.toggle('is-active', i === target));
-      box.classList.toggle('is-flash-photo', target === Number(box.dataset.reflectFlash ?? -1));
-    });
+    // 2 s: cuenta 2 → 1 → encendido.
+    vi.advanceTimersByTime(2000);
 
-    expect(count.textContent).toBe('2');
+    // Cada pieza muestra su propia foto con flash…
+    expect(first.querySelectorAll('.hero-photo')[1].classList.contains('is-active')).toBe(true);
+    expect(second.querySelectorAll('.hero-photo')[1].classList.contains('is-active')).toBe(true);
 
-    vi.advanceTimersByTime(1000);
-    expect(count.textContent).toBe('1');
+    // …y la primera foto de cada una dejó de verse.
+    expect(first.querySelectorAll('.hero-photo')[0].classList.contains('is-active')).toBe(false);
 
-    // Se enciende: pide pausa al hero y marca la foto con flash.
-    vi.advanceTimersByTime(1000);
-    expect(badge.classList.contains('is-lit')).toBe(true);
-    expect(events).toContain('pause');
-    expect(media.classList.contains('is-flash-photo')).toBe(true);
-    expect(media.querySelectorAll('.hero-photo')[1].classList.contains('is-active')).toBe(true);
+    // No se pidió pausar ni mover el carrusel de productos.
+    expect(moved).toEqual([]);
+  });
 
-    // Al apagarse devuelve el control.
+  it('vuelve a la portada sin saltar de producto', async () => {
+    await import('../src/lib/reflect-anim');
+
+    const first = document.querySelector<HTMLElement>('[data-reflect]')!;
+
+    vi.advanceTimersByTime(2000);
+    expect(first.querySelectorAll('.hero-photo')[1].classList.contains('is-active')).toBe(true);
+
+    // Se apaga al completar la vuelta (2 s de cuenta + 2.5 s de encendido).
     vi.advanceTimersByTime(3000);
-    expect(badge.classList.contains('is-lit')).toBe(false);
-    expect(events).toContain('resume');
-    expect(media.querySelectorAll('.hero-photo')[0].classList.contains('is-active')).toBe(true);
+    expect(first.querySelectorAll('.hero-photo')[0].classList.contains('is-active')).toBe(true);
+    expect(first.querySelector('.reflect-badge')!.classList.contains('is-lit')).toBe(false);
   });
 });
