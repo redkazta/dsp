@@ -74,7 +74,8 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
   }
 
   .shop-grid--compact :global(.product-frame > img),
-  .shop-grid--compact :global(.product-frame > picture > img) {
+  .shop-grid--compact :global(.product-frame > picture > img),
+  .shop-grid--compact :global(.card-slide img) {
     padding: 3%;
   }
 
