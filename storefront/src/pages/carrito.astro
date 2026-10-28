@@ -53,13 +53,15 @@ const suggestions = (featured.data ?? []).map((p: any) => {
 <BaseLayout title={t.cart.metaTitle} description={t.cart.metaDescription}>
   <script type="application/json" id="cart-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/25 bg-noise">
-    <div class="page-container py-10 sm:py-16">
-      <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">{t.cart.title}</h1>
-      <p id="cart-summary-text" class="text-white/80 mt-3 sm:mt-4 text-lg">{t.common.loading}</p>
+    <div class="page-container py-4 sm:py-5">
+      <div class="flex items-baseline justify-between gap-4">
+        <h1 class="font-titulos text-2xl sm:text-3xl text-blancoRoto leading-none">{t.cart.title}</h1>
+        <p id="cart-summary-text" class="text-white/70 text-sm sm:text-base">{t.common.loading}</p>
+      </div>
     </div>
   </section>
 
-  <div class="page-container py-10 sm:py-12 lg:py-16">
+  <div class="page-container py-5 sm:py-6">
     <div id="cart-empty" class="hidden">
       <div class="text-center py-10 sm:py-16">
         <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">{t.cart.emptyTitle}</p>
@@ -114,57 +116,57 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       }
     </div>
 
-    <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+    <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8">
       <!-- Items -->
-      <div class="lg:col-span-2">
-        <ul id="cart-notices" class="hidden mb-4 space-y-2"></ul>
-        <div id="cart-items" class="divide-y-2 divide-white/15"></div>
+      <div class="min-w-0">
+        <ul id="cart-notices" class="hidden mb-3 space-y-2"></ul>
+        <div id="cart-items" class="divide-y divide-white/15 border-y border-white/15"></div>
       </div>
 
       <!-- Resumen: primero en móvil, al lado en desktop -->
-      <aside class="lg:col-span-1 order-first lg:order-last">
-        <div class="lg:sticky lg:top-28 border-2 border-white/25 p-6 sm:p-8 bg-negro-carbono">
-          <h2 class="font-titulos text-2xl text-blancoRoto mb-5 sm:mb-6">{t.cart.summary}</h2>
+      <aside class="order-first lg:order-last">
+        <div class="lg:sticky lg:top-24 border-2 border-white/25 p-5 sm:p-6 bg-negro-carbono">
+          <h2 class="font-titulos text-lg text-blancoRoto mb-4">{t.cart.summary}</h2>
 
-          <div class="space-y-4 pb-6 border-b-2 border-white/25">
-            <div class="flex justify-between text-base">
-              <span class="text-white/80">{t.cart.subtotal}</span>
+          <div class="space-y-2.5 pb-4 border-b border-white/20">
+            <div class="flex justify-between text-sm">
+              <span class="text-white/75">{t.cart.subtotal}</span>
               <span id="sum-subtotal" class="text-blancoRoto">$0.00</span>
             </div>
-            <div class="flex justify-between gap-3 text-base">
-              <span class="text-white/80">{t.cart.shipping}</span>
+            <div class="flex justify-between gap-3 text-sm">
+              <span class="text-white/75">{t.cart.shipping}</span>
               <span id="sum-shipping" class="text-blancoRoto text-right">{t.cart.shippingAtPay}</span>
             </div>
             <div id="free-shipping-progress" class="hidden">
-              <div class="h-1.5 bg-white/20 mb-2">
-                <div id="free-shipping-bar" class="h-full bg-oro-brillo" style="width:0%"></div>
+              <div class="h-1 bg-white/20 mb-1.5">
+                <div id="free-shipping-bar" class="h-full bg-oro-brillo transition-all duration-500" style="width:0%"></div>
               </div>
-              <p id="free-shipping-text" class="text-xs text-white/80"></p>
+              <p id="free-shipping-text" class="text-[11px] text-white/75 leading-snug"></p>
             </div>
           </div>
 
-          <div class="flex justify-between items-center py-6">
-            <span class="font-acentos text-base uppercase tracking-[0.2em] text-blancoRoto">{t.cart.total}</span>
-            <span id="sum-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
+          <div class="flex justify-between items-baseline py-3.5">
+            <span class="font-acentos text-xs uppercase tracking-[0.18em] text-blancoRoto">{t.cart.total}</span>
+            <span id="sum-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
           </div>
 
-          <a href="/checkout" class="btn-gold w-full mb-3">{t.cart.checkout}</a>
-          <a href="/tienda" class="btn-outline w-full mb-3 text-center">{t.cart.continueShopping}</a>
+          <a href="/checkout" class="btn-gold w-full !min-h-[46px] mb-2">{t.cart.checkout}</a>
+          <a href="/tienda" class="btn-outline w-full !min-h-[42px] mb-2 text-center !text-xs">{t.cart.continueShopping}</a>
           <a
             href="/favoritos"
-            class="block text-center text-sm uppercase tracking-[0.16em] text-white/80 hover:text-oro-brillo py-2"
+            class="block text-center text-xs uppercase tracking-[0.14em] text-white/70 hover:text-oro-brillo py-1.5"
           >
             {t.cart.viewWishlist}
           </a>
 
-          <div class="mt-8 pt-6 border-t-2 border-white/25 space-y-2">
-            <p class="flex items-center gap-2 text-sm text-white/80">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
+          <div class="mt-4 pt-4 border-t border-white/20 space-y-1.5">
+            <p class="flex items-center gap-2 text-xs text-white/75">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
               {t.cart.freeFrom} {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('en-US')} USD`}
             </p>
-            <p class="text-xs text-white/60">{t.cart.madeToOrderTime}</p>
+            <p class="text-[11px] text-white/55 leading-snug">{t.cart.madeToOrderTime}</p>
           </div>
         </div>
       </aside>
@@ -212,27 +214,34 @@ const suggestions = (featured.data ?? []).map((p: any) => {
         .map((i) => {
           const img = safeUrl(i.image);
           return `
-        <div class="flex gap-4 sm:gap-5 py-5 sm:py-6">
-          <div class="w-20 h-24 sm:w-24 sm:h-32 bg-white border-2 border-white/30 overflow-hidden shrink-0">
+        <div class="cart-row flex items-center gap-4 py-3.5 sm:py-4" data-row="${escapeHtml(i.variantId)}">
+          <div class="w-16 h-16 sm:w-[72px] sm:h-[72px] bg-white border border-white/25 overflow-hidden shrink-0">
             ${img ? `<img src="${img}" alt="${escapeHtml(i.name)}" class="w-full h-full object-contain">` : ''}
           </div>
-          <div class="flex-1 min-w-0 flex flex-col justify-between gap-3">
-            <div>
-              <h3 class="font-acentos text-base text-blancoRoto mb-1 line-clamp-2">${escapeHtml(i.name)}</h3>
-              <p class="text-sm text-white/80">${escapeHtml(i.variantName)}</p>
-            </div>
-            <div class="flex flex-wrap items-end justify-between gap-3">
-              <div class="flex items-center border-2 border-white/30">
-                <button data-dec="${escapeHtml(i.variantId)}" aria-label="${uiText('removeOne')}" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">−</button>
-                <span class="w-9 text-center text-base text-blancoRoto">${i.qty}</span>
-                <button data-inc="${escapeHtml(i.variantId)}" aria-label="${uiText('addOne')}" class="w-11 h-11 text-blancoRoto hover:text-oro-brillo transition-colors text-lg">+</button>
-              </div>
-              <div class="text-right">
-                <p class="font-acentos text-lg text-oro-brillo">$${formatMXN(i.price * i.qty)}</p>
-                <button data-remove="${escapeHtml(i.variantId)}" class="text-xs text-white/80 hover:text-red-400 transition-colors uppercase tracking-wider mt-1 py-1">${uiText('remove')}</button>
-              </div>
-            </div>
+
+          <div class="flex-1 min-w-0">
+            <h3 class="font-acentos text-sm sm:text-[15px] text-blancoRoto truncate">${escapeHtml(i.name)}</h3>
+            <p class="text-xs text-white/65 truncate mt-0.5">${escapeHtml(i.variantName)}</p>
           </div>
+
+          <div class="flex items-center border border-white/30 shrink-0">
+            <button data-dec="${escapeHtml(i.variantId)}" aria-label="${uiText('removeOne')}"
+              class="w-8 h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-sm leading-none">−</button>
+            <span class="w-8 text-center text-sm text-blancoRoto tabular-nums">${i.qty}</span>
+            <button data-inc="${escapeHtml(i.variantId)}" aria-label="${uiText('addOne')}"
+              class="w-8 h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-sm leading-none">+</button>
+          </div>
+
+          <p class="font-acentos text-sm sm:text-base text-oro-brillo whitespace-nowrap w-[76px] text-right shrink-0 tabular-nums">$${formatMXN(i.price * i.qty)}</p>
+
+          <button data-remove="${escapeHtml(i.variantId)}"
+            aria-label="${uiText('remove')}: ${escapeHtml(i.name)}"
+            title="${uiText('remove')}"
+            class="remove-btn w-9 h-9 shrink-0 inline-flex items-center justify-center border border-white/25 text-white/60 hover:border-red-400 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" />
+            </svg>
+          </button>
         </div>`;
         })
         .join('');
@@ -277,6 +286,16 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       );
       list.querySelectorAll<HTMLElement>('[data-remove]').forEach((b) =>
         b.addEventListener('click', () => {
+          // Se desvanece antes de desaparecer: el usuario ve QUÉ se borró.
+          const row = b.closest('.cart-row') as HTMLElement | null;
+          if (row) {
+            row.classList.add('is-removing');
+            window.setTimeout(() => {
+              removeFromCart(b.dataset.remove!);
+              render();
+            }, 220);
+            return;
+          }
           removeFromCart(b.dataset.remove!);
           render();
         })
@@ -316,4 +335,63 @@ const suggestions = (featured.data ?? []).map((p: any) => {
     startCartSync();
     window.addEventListener('cart:updated', () => render());
   </script>
+
+  <style>
+    /* Ítem compacto: todo en una fila, la fila se desvanece al borrar. */
+    .cart-row {
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    }
+
+    .cart-row.is-removing {
+      opacity: 0;
+      transform: translateX(14px);
+      pointer-events: none;
+    }
+
+    /* En pantallas estrechas la fila se reordena en dos líneas. */
+    @media (max-width: 639px) {
+      .cart-row {
+        flex-wrap: wrap;
+        row-gap: 0.6rem;
+      }
+
+      .cart-row > div:first-child {
+        order: 1;
+      }
+
+      .cart-row .min-w-0 {
+        order: 2;
+        flex-basis: calc(100% - 5rem);
+      }
+
+      .cart-row > div.flex {
+        order: 3;
+        margin-left: 5rem;
+      }
+
+      .cart-row > p {
+        order: 4;
+        width: auto !important;
+        flex: 1;
+      }
+
+      .cart-row .remove-btn {
+        order: 5;
+      }
+    }
+
+    /* El grid debe poder encogerse: sin `min-width: 0` la columna del
+       resumen empuja el ancho y la página desborda en móvil. */
+    #cart-content > * {
+      min-width: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cart-row {
+        transition: none;
+      }
+    }
+  </style>
 </BaseLayout>
