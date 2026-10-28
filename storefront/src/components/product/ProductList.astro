@@ -49,19 +49,31 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
 
 <style>
   /* Versión compacta de /tienda: mismas piezas, menos aire.
-     El marco mantiene el 1:1 pero con un techo de altura, así entran
-     jeans y camisas sin scroll. */
+     Ojo: aquí NO se puede usar `aspect-ratio` con contenido absoluto.
+     Todo lo que va dentro del marco (imagen, badge, flechas, CTA) es
+     `position: absolute`, así que el marco no tiene contenido en flujo y
+     su altura sería 0. Se le da altura explícita y se centra con flex. */
   .shop-grid--compact :global(.product-frame) {
-    max-height: clamp(132px, 20vh, 240px);
-    /* `aspect-ratio` vive en global.css y gana por orden de carga. */
     aspect-ratio: auto !important;
-    /* imprescindible: badges, flechas y CTA son `absolute` */
+    height: clamp(140px, 21vh, 250px);
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* El texto va DEBAJO del marco, no encima: era el bug anterior cuando
-     el selector `a > div:last-child` le quitaba su `pt-4`. */
+  /* La imagen del producto suelto llena el marco sin depender de `inset` */
+  .shop-grid--compact :global(.product-frame > img),
+  .shop-grid--compact :global(.product-frame > picture > img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    padding: 3%;
+  }
 
   .shop-grid--compact :global(.product-card-wrap) {
     display: flex;
@@ -100,19 +112,44 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
   .shop-grid--compact :global(.reflect-badge) {
     top: 4px;
     left: 4px;
-    min-width: 48px;
-    min-height: 32px;
-    padding: 3px 5px 2px;
+    min-width: 0;
+    min-height: 0;
+    padding: 3px 6px;
+    gap: 0;
+    border-width: 1px;
+    backdrop-filter: none;
+  }
+
+  /* Las piezas sin reflejo solo llevan la etiqueta: ocupa menos y no
+     compite con las que sí tienen cuenta atrás. */
+  .shop-grid--compact :global(.reflect-badge.is-plain) {
+    min-width: 0;
+    min-height: 0;
+    padding: 3px 6px;
   }
 
   .shop-grid--compact :global(.reflect-badge-label) {
-    font-size: 6px;
-    letter-spacing: 0.03em;
+    font-size: 7px;
+    letter-spacing: 0.06em;
     line-height: 1.1;
   }
 
   .shop-grid--compact :global(.reflect-badge-count) {
-    font-size: 14px;
+    font-size: 15px;
+    margin-top: 1px;
+  }
+
+  .shop-grid--compact :global(.reflect-badge-dot) {
+    width: 4px;
+    height: 4px;
+    flex-basis: 4px;
+  }
+
+  /* Con cuenta atrás sí necesita un poco más de cuerpo para leerse */
+  .shop-grid--compact :global(.reflect-badge:not(.is-plain)) {
+    min-width: 42px;
+    min-height: 30px;
+    padding: 3px 5px 2px;
   }
 
   .shop-grid--compact :global(.wish-btn) {

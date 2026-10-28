@@ -68,22 +68,6 @@ void trackId;
 ---
 
 <div class="product-card-wrap">
-  <button
-    type="button"
-    class="wish-btn absolute top-3 right-3 z-20 w-11 h-11 inline-flex items-center justify-center bg-negro-profundo border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors"
-    data-wish-id={product.id}
-    data-wish-slug={product.slug ?? ''}
-    data-wish-name={title}
-    data-wish-price={price}
-    data-wish-image={images[0]?.url ?? ''}
-    aria-pressed="false"
-    aria-label={`${t.product.wishlistAdd}: ${title}`}
-  >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
-    </svg>
-  </button>
-
   <a href={href} class="block">
     <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
     <div
@@ -94,6 +78,24 @@ void trackId;
       data-reflect-rotates={reflect ? '1' : undefined}
     >
       <ReflectBadge reflective={reflect} class={isSoldOut ? 'is-lowered' : ''} />
+
+      <!-- El corazón vive DENTRO del marco: si cuelga de la tarjeta, se
+           posiciona sobre el nombre y el precio, no sobre la foto. -->
+      <button
+        type="button"
+        class="wish-btn absolute top-3 right-3 z-20 w-11 h-11 inline-flex items-center justify-center bg-negro-profundo border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors"
+        data-wish-id={product.id}
+        data-wish-slug={product.slug ?? ''}
+        data-wish-name={title}
+        data-wish-price={price}
+        data-wish-image={images[0]?.url ?? ''}
+        aria-pressed="false"
+        aria-label={`${t.product.wishlistAdd}: ${title}`}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
+        </svg>
+      </button>
       {images.length > 0 ? (
         <>
           {images.length > 1 ? (
