@@ -372,7 +372,7 @@ import { localize } from '../lib/routes';
     const form = document.getElementById('checkout-form') as HTMLFormElement;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
     const errorEl = document.getElementById('pay-error')!;
-    const summaryError = document.getElementById('checkout-summary-error') as HTMLElement | null;
+    const summaryError: HTMLElement | null = document.getElementById('checkout-summary-error') as HTMLElement;
     const alertDiv = document.getElementById('checkout-alert') as HTMLElement;
     const paymentAvailable = payBtn?.getAttribute('data-available') !== 'false';
 
@@ -426,7 +426,7 @@ import { localize } from '../lib/routes';
         // Sacudida + anillo en el propio campo: la mirada va justo ahí.
         nudge(field, { focus: false });
         if (parent) {
-          let errorDiv = parent.querySelector('.error-message') as HTMLElement | null;
+          let errorDiv: HTMLElement | null = parent.querySelector('.error-message');
           if (!errorDiv) {
             errorDiv = document.createElement('div');
             errorDiv.className = 'error-message dsp-alert mt-1.5 text-xs';
@@ -619,7 +619,7 @@ import { localize } from '../lib/routes';
       .then((profile) => {
         if (!profile) return;
         const set = (name: string, val: string | null | undefined) => {
-          const el = form.elements.namedItem(name) as HTMLInputElement | null;
+          const el: HTMLInputElement | null = form.elements.namedItem(name) as HTMLInputElement;
           if (el && !el.value && val) el.value = val;
         };
         set('firstName', profile.first_name);
