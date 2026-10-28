@@ -33,3 +33,11 @@ Thumbs.db
 *.log
 # Lockfile del storefront (Vercel instala desde package.json)
 storefront/package-lock.json
+
+# Logs del chequeo pre-push
+.prepush-build.log
+.prepush-test.log
+
+# Archivos temporales del validador de <script>
+storefront/.__block_*.ts
+storefront/.__out.js
