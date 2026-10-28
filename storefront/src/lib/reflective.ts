@@ -1,10 +1,18 @@
 /**
- * Piezas reflectivas: qué fotos mostrar y cuál es la del reflejo.
+ * Piezas reflectivas: galería ordenada y qué pares se alternan.
  *
- * El atributo vive en la prenda (`products.is_reflective`), no en el nombre
- * del archivo. El `-flash` solo se usa para *elegir la foto* del reflejo
- * dentro de la galería; si algún día cambian los nombres, basta con ajustar
- * `isFlashUrl`.
+ * Cada prenda puede tener dos vistas (frente y espalda) y cada vista dos
+ * tomas (sin flash y con flash). El orden importa:
+ *
+ *   frente · frente-flash · espalda · espalda-flash
+ *
+ * Así el ciclo natural `0 → 1 → 2 → 3 → 0` recorre **cada vista con su
+ * reflejo**: frente normal, frente encendido, espalda normal, espalda
+ * encendida. Antes quedaban intercaladas (frente, frente-flash,
+ * espalda-flash, espalda) y el ciclo solo alternaba las dos primeras.
+ *
+ * El atributo vive en la prenda (`products.is_reflective`); el nombre del
+ * archivo solo se usa para reconocer la vista y el flash.
  */
 
 /** ¿La URL corresponde a una toma con el flash encendido? */
@@ -14,24 +22,27 @@ export function isFlashUrl(url: string | null | undefined): boolean {
   return /flash/.test(file.replace(/no[_-]?flash/g, ''));
 }
 
+/** ¿La URL es la espalda? */
+export function isBackUrl(url: string | null | undefined): boolean {
+  return /(back|espalda)/i.test(String(url ?? ''));
+}
+
 export interface ReflectImagePlan {
-  /** Fotos a mostrar en orden (sin las que no aportan). */
+  /** Fotos en orden: vista normal seguida de su toma con flash. */
   images: string[];
-  /** Índice de la toma con reflejo, o -1 si no hay. */
+  /** Índice de la primera toma con flash (el par que enciende el ciclo). */
   flashIndex: number;
   /** La pieza se puede animar (es reflectiva y tiene las dos tomas). */
   animatable: boolean;
 }
 
 /**
- * Ordena la galería y localiza la toma con flash.
+ * Ordena la galería agrupando **vista + su flash**.
  *
- * Se **conservan todas las fotos** de la pieza (frente, espalda y sus tomas
- * con flash): antes se quedaba solo con frente + flash y se perdía la
- * espalda de los jeans, que sí existe en disco y en la base.
+ *     […/01-frente, …/02-espalda, …/03-frente-flash, …/04-espalda-flash]
+ *  →  […/01-frente, …/03-frente-flash, …/02-espalda, …/04-espalda-flash]
  *
- * El orden es: portada (sin flash) primero, la toma con flash justo después
- * —así el cambio automático se lee como un encendido— y el resto al final.
+ * Se conservan todas las fotos: antes se descartaba la espalda.
  */
 export function planReflectImages(
   raw: Array<{ url: string; position?: number | null }> | null | undefined,
@@ -55,14 +66,36 @@ export function planReflectImages(
     return { images: urls, flashIndex: -1, animatable: false };
   }
 
-  const front = plain[0] ?? flash[0];
+  /*
+   * Se agrupa por vista. El orden de las vistas sale del orden original de
+   * las fotos "normales" (la portada primero), y cada vista arrastra su
+   * toma con flash justo detrás.
+   */
+  const views = [...plain];
 
-  // Portada → toma con flash → el resto (espalda, etc.), sin repetir.
-  const images = [
-    front,
-    ...flash.filter((url) => url !== front),
-    ...urls.filter((url) => url !== front && !flash.includes(url)),
-  ];
+  // Una vista que solo existe con flash (raro) también entra.
+  for (const url of flash) {
+    const sameView = views.some(
+      (plainUrl) => isBackUrl(plainUrl) === isBackUrl(url)
+    );
+    if (!sameView && !views.includes(url)) views.push(url);
+  }
+
+  const images: string[] = [];
+
+  for (const view of views) {
+    images.push(view);
+
+    const itsFlash = flash.find(
+      (url) => isBackUrl(url) === isBackUrl(view) && !images.includes(url)
+    );
+    if (itsFlash) images.push(itsFlash);
+  }
+
+  // Cualquier flash que no haya encontrado pareja, al final.
+  for (const url of flash) {
+    if (!images.includes(url)) images.push(url);
+  }
 
   const flashIndex = images.findIndex(isFlashUrl);
 

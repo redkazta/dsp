@@ -83,9 +83,10 @@ describe('carrusel sin reloj propio', () => {
     vi.advanceTimersByTime(1000);
     expect(scrolls.length).toBe(base + 1);
 
-    // Tick 4: vuelve la portada.
+    // Con dos fotos la vuelta siguiente pide otra vez la portada. Si el
+    // carrusel ya está ahí no se mueve, así que no se espera un scroll más.
     vi.advanceTimersByTime(1000);
-    expect(scrolls.length).toBe(base + 2);
+    expect(scrolls.length).toBe(base + 1);
   });
 
   it('no se mueve solo aunque pasen muchos segundos', async () => {

@@ -49,6 +49,13 @@ import { onTick, sync } from './reflect-clock';
     labelNormal: string;
     flashIndex: number;
     plainIndex: number;
+    /**
+     * Vista que se está mostrando (0 = frente, 1 = espalda…).
+     * Cada vuelta avanza a la siguiente para enseñar las dos caras.
+     */
+    view: number;
+    /** Cuántas vistas tiene la pieza (frente, espalda…). */
+    viewCount: number;
     /** Fase actual del ciclo. */
     phase: Phase;
     /** Número que se está mostrando. */
@@ -70,6 +77,10 @@ import { onTick, sync } from './reflect-clock';
     const flashIndex = Number(root.dataset.reflectFlash);
     if (!Number.isInteger(flashIndex) || flashIndex < 0) return null;
 
+    // Cuántas fotos tiene la galería: el ciclo las recorre en parejas
+    // (vista sin flash → la misma vista con flash).
+    const photos = root.querySelectorAll('[data-carousel-thumb], [data-carousel-slide], [data-hero-photo]').length;
+
     const plainRaw = Number(root.dataset.reflectPlain);
     const badge = root.querySelector<HTMLElement>('[data-reflect-badge]');
 
@@ -82,6 +93,8 @@ import { onTick, sync } from './reflect-clock';
       labelNormal: badge?.dataset.labelNormal ?? 'Normal en:',
       flashIndex,
       plainIndex: Number.isInteger(plainRaw) && plainRaw >= 0 ? plainRaw : 0,
+      view: 0,
+      viewCount: Math.max(1, Math.floor(photos / 2)) || 1,
       phase: 'reflect',
       remaining: COUNT_FROM,
       rotates: root.hasAttribute('data-reflect-rotates'),
@@ -186,7 +199,8 @@ import { onTick, sync } from './reflect-clock';
   function restart(scope: ReflectScope) {
     scope.phase = 'reflect';
     scope.remaining = COUNT_FROM;
-    showPhoto(scope, scope.plainIndex);
+    scope.view = 0;
+    showPhoto(scope, 0);
     paint(scope, false);
   }
 
@@ -221,19 +235,22 @@ import { onTick, sync } from './reflect-clock';
 
       // Se acabó la fase: cambio de foto y de etiqueta.
       if (scope.phase === 'reflect') {
-        // Reflejo → normal: aparece la foto con flash.
+        // Reflejo → normal: se enciende la toma con flash **de esta vista**.
         scope.phase = 'normal';
         scope.remaining = COUNT_FROM;
-        showPhoto(scope, scope.flashIndex);
+        showPhoto(scope, scope.flashIndex + scope.view * 2);
         paint(scope);
         return;
       }
 
-      // Normal → reflejo: vuelve la portada. Cierra la vuelta; el carrusel
-      // avanza por su cuenta al oír el mismo latido.
+      // Normal → reflejo: vuelve la vista sin flash.
+      //
+      // Cada vuelta avanza de vista (frente → espalda → frente…) para que un
+      // jean con 4 fotos muestre **las dos caras**, no solo el frente.
       scope.phase = 'reflect';
       scope.remaining = COUNT_FROM;
-      showPhoto(scope, scope.plainIndex);
+      scope.view = (scope.view + 1) % Math.max(1, scope.viewCount);
+      showPhoto(scope, scope.view * 2);
       paint(scope);
     });
   }

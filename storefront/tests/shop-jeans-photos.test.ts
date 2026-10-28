@@ -66,7 +66,7 @@ afterEach(() => {
 });
 
 describe('jean con 4 fotos', () => {
-  it('el ciclo recorre la galería completa', async () => {
+  it('el ciclo recorre la galería alternando vistas', async () => {
     await import('../src/lib/carousel');
     await import('../src/lib/reflect-anim');
 
@@ -77,9 +77,9 @@ describe('jean con 4 fotos', () => {
     vi.advanceTimersByTime(2000);
     expect(activeIndex()).toBe(1);
 
-    // 4 s: vuelve a la portada para empezar otra vuelta.
+    // 4 s: la siguiente vuelta enseña la espalda.
     vi.advanceTimersByTime(2000);
-    expect(activeIndex()).toBe(0);
+    expect(activeIndex()).toBe(2);
   });
 
   it('los puntos permiten ver la espalda a mano', async () => {

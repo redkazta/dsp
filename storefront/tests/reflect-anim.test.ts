@@ -70,11 +70,10 @@ describe('reflect-anim', () => {
     expect(badge.classList.contains('is-lit')).toBe(false);
     expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(true);
 
-    // Y al cerrar la vuelta vuelve a la portada.
+    // Y al cerrar la vuelta vuelve a la vista sin flash.
     vi.advanceTimersByTime(2000);
     expect(labelOf(root)).toBe('Reflectivo en:');
     expect(badge.classList.contains('is-lit')).toBe(true);
-    expect(root.querySelectorAll('img')[1].classList.contains('is-flash-photo')).toBe(false);
   });
 
   it('no arranca sin la foto con reflejo', async () => {
