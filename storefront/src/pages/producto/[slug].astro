@@ -110,6 +110,9 @@ const ui = {
   combinationUnavailable: t.product.combinationUnavailable,
   wishlistShort: t.product.wishlistShort,
   wishlistSaved: t.product.wishlistSaved,
+  addedToCart: t.product.added,
+  cartAddedTitle: t.product.cartAddedTitle,
+  wishAddedTitle: t.product.wishAddedTitle,
 };
 ---
 
@@ -531,9 +534,8 @@ const ui = {
     import '../../lib/carousel';
     import '../../lib/reflect-anim';
     import { addToCart } from '../../lib/cart';
-    import { openStoreDrawer } from '../../lib/store-drawer';
     import { sanitizeVariants } from '../../lib/product-variants';
-    import { toggleWishlist, isInWishlist, SESSION_ENDED_EVENT } from '../../lib/wishlist';
+    import { toggleWishlist, currentWishlist, hasSession, SESSION_ENDED_EVENT } from '../../lib/wishlist';
 
     // El botón secundario de la ficha lleva directo al pago con el carrito
     // abierto, en vez de a una página intermedia sin acción clara.
@@ -647,12 +649,12 @@ const ui = {
           color: variant.color ?? null,
         });
 
-        feedback.textContent = '✓ Agregado al carrito';
+        feedback.textContent = '✓ ' + uiText('addedToCart');
         feedback.classList.remove('hidden');
         setTimeout(() => feedback.classList.add('hidden'), 2500);
 
-        // Abre el carrito flotante para seguir comprando sin salir
-        openStoreDrawer('cart');
+        // Solo se confirma con el aviso flotante: no se abre ningún panel,
+        // así se puede seguir comprando sin cerrar nada.
       });
     }
 
@@ -674,7 +676,22 @@ const ui = {
     }
 
     if (wishBtn) {
-      isInWishlist(wishBtn.dataset.wishId!).then(paintWish);
+      // Misma fuente de datos que el catálogo y /favoritos: si se quita el
+      // favorito en otra vista, el botón no puede quedar marcado.
+      const syncWish = async () => {
+        try {
+          const items = await currentWishlist(await hasSession());
+          paintWish(items.some((i) => String(i.productId) === String(wishBtn.dataset.wishId)));
+        } catch {
+          /* sin datos: se deja lo pintado */
+        }
+      };
+
+      void syncWish();
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void syncWish();
+      });
+      window.addEventListener('focus', () => void syncWish());
 
       wishBtn.addEventListener('click', async () => {
         const active = await toggleWishlist({
@@ -686,13 +703,12 @@ const ui = {
         });
 
         paintWish(active);
+        // El aviso flotante lo emite `StoreDrawer` al escuchar `wishlist:added`.
       });
 
-      // Si la sesión termina (cerrar sesión), el botón vuelve a reflejar el
-      // almacenamiento del visitante, que puede estar vacío.
-      window.addEventListener(SESSION_ENDED_EVENT, () => {
-        isInWishlist(wishBtn.dataset.wishId!).then(paintWish);
-      });
+      // Al cerrar sesión el botón vuelve a reflejar el almacenamiento del
+      // visitante, que puede estar vacío.
+      window.addEventListener(SESSION_ENDED_EVENT, () => void syncWish());
     }
   </script>
 

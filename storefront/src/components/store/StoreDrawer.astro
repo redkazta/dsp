@@ -58,12 +58,20 @@ const ui = {
   working: lang === 'en' ? 'Adding…' : 'Añadiendo…',
   nothingAdded: lang === 'en' ? 'Nothing available' : 'Nada disponible',
   removedFromCart: lang === 'en' ? 'Removed from cart' : 'Quitado del carrito',
+  removedFromWish: lang === 'en' ? 'Removed from wishlist' : 'Quitado de favoritos',
   addedToCart: lang === 'en' ? 'Added to cart' : 'Añadido al carrito',
+  cartAddedTitle: t.product.cartAddedTitle,
+  cartRemovedTitle: t.product.cartRemovedTitle,
+  wishAddedTitle: t.product.wishAddedTitle,
+  wishRemovedTitle: t.product.wishRemovedTitle,
+  addedNTitle: t.product.addedTitle,
   minQtyWish: lang === 'en' ? 'Minimum is 1 in the cart' : 'Mínimo 1 en el carrito',
   actionFailed:
     lang === 'en' ? 'Could not complete, try again' : 'No se pudo completar, intenta otra vez',
   toCart: lang === 'en' ? 'to cart' : 'al carrito',
   newCartReady: lang === 'en' ? 'New cart ready' : 'Carrito nuevo listo',
+  itemOne: lang === 'en' ? 'item' : 'pieza',
+  itemMany: lang === 'en' ? 'items' : 'piezas',
 };
 ---
 
@@ -107,9 +115,6 @@ const ui = {
     </div>
   </div>
 
-  <!-- Aviso visual rápido para acciones dentro de los mini paneles -->
-  <div id="mini-toast" class="mini-toast" hidden role="status" aria-live="polite"></div>
-
   <!-- Carrito: mini panel al hover, click navega a /carrito -->
   <div class="store-trigger" data-panel="cart">
     <a
@@ -146,8 +151,6 @@ const ui = {
 <!-- Overlay + panel -->
 <div id="drawer" class="drawer" data-wishlist={JSON.stringify(initialWishlist)} data-ui={JSON.stringify(ui)} hidden>
   <button type="button" id="drawer-backdrop" class="drawer-backdrop" aria-label={t.header.close}></button>
-
-  <p id="wish-toast" class="wish-toast" role="status" aria-live="polite"></p>
 
   <aside
     id="drawer-panel"
@@ -604,39 +607,7 @@ const ui = {
     color: #ffe28a;
   }
 
-  /* ---------- Aviso rápido dentro de los mini paneles ---------- */
-  .mini-toast {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 75;
-    max-width: min(340px, calc(100vw - 32px));
-    padding: 8px 12px;
-    border: 1px solid rgba(247, 223, 165, 0.75);
-    background: #050505;
-    color: #ffe28a;
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    text-align: center;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(-6px);
-    transition: opacity 0.18s ease, transform 0.18s ease;
-  }
-
-  .mini-toast[hidden] {
-    display: none;
-  }
-
-  .mini-toast.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* Cuando el aviso está visible el panel grande no debe taparlo */
+  /* Puede haber un aviso flotante encima del panel */
   .store-actions {
     isolation: isolate;
   }
@@ -675,34 +646,6 @@ const ui = {
 
   .drawer[hidden] {
     display: none;
-  }
-
-  .wish-toast {
-    position: absolute;
-    top: 84px;
-    left: 50%;
-    transform: translate(-50%, -12px);
-    z-index: 90;
-    max-width: calc(100% - 32px);
-    padding: 12px 20px;
-    border: 2px solid #ffe28a;
-    background: #0b0b0b;
-    color: #ffffff;
-    font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.25s ease,
-      transform 0.25s ease;
-  }
-
-  .wish-toast.is-visible {
-    opacity: 1;
-    transform: translate(-50%, 0);
   }
 
   .drawer-backdrop {
@@ -954,6 +897,9 @@ const ui = {
     cartCount,
     cartSubtotal,
     formatMXN,
+    saveCart,
+    startCartSync,
+    takeLastAdded,
     type CartItem,
   } from '../../lib/cart';
   import type { VariantOption } from '../../lib/product-variants';
@@ -965,6 +911,7 @@ const ui = {
   } from '../../lib/wishlist';
   import { FREE_SHIPPING_THRESHOLD } from '../../lib/pricing';
   import { escapeHtml, safeUrl } from '../../lib/html';
+  import { showFlashToast } from '../../lib/flash-toast';
 
   type Tab = 'cart' | 'wishlist';
 
@@ -1139,7 +1086,10 @@ const ui = {
 
     wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
       b.addEventListener('click', async () => {
-        await removeFromWishlist(b.dataset.wishRemove!);
+        const name =
+          b.closest('.drawer-item')?.querySelector('.mini-name')?.textContent?.trim() ??
+          '';
+        await removeFromWishlist(b.dataset.wishRemove!, name);
         renderWishlist();
       })
     );
@@ -1225,23 +1175,52 @@ const ui = {
     else updateBadges();
   });
 
-  // Aviso al guardar o quitar un favorito desde cualquier página
-  const toast = document.getElementById('wish-toast')!;
-  let toastTimer: number | undefined;
-
+  // Avisos flotantes: carrito y favoritos, en cualquier página.
+  // Todos pasan por `showFlashToast` (centro de la pantalla).
   window.addEventListener('wishlist:added', (e: Event) => {
     const name = (e as CustomEvent<{ name?: string }>).detail?.name;
-    toast.textContent = name ? `❤ ${name} — ${uiText('savedToWish')}` : uiText('savedToWish');
-    toast.classList.add('is-visible');
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2600);
+    showFlashToast(uiText('wishAddedTitle'), { tone: 'wish', detail: name || '' });
   });
 
-  window.addEventListener('wishlist:removed', () => {
-    toast.textContent = uiText('removedFromWish');
-    toast.classList.add('is-visible');
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 2000);
+  // "Producto añadido al carrito": se emite en `lib/cart.ts`. Se compara la
+  // firma del carrito para no repetir el aviso cuando `refreshCartPrices()`
+  // reajusta precios o reordena sin que el usuario haya añadido nada.
+  let lastCartSignature = '';
+  window.addEventListener('cart:updated', () => {
+    const items = getCart();
+    if (items.length === 0) {
+      lastCartSignature = '';
+      return;
+    }
+
+    // Orden fijo por variante: solo cuenta qué hay y cuánto, no el orden.
+    const signature = items
+      .map((i) => `${i.variantId}:${i.qty}`)
+      .sort()
+      .join('|');
+
+    // Un cambio de precio (misma cantidad) no es un "añadido".
+    if (signature === lastCartSignature) return;
+    const firstRender = lastCartSignature === '';
+    lastCartSignature = signature;
+
+    // Primera lectura (otra pestaña, recarga): no hubo acción del usuario.
+    if (firstRender) return;
+
+    // Cambio hecho en OTRA pestaña: el carrito se repinta, pero no se lanza
+    // un aviso que el usuario no provocó en esta pantalla.
+    const added = takeLastAdded();
+    if (!added) return;
+
+    showFlashToast(uiText('cartAddedTitle'), {
+      tone: 'cart',
+      detail: [added.name, added.variantName].filter(Boolean).join(' · '),
+    });
+  });
+
+  window.addEventListener('wishlist:removed', (e: Event) => {
+    const name = (e as CustomEvent<{ name?: string }>).detail?.name;
+    showFlashToast(uiText('wishRemovedTitle'), { tone: 'wish', detail: name || '' });
   });
 
   // Favoritos iniciales (SSR + fusión de lo guardado sin sesión)
@@ -1264,10 +1243,14 @@ const ui = {
 
   updateBadges();
 
+  // Otras pestañas del mismo navegador: sus cambios repintan el carrito y
+  // el contador del header sin recargar.
+  startCartSync();
+
   /** Reemplaza el carrito completo ("carrito nuevo con estos"). */
   function replaceCart(items: CartItem[]) {
-    window.localStorage.setItem('dsp_cart', JSON.stringify(items));
-    window.dispatchEvent(new CustomEvent('cart:updated', { detail: items }));
+    // `saveCart` escribe, avisa a las demás pestañas y emite `cart:updated`.
+    saveCart(items);
   }
 
   // ============================================
@@ -1286,26 +1269,16 @@ const ui = {
 
   let closeTimer: number | undefined;
 
-  // ---------- Aviso rápido (feedback de acciones en los mini paneles) ----------
-  const miniToast = document.getElementById('mini-toast') as HTMLElement | null;
-  let miniToastTimer: number | undefined;
-
-  function miniNotify(message: string) {
-    if (!miniToast || !message) return;
-    miniToast.textContent = message;
-    miniToast.hidden = false;
-    // Reinicia la animación aunque se pulse varias veces seguidas.
-    miniToast.classList.remove('is-visible');
-    void miniToast.offsetWidth;
-    miniToast.classList.add('is-visible');
-
-    window.clearTimeout(miniToastTimer);
-    miniToastTimer = window.setTimeout(() => {
-      miniToast.classList.remove('is-visible');
-      window.setTimeout(() => {
-        if (!miniToast.classList.contains('is-visible')) miniToast.hidden = true;
-      }, 200);
-    }, 1900);
+  // ---------- Aviso de acciones dentro de los mini paneles ----------
+  //
+  // Antes era un toast diminuto pegado al header. Ahora todo el feedback
+  // usa el mismo aviso flotante centrado (`lib/flash-toast.ts`), para que
+  // el usuario reconozca una sola forma de confirmar acciones.
+  //
+  // `tone` decide el icono: carrito, favorito o informativo.
+  function miniNotify(message: string, tone: 'cart' | 'wish' | 'info' = 'info') {
+    if (!message) return;
+    showFlashToast(message, { tone });
   }
 
   /** Extrae el nombre visible de una fila del mini panel. */
@@ -1402,7 +1375,10 @@ const ui = {
           if (scope === 'cart') {
             await fadeOutRow(btn.closest('.mini-item') as HTMLElement | null);
             removeFromCart(item.variantId);
-            miniNotify(`${item.name} · ${uiText('removedFromCart')}`);
+            showFlashToast(uiText('cartRemovedTitle'), {
+              tone: 'cart',
+              detail: item.name,
+            });
           } else {
             miniNotify(uiText('minQtyWish'));
           }
@@ -1411,9 +1387,10 @@ const ui = {
 
         updateQty(item.variantId, item.qty + dir);
         bumpQty(btn.closest('.mini-qty') as HTMLElement | null);
-        miniNotify(
-          `${item.name} · ${uiText('qty')} ${item.qty + dir}`
-        );
+        showFlashToast(uiText('qty') + ' ' + (item.qty + dir), {
+          tone: 'cart',
+          detail: item.name,
+        });
       });
     });
 
@@ -1427,7 +1404,7 @@ const ui = {
           const variantId = getCart().find((i) => i.variantId === id)?.variantId ?? id;
           await fadeOutRow(row);
           removeFromCart(variantId);
-          miniNotify(`${name} · ${uiText('removedFromCart')}`);
+          showFlashToast(uiText('cartRemovedTitle'), { tone: 'cart', detail: name });
           return;
         }
 
@@ -1435,8 +1412,8 @@ const ui = {
         row?.style.setProperty('opacity', '0.55');
 
         try {
-          await removeFromWishlist(id);
-          miniNotify(`${name} · ${uiText('removedFromWish')}`);
+          await removeFromWishlist(id, name);
+          // El evento `wishlist:removed` ya muestra el aviso centrado.
         } catch {
           row?.style.removeProperty('opacity');
           btn.removeAttribute('disabled');
@@ -1598,11 +1575,11 @@ const ui = {
         if (!ok) {
           btn.removeAttribute('disabled');
           btn.textContent = uiText('nothingAdded');
-          miniNotify(`${name} · ${uiText('nothingAdded')}`);
+          showFlashToast(uiText('nothingAdded'), { tone: 'info', detail: name });
           return;
         }
 
-        miniNotify(`${name} · ${uiText('addedToCart')}`);
+        // El aviso lo emite el listener global de `cart:updated`.
         // Si funcionó, `cart:updated` repinta y el botón pasa a −/+ qty.
       });
     });
@@ -1620,13 +1597,6 @@ const ui = {
         const panel = t.querySelector<HTMLElement>('.mini-panel');
         if (panel) panel.hidden = true;
       });
-
-      // El aviso se va con el panel para no quedar flotando en la página.
-      if (miniToast) {
-        window.clearTimeout(miniToastTimer);
-        miniToast.classList.remove('is-visible');
-        miniToast.hidden = true;
-      }
     };
 
     if (immediate) apply();
@@ -1722,7 +1692,14 @@ const ui = {
 
     const n = await wishItemsToCart(false);
     btn.textContent = n > 0 ? `${uiText('addedN')} ${n}` : uiText('nothingAdded');
-    miniNotify(n > 0 ? `${uiText('addedN')} ${n} ${uiText('toCart')}` : uiText('nothingAdded'));
+    if (n > 0) {
+      showFlashToast(uiText('cartAddedTitle'), {
+        tone: 'cart',
+        detail: `${n} ${n === 1 ? uiText('itemOne') : uiText('itemMany')}`,
+      });
+    } else {
+      showFlashToast(uiText('nothingAdded'), { tone: 'info' });
+    }
     window.setTimeout(() => {
       btn.textContent = uiText('addAllToCart');
       btn.disabled = currentWish.length === 0;
@@ -1736,7 +1713,14 @@ const ui = {
 
     const n = await wishItemsToCart(true);
     btn.textContent = n > 0 ? `${uiText('addedN')} ${n}` : uiText('nothingAdded');
-    miniNotify(n > 0 ? uiText('newCartReady') : uiText('nothingAdded'));
+    if (n > 0) {
+      showFlashToast(uiText('newCartReady'), {
+        tone: 'cart',
+        detail: `${n} ${n === 1 ? uiText('itemOne') : uiText('itemMany')}`,
+      });
+    } else {
+      showFlashToast(uiText('nothingAdded'), { tone: 'info' });
+    }
     window.setTimeout(() => {
       btn.textContent = uiText('newCartFromWish');
       btn.disabled = currentWish.length === 0;

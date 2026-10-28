@@ -372,7 +372,7 @@ void trackId;
 <script>
   import '../../lib/carousel';
   import '../../lib/reflect-anim';
-  import { isInWishlist, toggleWishlist } from '../../lib/wishlist';
+  import { currentWishlist, hasSession, toggleWishlist } from '../../lib/wishlist';
   type WishWindow = Window & { __dspWishBound?: boolean };
 
   function initWishCards() {
@@ -384,13 +384,26 @@ void trackId;
       btn.querySelector('svg')?.setAttribute('fill', active ? 'currentColor' : 'none');
     };
 
-    // Un solo request para todas las tarjetas visibles (antes: uno por tarjeta)
-    Promise.all(
-      [...document.querySelectorAll<HTMLButtonElement>('.wish-btn')].map(async (btn) => {
-        const active = await isInWishlist(btn.dataset.wishId!).catch(() => false);
-        paint(btn, active);
-      })
-    );
+    // Un solo request para todas las tarjetas: mismo origen de datos que
+    // /favoritos y el panel, para que el corazón nunca se quede "pegado".
+    async function syncCards() {
+      try {
+        const items = await currentWishlist(await hasSession());
+        const saved = new Set(items.map((i) => String(i.productId)));
+        document.querySelectorAll<HTMLButtonElement>('.wish-btn').forEach((btn) =>
+          paint(btn, saved.has(String(btn.dataset.wishId)))
+        );
+      } catch {
+        /* sin datos: se deja lo que haya pintado */
+      }
+    }
+
+    void syncCards();
+    // Al volver de /favoritos (o de otra pestaña) el estado se refresca.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') void syncCards();
+    });
+    window.addEventListener('focus', () => void syncCards());
 
     document.addEventListener('click', async (e) => {
       const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.wish-btn');
@@ -407,7 +420,11 @@ void trackId;
         image: btn.dataset.wishImage || null,
       });
 
-      paint(btn, active);
+      // Todas las tarjetas del mismo producto, no solo la pulsada.
+      const id = String(btn.dataset.wishId);
+      document.querySelectorAll<HTMLButtonElement>('.wish-btn').forEach((other) => {
+        if (String(other.dataset.wishId) === id) paint(other, active);
+      });
     });
   }
 

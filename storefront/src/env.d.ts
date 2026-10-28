@@ -1,5 +1,11 @@
 /// <reference types="astro/client" />
 
+/** Identificadores de pestaña para los canales de sincronización. */
+interface Window {
+  __dspWishlistTab?: string;
+  __dspCartTab?: string;
+}
+
 interface ImportMetaEnv {
   readonly PUBLIC_SUPABASE_URL?: string;
   readonly PUBLIC_SUPABASE_ANON_KEY?: string;

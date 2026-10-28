@@ -179,6 +179,7 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       cartSubtotal,
       refreshCartPrices,
       formatMXN,
+      startCartSync,
     } from '../lib/cart';
     import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from '../lib/pricing';
     import { escapeHtml, safeUrl } from '../lib/html';
@@ -310,5 +311,9 @@ const suggestions = (featured.data ?? []).map((p: any) => {
       .catch(() => render());
 
     render();
+
+    // Cambios desde otra pestaña: se repinta la página sin recargar.
+    startCartSync();
+    window.addEventListener('cart:updated', () => render());
   </script>
 </BaseLayout>

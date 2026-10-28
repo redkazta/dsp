@@ -31,6 +31,12 @@ function writeLocal(items: WishlistItem[]) {
   window.dispatchEvent(new CustomEvent('wishlist:updated', { detail: items }));
 }
 
+/**
+ * Los cambios de localStorage en otras pestañas no disparan
+ * `wishlist:updated` aquí (el navegador solo emite `storage`).
+ * `wishlist-sync.ts` lo captura y `wishlist.ts` relee esta misma clave.
+ */
+
 export function isLocalWishlisted(productId: string) {
   return getLocalWishlist().some((i) => i.productId === productId);
 }
@@ -55,8 +61,15 @@ export function toggleLocalWishlist(item: WishlistItem): boolean {
   return !exists;
 }
 
-export function removeLocalWishlist(productId: string) {
-  writeLocal(getLocalWishlist().filter((i) => i.productId !== productId));
+export function removeLocalWishlist(productId: string, name = '') {
+  const current = getLocalWishlist();
+  // Si quien llama no pasa el nombre, se rescata el que ya estaba guardado.
+  const known = current.find((i) => i.productId === productId)?.name ?? '';
+  writeLocal(current.filter((i) => i.productId !== productId));
   window.dispatchEvent(new CustomEvent('wishlist:updated', { detail: getLocalWishlist() }));
-  window.dispatchEvent(new CustomEvent('wishlist:removed', { detail: { productId } }));
+  window.dispatchEvent(
+    new CustomEvent('wishlist:removed', {
+      detail: { productId, name: name || known },
+    })
+  );
 }

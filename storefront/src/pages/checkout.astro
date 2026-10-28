@@ -360,7 +360,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   </style>
 
   <script>
-    import { getCart, refreshCartPrices, formatMXN } from '../lib/cart';
+    import { getCart, refreshCartPrices, formatMXN, startCartSync } from '../lib/cart';
     import { shippingCostFor, STANDARD_SHIPPING } from '../lib/pricing';
     import { escapeHtml, friendlyError } from '../lib/html';
 
@@ -621,6 +621,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       });
 
     renderSummary();
+
+    // Otra pestaña cambió el carrito: el resumen se repinta antes de pagar
+    // (nunca se cobra un carrito que ya no es el que se ve).
+    startCartSync();
+    window.addEventListener('cart:updated', () => renderSummary());
 
     if (!paymentAvailable) {
       showError(uiText('unavailable'));

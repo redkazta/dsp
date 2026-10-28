@@ -139,8 +139,13 @@ const available = items.filter((i) => !stale.includes(i.productId));
 
   <script>
     import '../lib/reflect-anim';
-    import { removeFromWishlist, type WishlistItem } from '../lib/wishlist';
-    import { getLocalWishlist, pruneLocalWishlist } from '../lib/wishlist-local';
+    import {
+      currentWishlist,
+      removeFromWishlist,
+      SESSION_ENDED_EVENT,
+      type WishlistItem,
+    } from '../lib/wishlist';
+    import { pruneLocalWishlist } from '../lib/wishlist-local';
     import { escapeHtml, safeUrl } from '../lib/html';
     import { planReflectImages } from '../lib/reflective';
 
@@ -227,7 +232,10 @@ const available = items.filter((i) => !stale.includes(i.productId));
       grid.querySelectorAll<HTMLButtonElement>('[data-wish-remove]').forEach((b) =>
         b.addEventListener('click', async () => {
           b.disabled = true;
-          await removeFromWishlist(b.dataset.wishRemove!);
+          const name =
+            b.closest('article')?.querySelector('h3')?.textContent?.trim() ?? '';
+          // El aviso centrado lo emite `StoreDrawer` desde `wishlist:removed`.
+          await removeFromWishlist(b.dataset.wishRemove!, name);
         })
       );
     }
@@ -236,18 +244,38 @@ const available = items.filter((i) => !stale.includes(i.productId));
       render((e as CustomEvent<WishlistItem[]>).detail ?? []);
     });
 
+    // Al volver a esta pestaña o al recuperar el foco, se relee la fuente
+    // real (servidor o navegador): así un cambio hecho en otra página
+    // (/tienda, ficha, otro tab) se refleja sin recargar.
+    async function syncWishlist() {
+      try {
+        const items = await currentWishlist(isAuth);
+        render(items);
+      } catch {
+        /* si falla, se queda lo que ya estaba pintado */
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') syncWishlist();
+    });
+    window.addEventListener('focus', syncWishlist);
+    window.addEventListener(SESSION_ENDED_EVENT, syncWishlist);
+
     if (isAuth) {
       render(serverItems);
     } else {
-      // Visitante: favoritos en localStorage, sin piezas que ya no existen.
-      const local = getLocalWishlist();
-      if (local.length === 0) {
+      // Visitante: la MISMA fuente que el resto del sitio (localStorage vía
+      // `wishlist.ts`), no una lectura suelta del navegador.
+      const items = await currentWishlist(false);
+      if (items.length === 0) {
         render([]);
       } else {
+        // Descarta piezas que ya no existen en el catálogo.
         fetch('/api/wishlist?ids=1')
           .then((r) => r.json())
-          .then((json) => render(Array.isArray(json?.ids) ? pruneLocalWishlist(json.ids) : local))
-          .catch(() => render(local));
+          .then((json) => render(Array.isArray(json?.ids) ? pruneLocalWishlist(json.ids) : items))
+          .catch(() => render(items));
       }
     }
   </script>

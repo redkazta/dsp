@@ -407,3 +407,106 @@ img.is-flash-photo {
     animation: none;
   }
 }
+
+/* ============================================
+   Aviso flotante global (lib/flash-toast.ts)
+   ============================================
+   Confirma acciones sueltas: "Producto añadido al carrito", "Producto
+   guardado en favoritos"... Aparece centrado en la pantalla, por encima
+   de cualquier panel, y desaparece solo. No bloquea la página.
+   Fuera de @layer para que nada lo colapse. */
+.dsp-flash {
+  position: fixed;
+  z-index: 130;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.94);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 240px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 18px 24px;
+  background: #000000;
+  border: 2px solid rgba(255, 226, 138, 0.8);
+  box-shadow:
+    0 30px 80px -30px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(255, 226, 138, 0.14),
+    0 0 70px -20px rgba(255, 226, 138, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    visibility 0.22s ease;
+}
+
+.dsp-flash.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.dsp-flash-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  color: #ffe28a;
+  border: 1px solid rgba(255, 226, 138, 0.5);
+  background: rgba(255, 226, 138, 0.08);
+}
+
+.dsp-flash-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.dsp-flash-text strong {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+
+.dsp-flash-text span {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: #ffe28a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .dsp-flash {
+    padding: 14px 18px;
+    gap: 12px;
+  }
+
+  .dsp-flash-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dsp-flash-text strong {
+    font-size: 14px;
+  }
+
+  .dsp-flash-text span {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsp-flash {
+    transition: opacity 0.15s ease;
+  }
+}

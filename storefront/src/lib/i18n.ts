@@ -233,6 +233,11 @@ export const copy = {
       selectColorError: 'Selecciona un color',
       combinationUnavailable: 'Combinación no disponible',
       wishlistSaved: 'Guardado',
+      cartAddedTitle: 'Producto añadido al carrito',
+      cartRemovedTitle: 'Producto eliminado del carrito',
+      wishAddedTitle: 'Producto guardado en favoritos',
+      wishRemovedTitle: 'Producto eliminado de favoritos',
+      addedTitle: 'Producto añadido',
     },
 
     // ---------------- Carrito ----------------
@@ -987,6 +992,11 @@ export const copy = {
       selectColorError: 'Choose a colour',
       combinationUnavailable: 'Combination not available',
       wishlistSaved: 'Saved',
+      cartAddedTitle: 'Product added to cart',
+      cartRemovedTitle: 'Product removed from cart',
+      wishAddedTitle: 'Product saved to wishlist',
+      wishRemovedTitle: 'Product removed from wishlist',
+      addedTitle: 'Product added',
     },
 
     // ---------------- Cart ----------------

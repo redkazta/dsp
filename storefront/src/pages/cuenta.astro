@@ -417,9 +417,10 @@ const ordersView = orders.map((o) => ({
       wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
         b.addEventListener('click', async () => {
           const box = b.closest('[data-wish-row]') as HTMLElement | null;
+          const name = box?.querySelector('h3')?.textContent?.trim() ?? '';
           box?.style.setProperty('opacity', '0.4');
           b.setAttribute('disabled', 'true');
-          await removeFromWishlist(b.dataset.wishRemove!);
+          await removeFromWishlist(b.dataset.wishRemove!, name);
           box?.remove();
         })
       );

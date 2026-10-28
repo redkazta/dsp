@@ -1,16 +1,20 @@
 ---
 /**
  * ProductList.astro - Grid de productos
- * 2 columnas en móvil, 3 en tablet, 4 en desktop.
+ * 2 columnas en móvil, 3 en tablet, 4 en desktop. Y una columna más en
+ * pantallas grandes para que toda la colección entre sin scroll.
+ * En `/tienda` se usa `compact` para que se vean jeans y playeras de una.
  */
 import ProductCard from './ProductCard.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
 
 export interface Props {
   products: any[];
+  /** Tarjetas más pequeñas y sin aire extra (catálogo de /tienda). */
+  compact?: boolean;
 }
 
-const { products: rawProducts } = Astro.props;
+const { products: rawProducts, compact = false } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -28,10 +32,66 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
       <p class="text-muted">{t.shop.noProducts}</p>
     </div>
   ) : (
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16">
+    <div
+      class:list={[
+        'grid',
+        compact
+          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-2.5 gap-y-4 sm:gap-x-3 sm:gap-y-5 lg:gap-x-4 lg:gap-y-6 shop-grid--compact'
+          : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16',
+      ]}
+    >
       {products.map((product) => (
         <ProductCard product={product} />
       ))}
     </div>
   )
 }
+
+<style>
+  /* Mismo marco 1:1, pero 30% más pequeño: el ancho de la rejilla ya lo
+     encoge; el alto del marco se limita para que no acapare la pantalla. */
+  .shop-grid--compact :global(.product-frame) {
+    max-height: clamp(110px, 16.5vh, 210px);
+    /* `aspect-ratio` es la fuente del alto: se sobreescribe con !important
+       porque vive en global.css y gana por orden de carga. */
+    aspect-ratio: auto !important;
+  }
+
+  .shop-grid--compact :global(.product-frame > img),
+  .shop-grid--compact :global(.product-frame > picture > img) {
+    padding: 4%;
+  }
+
+  .shop-grid--compact :global(.product-card-wrap a > div:last-child) {
+    padding-top: 0.6rem;
+  }
+
+  .shop-grid--compact :global(h3) {
+    font-size: 0.875rem;
+  }
+
+  /* Badge de reflectivo y flechas del carrusel, a escala de la tarjeta. */
+  .shop-grid--compact :global(.reflect-badge) {
+    top: 6px;
+    left: 6px;
+    min-width: 58px;
+    min-height: 40px;
+    padding: 4px 6px 3px;
+  }
+
+  .shop-grid--compact :global(.reflect-badge-label) {
+    font-size: 7px;
+    letter-spacing: 0.04em;
+  }
+
+  .shop-grid--compact :global(.reflect-badge-count) {
+    font-size: 18px;
+  }
+
+  .shop-grid--compact :global(.wish-btn) {
+    top: 6px;
+    right: 6px;
+    width: 34px;
+    height: 34px;
+  }
+</style>

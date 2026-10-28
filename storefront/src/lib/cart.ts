@@ -4,6 +4,10 @@
  * Solo guarda qué variante y cuántas piezas: el precio que se cobra
  * se recalcula en el servidor (`/api/checkout`). Lo que se muestra aquí
  * es referencial y se refresca con `refreshCartPrices()`.
+ *
+ * El carrito vive en el navegador, así que "tiempo real" aquí significa
+ * entre pestañas del mismo navegador: `BroadcastChannel` + el evento
+ * `storage` (que el navegador emite en las demás pestañas al escribir).
  */
 
 export interface CartItem {
@@ -24,6 +28,91 @@ import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from './p
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor };
 
 const KEY = 'dsp_cart';
+const SYNC_KEY = 'dsp_cart_sync';
+const CHANNEL = 'dsp:cart';
+
+// ---------------------------------------------------------------------------
+// Sincronización entre pestañas
+// ---------------------------------------------------------------------------
+
+let channel: BroadcastChannel | null = null;
+let syncBound = false;
+
+function tabId(): string {
+  const w = window as Window & { __dspCartTab?: string };
+  w.__dspCartTab ??=
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `tab-${Math.random().toString(36).slice(2)}`;
+  return w.__dspCartTab;
+}
+
+/**
+ * Arranca la escucha entre pestañas (idempotente, una vez por página).
+ *
+ * No hay nada que pedir al servidor: el carrito es local, así que el aviso
+ * llega con la propia lista ya escrita en `localStorage`.
+ */
+export function startCartSync(): void {
+  if (typeof window === 'undefined' || syncBound) return;
+  syncBound = true;
+  tabId();
+
+  if (typeof window.BroadcastChannel !== 'undefined') {
+    channel = new window.BroadcastChannel(CHANNEL);
+    channel.onmessage = (e) => {
+      if (e.data?.from && e.data.from === tabId()) return;
+      emitCartUpdate();
+    };
+  }
+
+  // Red de seguridad: `storage` no depende de que la otra pestaña tenga el
+  // canal abierto (y `dsp_cart_sync` sirve para cambios de otra pestaña
+  // que no toquen la clave principal, p. ej. `replaceCart`).
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY || e.key === SYNC_KEY) emitCartUpdate();
+  });
+}
+
+/**
+ * `cart:updated` con la lista leída AHORA de localStorage.
+ * Se relee a propósito: el evento debe reflejar el estado real, no una
+ * copia que pueda haber quedado vieja.
+ */
+function emitCartUpdate(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('cart:updated', { detail: getCart() }));
+}
+
+/** Avisa a las demás pestañas de que el carrito cambió aquí. */
+function broadcastCart(): void {
+  if (typeof window === 'undefined') return;
+  channel?.postMessage({ type: 'changed', from: tabId() });
+  try {
+    localStorage.setItem(SYNC_KEY, String(Date.now()));
+  } catch {
+    /* modo privado restrictivo: el canal ya avisó */
+  }
+}
+
+/**
+ * Detalle de la última pieza añadida (para los avisos flotantes).
+ * `StoreDrawer` no sabe qué se acaba de añadir —solo ve el carrito entero—
+ * así que `addToCart` deja aquí el nombre y la variante.
+ */
+export interface LastAdded {
+  name: string;
+  variantName?: string;
+  image?: string;
+}
+
+let lastAdded: LastAdded | null = null;
+
+export function takeLastAdded(): LastAdded | null {
+  const value = lastAdded;
+  lastAdded = null;
+  return value;
+}
 
 export function getCart(): CartItem[] {
   if (typeof localStorage === 'undefined') return [];
@@ -37,7 +126,8 @@ export function getCart(): CartItem[] {
 
 export function saveCart(items: CartItem[]): void {
   localStorage.setItem(KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent('cart:updated', { detail: items }));
+  broadcastCart();
+  emitCartUpdate();
 }
 
 export function addToCart(item: CartItem): CartItem[] {
@@ -48,6 +138,11 @@ export function addToCart(item: CartItem): CartItem[] {
   } else {
     cart.push(item);
   }
+  lastAdded = {
+    name: item.name,
+    variantName: item.variantName,
+    image: item.image,
+  };
   saveCart(cart);
   return cart;
 }

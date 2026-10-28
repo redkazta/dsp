@@ -93,35 +93,24 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   title={t.shop.metaTitle}
   description={t.shop.metaDescription}
 >
-  <!-- Encabezado -->
-  <section class="relative border-b border-white/30 overflow-hidden">
+  <!-- Encabezado compacto: solo título, número de piezas y carrito -->
+  <section class="relative border-b border-white/20 overflow-hidden">
     <div class="absolute inset-0 bg-noise"></div>
     <div class="absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-oro-brillo/5 blur-[110px] pointer-events-none"></div>
 
-    <div class="relative page-container pt-8 sm:pt-10 pb-10 lg:pt-14 lg:pb-16">
-      <nav class="mb-6 sm:mb-8">
-        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
-          <li><a href="/" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumbHome}</a></li>
-          <li>/</li>
-          <li class="text-oro-brillo">{t.shop.breadcrumb}</li>
-        </ol>
-      </nav>
-
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-        <div>
-          <p class="section-label mb-4">{t.shop.collection}</p>
-          <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto leading-none mb-4">
-            {categoryId ? categoryName(lang, categories.find((c: any) => c.id === categoryId)) ?? t.shop.breadcrumb : t.shop.allPieces}
+    <div class="relative page-container py-3 sm:py-3.5">
+      <div class="flex items-end justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="font-titulos text-2xl sm:text-3xl lg:text-4xl text-blancoRoto leading-none truncate">
+            {categoryId ? categoryName(lang, categories.find((c: any) => c.id === categoryId)) ?? t.shop.allPieces : t.shop.allPieces}
           </h1>
-          <p class="text-base text-white/80">
+          <p class="mt-1.5 text-sm text-white/70">
             {products.length} {products.length === 1 ? t.shop.productOne : t.shop.productMany}
             {search ? ` ${t.shop.forQuery} “${search}”` : ''}
           </p>
         </div>
 
-        <div class="flex items-center gap-3">
-          <a href="/carrito" class="btn-outline">{t.shop.viewCart}</a>
-        </div>
+        <a href="/carrito" class="btn-outline !min-h-[34px] !px-3 !py-1.5 !text-[11px] shrink-0">{t.shop.viewCart}</a>
       </div>
     </div>
   </section>
@@ -129,13 +118,13 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   <!-- Barra de filtros -->
   <section class="sticky top-16 sm:top-20 z-40 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
     <div class="page-container">
-      <div class="flex flex-col lg:flex-row lg:items-center gap-5 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center gap-2 py-1.5">
         <!-- Chips de categoría -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 -mx-5 px-5 sm:mx-0 sm:px-0 scrollbar-none">
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 lg:pb-0 -mx-5 px-5 sm:mx-0 sm:px-0 scrollbar-none">
           <a
             href={buildUrl({ category: undefined })}
             class:list={[
-              'shrink-0 px-4 py-2.5 min-h-[44px] inline-flex items-center font-acentos text-xs uppercase tracking-[0.2em] border-2 transition-colors duration-300',
+              'shrink-0 px-3 py-1.5 min-h-[34px] inline-flex items-center font-acentos text-[11px] uppercase tracking-[0.16em] border-2 transition-colors duration-300',
               !categoryId
                 ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
                 : 'border-white/40 text-white/80 hover:border-oro-brillo hover:text-oro-brillo',
@@ -148,7 +137,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
               <a
                 href={buildUrl({ category: cat.id })}
                 class:list={[
-                  'shrink-0 px-4 py-2.5 min-h-[44px] inline-flex items-center font-acentos text-xs uppercase tracking-[0.2em] border-2 transition-colors duration-300',
+                  'shrink-0 px-3 py-1.5 min-h-[34px] inline-flex items-center font-acentos text-[11px] uppercase tracking-[0.16em] border-2 transition-colors duration-300',
                   categoryId === cat.id
                     ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
                     : 'border-white/40 text-white/80 hover:border-oro-brillo hover:text-oro-brillo',
@@ -163,14 +152,14 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
         <div class="flex-1"></div>
 
         <!-- Buscar + precio + ordenar -->
-        <div class="flex flex-col sm:flex-row gap-3 lg:shrink-0">
+        <div class="flex flex-col sm:flex-row gap-2 lg:shrink-0">
           <form method="get" class="flex">
             <input
               type="search"
               name="q"
               value={search}
               placeholder={t.shop.searchPlaceholder}
-              class="input-dark text-sm !min-h-[48px] w-full sm:w-56"
+              class="input-dark text-xs !min-h-[34px] !py-1.5 w-full sm:w-44"
             />
             {categoryId && <input type="hidden" name="category" value={categoryId} />}
             <input type="hidden" name="sort" value={sort} />
@@ -179,7 +168,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
 
           <!-- Precio: enlaces compartibles (?precio=700-1200) -->
           <details class="relative">
-            <summary class="input-dark text-sm !min-h-[48px] pr-8 cursor-pointer flex items-center select-none">
+            <summary class="input-dark text-xs !min-h-[34px] !py-1.5 pr-7 cursor-pointer flex items-center select-none">
               {priceBand.label}
             </summary>
             <div class="absolute right-0 top-full mt-2 z-50 min-w-[230px] bg-negro-carbono border-2 border-white/30 p-2">
@@ -188,7 +177,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
                   <a
                     href={buildUrl({ precio: band.value || undefined })}
                     class:list={[
-                      'block px-3 py-2.5 text-sm transition-colors',
+                      'block px-3 py-2 text-sm transition-colors',
                       band.value === priceBand.value
                         ? 'text-oro-brillo bg-oro-brillo/10'
                         : 'text-white/80 hover:text-oro-brillo',
@@ -204,7 +193,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
           <form method="get" class="flex">
             <select
               name="sort"
-              class="input-dark text-sm !min-h-[48px] pr-8 cursor-pointer"
+              class="input-dark text-xs !min-h-[34px] !py-1.5 pr-7 cursor-pointer"
             >
               {
                 sortOptions.map((opt) => (
@@ -224,7 +213,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   </section>
 
   <!-- Grid -->
-  <section class="page-container py-10 sm:py-12 lg:py-16">
+  <section class="page-container py-3 sm:py-4 lg:py-5">
     {
       errorMessage ? (
         <div class="max-w-xl mx-auto text-center py-20">
@@ -255,7 +244,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
           </div>
         </div>
       ) : (
-        <ProductList products={products} />
+        <ProductList products={products} compact />
       )
     }
   </section>

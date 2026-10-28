@@ -657,6 +657,9 @@ const jsonLd = {
       });
       void paintMobileCounts();
 
+      // Cambios de carrito hechos en otra pestaña: símbolo y contador al día.
+      void import('../lib/cart').then(({ startCartSync }) => startCartSync());
+
       // ---------- Buscador global ----------
       const openSearch = document.getElementById('search-open');
       const mobileSearchOpen = document.getElementById('mobile-search-open');
