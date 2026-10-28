@@ -16,6 +16,7 @@ const ui = {
   failed: t.account.recoverFailed,
   sent: t.account.recoverSent,
 };
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.account.recoverMetaTitle} description={t.account.recoverMetaDescription}>
@@ -51,7 +52,7 @@ const ui = {
       </form>
 
       <p class="mt-8 text-center text-sm text-muted">
-        <a href="/entrar" class="text-oro-brillo font-semibold hover:text-white transition-colors">{t.account.backToLogin}</a>
+        <a href={localize(lang, 'login')} class="text-oro-brillo font-semibold hover:text-white transition-colors">{t.account.backToLogin}</a>
       </p>
     </div>
   </section>

@@ -98,6 +98,7 @@ if (stale.length > 0 && user) {
 }
 
 const available = items.filter((i) => !stale.includes(i.productId));
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.account.wishlistMetaTitle} description={t.cart.emptyText}>
@@ -120,7 +121,7 @@ const available = items.filter((i) => !stale.includes(i.productId));
         <p class="text-base text-white/80 mb-8">
           {t.account.wishlistEmptyText}
         </p>
-        <a href="/tienda" class="btn-gold inline-flex">{t.about.closingCta}</a>
+        <a href={localize(lang, 'shop')} class="btn-gold inline-flex">{t.about.closingCta}</a>
       </div>
     </div>
 

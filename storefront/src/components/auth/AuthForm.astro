@@ -31,6 +31,7 @@ const ui = {
   alreadyRegistered: t.account.alreadyRegistered,
   generic: t.common.error,
 };
+import { localize } from '../../lib/routes';
 ---
 
 <section class="min-h-[calc(100dvh-8rem)] flex items-start sm:items-center justify-center px-5 sm:px-6 py-10 sm:py-16 bg-noise">
@@ -168,7 +169,7 @@ const ui = {
         {
           !isRegister && (
             <p class="mt-2 text-right">
-              <a href="/recuperar" class="text-sm text-oro-brillo hover:text-white transition-colors">
+              <a href={localize(lang, 'recover')} class="text-sm text-oro-brillo hover:text-white transition-colors">
                 {t.account.forgot}
               </a>
             </p>
@@ -211,11 +212,11 @@ const ui = {
               />
               <span class="text-sm text-muted leading-relaxed">
                 {t.account.acceptTerms}
-                <a href="/terminos" class="text-oro-brillo hover:text-white underline underline-offset-2">
+                <a href={localize(lang, 'terms')} class="text-oro-brillo hover:text-white underline underline-offset-2">
                   {t.checkout.termsLink}
                 </a>
                 {t.account.andThe}
-                <a href="/privacidad" class="text-oro-brillo hover:text-white underline underline-offset-2">
+                <a href={localize(lang, 'privacy')} class="text-oro-brillo hover:text-white underline underline-offset-2">
                   {t.checkout.privacyLink}
                 </a>.
               </span>
@@ -238,14 +239,14 @@ const ui = {
         isRegister ? (
           <>
             {t.account.hasAccount}{' '}
-            <a href="/entrar" class="text-oro-brillo font-semibold hover:text-white transition-colors">
+            <a href={localize(lang, 'login')} class="text-oro-brillo font-semibold hover:text-white transition-colors">
               {t.account.goLogin}
             </a>
           </>
         ) : (
           <>
             {t.account.noAccount}{' '}
-            <a href="/registro" class="text-oro-brillo font-semibold hover:text-white transition-colors">
+            <a href={localize(lang, 'register')} class="text-oro-brillo font-semibold hover:text-white transition-colors">
               {t.account.goRegister}
             </a>
           </>

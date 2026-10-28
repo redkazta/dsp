@@ -7,6 +7,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 const page = t.legal.returns;
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout
@@ -41,8 +42,8 @@ const page = t.legal.returns;
     </div>
 
     <div class="mt-14 flex flex-wrap gap-3">
-      <a href="/contacto" class="btn-gold">{t.legal.linkContact}</a>
-      <a href="/tienda" class="btn-outline">{t.legal.viewCatalog}</a>
+      <a href={localize(lang, 'contact')} class="btn-gold">{t.legal.linkContact}</a>
+      <a href={localize(lang, 'shop')} class="btn-outline">{t.legal.viewCatalog}</a>
     </div>
   </article>
 </BaseLayout>

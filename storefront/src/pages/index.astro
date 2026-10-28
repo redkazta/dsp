@@ -11,6 +11,7 @@ const t = getCopy(lang);
 
 // Playera, jean, playera, jean…: el intercalado se hace en servidor.
 const slides = await getHomeSlides({ perCategory: 8, max: 12, lang });
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout homeScreen>
@@ -24,7 +25,7 @@ const slides = await getHomeSlides({ perCategory: 8, max: 12, lang });
       <HeroCarousel slides={slides} t={t} currency="USD" />
 
       <div class="hero-actions">
-        <a href="/tienda" class="btn-drop">{t.hero.cta}</a>
+        <a href={localize(lang, 'shop')} class="btn-drop">{t.hero.cta}</a>
       </div>
     </section>
   </div>

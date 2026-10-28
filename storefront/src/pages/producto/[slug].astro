@@ -114,6 +114,7 @@ const ui = {
   cartAddedTitle: t.product.cartAddedTitle,
   wishAddedTitle: t.product.wishAddedTitle,
 };
+import { localize } from '../../lib/routes';
 ---
 
 <BaseLayout
@@ -130,7 +131,7 @@ const ui = {
       <div class="max-w-3xl mx-auto py-32 text-center px-6">
         <p class="section-label mb-4">404</p>
         <h1 class="font-titulos text-4xl text-blancoRoto mb-6">{t.product.notFoundTitle}</h1>
-        <a href="/tienda" class="btn-gold inline-block">{t.product.backToShop}</a>
+        <a href={localize(lang, 'shop')} class="btn-gold inline-block">{t.product.backToShop}</a>
       </div>
     ) : (
       <>
@@ -139,7 +140,7 @@ const ui = {
           <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
             <li><a href="/" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumbHome}</a></li>
             <li>/</li>
-            <li><a href="/tienda" class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumb}</a></li>
+            <li><a href={localize(lang, 'shop')} class="hover:text-oro-brillo transition-colors">{t.shop.breadcrumb}</a></li>
             <li>/</li>
             <li class="text-oro-brillo truncate max-w-[200px]">{title}</li>
           </ol>
@@ -333,7 +334,7 @@ const ui = {
                   {isSoldOut ? t.product.soldOut : t.product.addToCart}
                 </button>
                 <a
-                  href="/carrito"
+                  href={localize(lang, 'cart')}
                   id="open-cart-drawer"
                   class="min-h-[56px] px-6 py-5 border-2 border-white/50 text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-all duration-300 flex items-center justify-center gap-2 font-acentos text-xs uppercase tracking-[0.2em]"
                   aria-label={t.product.cartCta}

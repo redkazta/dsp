@@ -75,6 +75,7 @@ const steps = order
 const subtotal = Number(order?.subtotal ?? order?.total_amount ?? 0);
 const shipping = Number(order?.shipping_cost ?? 0);
 const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.tracking_number) : null;
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title="Pedido confirmado | Dinero Sobre Problemas" description="Tu pedido fue recibido.">
@@ -97,7 +98,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <a href="/cuenta#pedidos" class="btn-gold">{t.account.myOrders}</a>
-            <a href="/tienda" class="btn-outline">{t.cart.continueShopping}</a>
+            <a href={localize(lang, 'shop')} class="btn-outline">{t.cart.continueShopping}</a>
           </div>
         </div>
       </div>
@@ -269,7 +270,7 @@ const trackUrl = order?.tracking_number ? trackingUrl(order.carrier, order.track
 
               <div class="flex flex-col gap-3">
                 <a href="/cuenta#pedidos" class="btn-gold w-full">{t.account.myOrders}</a>
-                <a href="/tienda" class="btn-outline w-full">{t.cart.continueShopping}</a>
+                <a href={localize(lang, 'shop')} class="btn-outline w-full">{t.cart.continueShopping}</a>
               </div>
             </aside>
           </div>

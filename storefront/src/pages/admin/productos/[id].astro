@@ -39,6 +39,7 @@ const missing = missingEnglish(product as any);
 
 const money = (n: number) =>
   `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+import { localize } from '../../../lib/routes';
 ---
 
 <AdminLayout title={product.name}>
@@ -57,7 +58,7 @@ const money = (n: number) =>
 
       <div class="flex flex-wrap gap-3 shrink-0">
         <a
-          href={`/producto/${product.slug ?? product.id}`}
+          href={localize(lang, 'products', product.slug ?? product.id)}
           target="_blank"
           rel="noopener"
           class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs"

@@ -7,6 +7,7 @@ import { getCopy, type Lang } from '../lib/i18n';
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 const a = t.about;
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={a.metaTitle} description={a.metaDescription}>
@@ -78,6 +79,6 @@ const a = t.about;
     <p class="text-white/80 mb-10 max-w-md mx-auto">
       {a.closingText}
     </p>
-    <a href="/tienda" class="btn-gold inline-block">{a.closingCta}</a>
+    <a href={localize(lang, 'shop')} class="btn-gold inline-block">{a.closingCta}</a>
   </section>
 </BaseLayout>

@@ -12,6 +12,7 @@ import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServerClient } from './lib/supabase-server';
 import { STAFF_ROLES, NOT_FOUND_HEADERS } from './lib/constants';
 import { LANG_COOKIE, langFromAcceptHeader, normalizeLang } from './lib/i18n';
+import { aliasToCanonical, canonicalPath } from './lib/routes';
 
 /** Rutas que no necesitan sesión ni consultas a Supabase. */
 const PUBLIC_ASSET = /^\/(_astro|_image|fonts|images|icons)\/|^\/(favicon|og-image|robots|sitemap)\./i;
@@ -38,6 +39,19 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   if (PUBLIC_ASSET.test(pathname) || (PUBLIC_FILE.test(pathname) && !pathname.startsWith('/api/'))) {
     return next();
   }
+
+  // ---------- Rutas localizadas ----------
+  // `/shop` sirve la misma página que `/tienda`, sin cambiar la URL del
+  // navegador. Se reescribe ANTES de resolver sesión para que todo lo de
+  // abajo (guardas de /cuenta, etc.) trabaje con la ruta canónica.
+  const canonical = aliasToCanonical(pathname);
+  if (canonical) {
+    // `rewrite` de Astro 5: renderiza otra página conservando la URL.
+    return context.rewrite(canonical);
+  }
+
+  // A partir de aquí se compara siempre contra la ruta canónica.
+  const route = canonicalPath(pathname);
 
   const supabase = createSupabaseServerClient(context.request, context.cookies);
 
@@ -93,24 +107,27 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   // Para cualquier visitante sin permisos de staff (con o sin sesión) el panel
   // no existe: se manda a la portada con un redirect normal, sin 401/403 que
   // delaten que /admin es una ruta real.
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+  if (route === '/admin' || route.startsWith('/admin/')) {
     if (!user || !isStaff) {
       return context.redirect('/', 307);
     }
   }
 
   // ---------- Rutas privadas del cliente ----------
-  if (PRIVATE_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    if (!user) return context.redirect(`/entrar?next=${encodeURIComponent(pathname + context.url.search)}`, 302);
+  if (PRIVATE_PREFIXES.some((p) => route === p || route.startsWith(`${p}/`))) {
+    if (!user) {
+      const from = context.url.pathname + context.url.search;
+      return context.redirect(`/entrar?next=${encodeURIComponent(from)}`, 302);
+    }
   }
 
   // ---------- Con sesión, las pantallas de acceso no tienen sentido ----------
-  if (user && ['/entrar', '/registro'].includes(pathname)) {
+  if (user && ['/entrar', '/registro'].includes(route)) {
     return context.redirect(safeNext(context.url.searchParams.get('next'), '/cuenta'), 302);
   }
 
   // ---------- Correo de recuperación: vuelve con un código a /nueva-password ----------
-  if (user && pathname === '/recuperar') {
+  if (user && route === '/recuperar') {
     return context.redirect('/nueva-password', 302);
   }
 

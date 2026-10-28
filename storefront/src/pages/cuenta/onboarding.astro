@@ -36,6 +36,7 @@ const fullName =
 
 const nextParam = Astro.url.searchParams.get('next') ?? '/cuenta';
 const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/cuenta';
+import { localize } from '../../lib/routes';
 ---
 
 <BaseLayout title={t.onboarding.metaTitle} description={t.onboarding.metaDescription}>
@@ -107,11 +108,11 @@ const next = nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextPara
           />
           <span class="text-sm text-muted leading-relaxed">
             {t.account.acceptTerms}
-            <a href="/terminos" class="text-oro-brillo hover:text-white underline underline-offset-2">
+            <a href={localize(lang, 'terms')} class="text-oro-brillo hover:text-white underline underline-offset-2">
               {t.checkout.termsLink}
             </a>
             {t.account.andThe}
-            <a href="/privacidad" class="text-oro-brillo hover:text-white underline underline-offset-2">
+            <a href={localize(lang, 'privacy')} class="text-oro-brillo hover:text-white underline underline-offset-2">
               {t.checkout.privacyLink}
             </a>.
           </span>

@@ -61,6 +61,7 @@ const ordersView = orders.map((o) => ({
   steps: timeline(o),
   trackUrl: o.tracking_number ? trackingUrl(o.carrier, o.tracking_number) : null,
 }));
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.account.metaTitle} description={t.account.profileSection}>
@@ -106,7 +107,7 @@ const ordersView = orders.map((o) => ({
             ordersView.length === 0 ? (
               <div class="card p-8 sm:p-10 text-center">
                 <p class="text-muted mb-5">{t.common.noOrders}</p>
-                <a href="/tienda" class="btn-outline inline-flex">
+                <a href={localize(lang, 'shop')} class="btn-outline inline-flex">
                   {t.about.closingCta}
                 </a>
               </div>

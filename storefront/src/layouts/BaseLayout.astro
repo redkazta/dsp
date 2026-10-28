@@ -7,6 +7,7 @@ import '../styles/global.css';
 import '../styles/animated-logo.css';
 import StoreDrawer from '../components/store/StoreDrawer.astro';
 import { getCopy, LANG_TOGGLE_LABEL, LOCALE, type Lang } from '../lib/i18n';
+import { localize, translateUrl } from '../lib/routes';
 
 export interface Props {
   title?: string;
@@ -29,21 +30,22 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 
-// Para el enlace del idioma: volver a la misma página (query incluida).
-const langReturnTo = Astro.url.pathname + Astro.url.search;
+// Para el enlace del idioma: volver a la MISMA página en el otro idioma
+// (/tienda → /shop, /producto/x → /product/x), no al inicio.
 const langNext = lang === 'es' ? 'en' : 'es';
+const langReturnTo = translateUrl(langNext, Astro.url.pathname + Astro.url.search);
 const langToggleHref = `/api/lang?lang=${langNext}&next=${encodeURIComponent(langReturnTo)}`;
 const langToggleLabel = LANG_TOGGLE_LABEL[lang];
 
 const navLinks = [
-  { href: '/tienda', label: t.nav.tienda },
-  { href: '/nosotros', label: t.nav.nosotros },
+  { href: localize(lang, 'shop'), label: t.nav.tienda },
+  { href: localize(lang, 'about'), label: t.nav.nosotros },
 ];
 
 const isAuth = Astro.locals.isAuthenticated;
 const firstName = Astro.locals.firstName;
 const isStaff = Astro.locals.isStaff;
-const accountHref = isAuth ? '/cuenta' : '/entrar';
+const accountHref = isAuth ? '/cuenta' : localize(lang, 'login');
 
 // Favoritos para el primer HTML (sin "Cargando…" y sin parpadeo).
 // Solo lectura con la sesión del visitante: RLS decide qué puede ver.
@@ -274,13 +276,13 @@ const jsonLd = {
                       </svg>
                       {t.header.myOrders}
                     </a>
-                    <a href="/favoritos" class="profile-menu-item" role="menuitem">
+                    <a href={localize(lang, 'favorites')} class="profile-menu-item" role="menuitem">
                       <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 0 0 0-7.8Z" />
                       </svg>
                       {t.nav.favoritos}
                     </a>
-                    <a href="/carrito" class="profile-menu-item" role="menuitem">
+                    <a href={localize(lang, 'cart')} class="profile-menu-item" role="menuitem">
                       <svg class="profile-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
                       </svg>
@@ -478,10 +480,10 @@ const jsonLd = {
             <ul class="space-y-3">
               {
                 [
-                  { href: '/tienda', label: t.footer.catalogue },
-                  { href: '/nosotros', label: t.footer.about },
-                  { href: '/contacto', label: t.footer.contact },
-                  { href: '/tallas', label: t.footer.sizes },
+                  { href: localize(lang, 'shop'), label: t.footer.catalogue },
+                  { href: localize(lang, 'about'), label: t.footer.about },
+                  { href: localize(lang, 'contact'), label: t.footer.contact },
+                  { href: localize(lang, 'sizes'), label: t.footer.sizes },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
@@ -499,10 +501,10 @@ const jsonLd = {
             <ul class="space-y-3">
               {
                 [
-                  { href: '/envios', label: t.footer.shipping },
-                  { href: '/devoluciones', label: t.footer.returns },
-                  { href: '/privacidad', label: t.footer.privacy },
-                  { href: '/terminos', label: t.footer.terms },
+                  { href: localize(lang, 'shipping'), label: t.footer.shipping },
+                  { href: localize(lang, 'returns'), label: t.footer.returns },
+                  { href: localize(lang, 'privacy'), label: t.footer.privacy },
+                  { href: localize(lang, 'terms'), label: t.footer.terms },
                 ].map((l) => (
                   <li>
                     <a href={l.href} class="text-base text-muted hover:text-oro-brillo transition-colors duration-300">
@@ -523,10 +525,10 @@ const jsonLd = {
             © {new Date().getFullYear()} {t.brand.toUpperCase()} · {t.footer.rights}
           </p>
           <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/80 font-acentos tracking-wider">
-            <a href="/privacidad" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.privacy}</a>
-            <a href="/terminos" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.terms}</a>
-            <a href="/envios" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.shipping}</a>
-            <a href="/contacto" class="py-1 hover:text-oro-brillo transition-colors">{t.footer.contact}</a>
+            <a href={localize(lang, 'privacy')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.privacy}</a>
+            <a href={localize(lang, 'terms')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.terms}</a>
+            <a href={localize(lang, 'shipping')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.shipping}</a>
+            <a href={localize(lang, 'contact')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.contact}</a>
           </div>
           <!-- Métodos de pago -->
           <div class="flex items-center gap-2">

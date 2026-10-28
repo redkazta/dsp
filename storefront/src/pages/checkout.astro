@@ -35,6 +35,7 @@ const paymentAvailable = Boolean(
   import.meta.env.STRIPE_SECRET_KEY && import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
 );
 const canceled = Astro.url.searchParams.get('canceled') === '1';
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription}>
@@ -43,7 +44,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     <div class="page-container py-10 sm:py-12">
       <nav class="mb-6">
         <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
-          <li><a href="/carrito" class="hover:text-oro-brillo transition-colors">{t.cart.title}</a></li>
+          <li><a href={localize(lang, 'cart')} class="hover:text-oro-brillo transition-colors">{t.cart.title}</a></li>
           <li>/</li>
           <li class="text-oro-brillo">{t.checkout.title}</li>
         </ol>
@@ -62,7 +63,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   <div id="checkout-empty" class="hidden max-w-3xl mx-auto px-5 py-24 sm:py-32 text-center">
     <p class="font-titulos text-3xl text-blancoRoto mb-6">{t.checkout.emptyTitle}</p>
     <div class="gold-line mx-auto mb-8"></div>
-    <a href="/tienda" class="btn-gold inline-flex">{t.checkout.goShop}</a>
+    <a href={localize(lang, 'shop')} class="btn-gold inline-flex">{t.checkout.goShop}</a>
   </div>
 
   <div id="checkout-content" class="page-container py-8 sm:py-12 lg:py-16">
@@ -276,9 +277,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
           <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
             {t.checkout.terms}
-            <a href="/terminos" class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
-            {t.checkout.and} <a href="/privacidad" class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
-            {t.checkout.and} <a href="/devoluciones" class="text-oro-brillo underline underline-offset-2">{t.checkout.returnsLink}</a>.
+            <a href={localize(lang, 'terms')} class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
+            {t.checkout.and} <a href={localize(lang, 'privacy')} class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
+            {t.checkout.and} <a href={localize(lang, 'returns')} class="text-oro-brillo underline underline-offset-2">{t.checkout.returnsLink}</a>.
           </p>
         </div>
       </aside>

@@ -3,17 +3,25 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../lib/i18n';
+import { localize } from '../lib/routes';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 const page = t.legal.contact;
 
-// Textos del script del navegador (el asunto del correo y el aviso).
+// Textos del script del navegador.
 const ui = {
-  subject: page.subject,
   name: page.name,
   email: 'Email',
-  opening: page.opening,
+  subject: page.subject,
+  message: page.message,
+  send: page.send,
+  sending: lang === 'en' ? 'Sending…' : 'Enviando…',
+  sent: lang === 'en' ? 'Message sent. We will reply soon.' : 'Mensaje enviado. Te respondemos pronto.',
+  error: lang === 'en' ? 'Could not send. Try again.' : 'No se pudo enviar. Inténtalo otra vez.',
+  required: lang === 'en' ? 'This field is required' : 'Este campo es obligatorio',
+  invalidEmail: lang === 'en' ? 'Enter a valid email' : 'Escribe un correo válido',
+  tooShort: lang === 'en' ? 'Tell us a bit more' : 'Cuéntanos un poco más',
 };
 ---
 
@@ -23,51 +31,108 @@ const ui = {
 >
   <script type="application/json" id="contact-ui" set:html={JSON.stringify(ui)} />
 
-  <section class="max-w-5xl mx-auto px-6 py-16 lg:py-24">
-    <div class="text-center mb-16">
-      <p class="section-label mb-4">{page.label}</p>
-      <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-4">{page.title}</h1>
-      <div class="gold-line mx-auto"></div>
+  <section class="max-w-5xl mx-auto px-5 py-8 lg:py-10">
+    <!-- Encabezado compacto -->
+    <div class="flex items-baseline justify-between gap-4 mb-6">
+      <div>
+        <p class="section-label mb-1.5">{page.label}</p>
+        <h1 class="font-titulos text-2xl lg:text-3xl text-blancoRoto leading-none">{page.title}</h1>
+      </div>
+      <span class="hidden sm:block gold-line" style="margin: 0"></span>
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-12">
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-6 lg:gap-10">
       <!-- Formulario -->
-      <form id="contact-form" class="space-y-4">
-        <input name="name" placeholder={page.name} required class="input-dark" />
-        <input name="email" type="email" placeholder="Email" required class="input-dark" />
-        <input name="subject" placeholder={page.subject} required class="input-dark" />
-        <textarea name="message" placeholder={page.message} rows="5" required class="input-dark"></textarea>
+      <form id="contact-form" class="space-y-2.5" novalidate>
+        <div class="grid sm:grid-cols-2 gap-2.5">
+          <label class="block">
+            <span class="sr-only">{page.name}</span>
+            <input
+              name="name"
+              placeholder={page.name}
+              required
+              autocomplete="name"
+              class="input-dark !min-h-[44px] !py-2 text-sm w-full"
+            />
+          </label>
+          <label class="block">
+            <span class="sr-only">Email</span>
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              required
+              autocomplete="email"
+              class="input-dark !min-h-[44px] !py-2 text-sm w-full"
+            />
+          </label>
+        </div>
 
-        <button type="submit" id="send-btn" class="btn-gold w-full">{page.send}</button>
-        <p id="form-msg" class="hidden text-xs text-center"></p>
+        <label class="block">
+          <span class="sr-only">{page.subject}</span>
+          <input
+            name="subject"
+            placeholder={page.subject}
+            required
+            class="input-dark !min-h-[44px] !py-2 text-sm w-full"
+          />
+        </label>
+
+        <label class="block">
+          <span class="sr-only">{page.message}</span>
+          <textarea
+            name="message"
+            placeholder={page.message}
+            rows="4"
+            required
+            class="input-dark !py-2.5 text-sm w-full resize-y"
+          ></textarea>
+        </label>
+
+        <!-- Honeypot: invisible para personas, lo rellenan los bots. -->
+        <input
+          type="text"
+          name="company"
+          tabindex="-1"
+          autocomplete="off"
+          aria-hidden="true"
+          class="absolute -left-[9999px] w-px h-px opacity-0"
+        />
+
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+          <button type="submit" id="send-btn" class="btn-gold !min-h-[46px] sm:w-auto sm:px-10">
+            {page.send}
+          </button>
+          <p id="form-msg" class="text-xs hidden" role="status" aria-live="polite"></p>
+        </div>
       </form>
 
-      <!-- Info -->
-      <div class="space-y-8">
+      <!-- Info compacta -->
+      <aside class="space-y-4 lg:border-l lg:border-white/15 lg:pl-8">
         <div>
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
+          <h2 class="font-acentos text-[10px] uppercase tracking-[0.25em] text-oro-brillo mb-1.5">
             {page.emailLabel}
           </h2>
           <a
             href="mailto:hola@dinerosobreproblemas.com"
-            class="text-white hover:text-oro-brillo transition-colors"
+            class="text-sm text-white hover:text-oro-brillo transition-colors break-all"
           >
             hola@dinerosobreproblemas.com
           </a>
         </div>
 
         <div>
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
+          <h2 class="font-acentos text-[10px] uppercase tracking-[0.25em] text-oro-brillo mb-1.5">
             {page.social}
           </h2>
-          <ul class="space-y-2">
+          <ul class="space-y-1">
             <li>
-              <a href="https://www.instagram.com/somos_dsp" target="_blank" rel="noopener noreferrer" class="text-white/80 hover:text-oro-brillo transition-colors">
+              <a href="https://www.instagram.com/somos_dsp" target="_blank" rel="noopener noreferrer" class="text-sm text-white/75 hover:text-oro-brillo transition-colors">
                 Instagram — @somos_dsp
               </a>
             </li>
             <li>
-              <a href="https://www.tiktok.com/@somosdsp" target="_blank" rel="noopener noreferrer" class="text-white/80 hover:text-oro-brillo transition-colors">
+              <a href="https://www.tiktok.com/@somosdsp" target="_blank" rel="noopener noreferrer" class="text-sm text-white/75 hover:text-oro-brillo transition-colors">
                 TikTok — @somosdsp
               </a>
             </li>
@@ -75,49 +140,146 @@ const ui = {
         </div>
 
         <div>
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
+          <h2 class="font-acentos text-[10px] uppercase tracking-[0.25em] text-oro-brillo mb-1.5">
             {page.customTitle}
           </h2>
-          <p class="text-sm text-white/80 leading-relaxed">{page.customText}</p>
+          <p class="text-xs text-white/70 leading-relaxed">{page.customText}</p>
         </div>
 
         <div>
-          <h2 class="font-acentos text-[11px] uppercase tracking-[0.25em] text-oro-brillo mb-3">
+          <h2 class="font-acentos text-[10px] uppercase tracking-[0.25em] text-oro-brillo mb-1.5">
             {page.responseTitle}
           </h2>
-          <p class="text-sm text-white/80">{page.responseText}</p>
+          <p class="text-xs text-white/70 leading-relaxed">{page.responseText}</p>
         </div>
-      </div>
+
+        <a
+          href={localize(lang, 'shop')}
+          class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-white/60 hover:text-oro-brillo transition-colors pt-1"
+        >
+          {t.footer.catalogue}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </a>
+      </aside>
     </div>
   </section>
 
   <script>
-    const form = document.getElementById('contact-form') as HTMLFormElement;
-    const btn = document.getElementById('send-btn') as HTMLButtonElement;
-    const msg = document.getElementById('form-msg')!;
+    import { busy, nudge } from '../lib/ux';
 
-    /** Textos resueltos en servidor. */
-    const ui = JSON.parse(document.getElementById('contact-ui')?.textContent || '{}') as Record<
-      string,
-      string
-    >;
+    const form = document.getElementById('contact-form') as HTMLFormElement | null;
+    const btn = document.getElementById('send-btn') as HTMLButtonElement | null;
+    const msg = document.getElementById('form-msg');
+    const ui = JSON.parse(document.getElementById('contact-ui')?.textContent || '{}') as Record<string, string>;
 
-    form?.addEventListener('submit', (e) => {
-      e.preventDefault();
+    /** Pinta un aviso bajo el botón y devuelve el campo al que pertenece. */
+    function complain(field: HTMLInputElement | HTMLTextAreaElement | null, text: string) {
+      if (msg) {
+        msg.textContent = text;
+        msg.className = 'text-xs dsp-alert';
+        msg.dataset.tone = 'error';
+        msg.hidden = false;
+        msg.classList.remove('hidden');
+      }
+      if (field) {
+        nudge(field);
+        field.focus({ preventScroll: false });
+      }
+    }
+
+    function clearNotice() {
+      if (!msg) return;
+      msg.classList.add('hidden');
+      msg.hidden = true;
+    }
+
+    /** Validación local: devuelve el campo que falla, o null si todo bien. */
+    function firstError(): { field: HTMLInputElement | HTMLTextAreaElement | null; text: string } | null {
+      if (!form) return null;
       const data = new FormData(form);
-      const subject = encodeURIComponent(`${ui.subject}: ${data.get('subject')}`);
-      const body = encodeURIComponent(
-        `${ui.name}: ${data.get('name')}\n${ui.email}: ${data.get('email')}\n\n${data.get('message')}`
-      );
 
-      window.location.href = `mailto:hola@dinerosobreproblemas.com?subject=${subject}&body=${body}`;
+      const name = String(data.get('name') ?? '').trim();
+      const email = String(data.get('email') ?? '').trim();
+      const subject = String(data.get('subject') ?? '').trim();
+      const message = String(data.get('message') ?? '').trim();
 
-      msg.textContent = ui.opening;
-      msg.className = 'text-xs text-center text-oro-brillo';
-      btn.disabled = true;
-      setTimeout(() => {
-        btn.disabled = false;
-      }, 3000);
+      const field = (n: string) => form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${n}"]`);
+
+      if (name.length < 2) return { field: field('name'), text: ui.required };
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { field: field('email'), text: ui.invalidEmail };
+      if (subject.length < 3) return { field: field('subject'), text: ui.required };
+      if (message.length < 10) return { field: field('message'), text: ui.tooShort };
+
+      return null;
+    }
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearNotice();
+
+      const problem = firstError();
+      if (problem) {
+        complain(problem.field, problem.text);
+        return;
+      }
+
+      // Se limpia el aviso de error de los campos al reintentar.
+      form.querySelectorAll('.dsp-invalid').forEach((el) => el.classList.remove('dsp-invalid'));
+
+      const restore = busy(btn, ui.sending);
+      const data = new FormData(form);
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: String(data.get('name') ?? ''),
+            email: String(data.get('email') ?? ''),
+            subject: String(data.get('subject') ?? ''),
+            message: String(data.get('message') ?? ''),
+            company: String(data.get('company') ?? ''),
+            lang: document.documentElement.lang || 'es',
+          }),
+        });
+
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const text =
+            payload?.error === 'rate_limited'
+              ? (document.documentElement.lang === 'en'
+                  ? 'Too many messages. Wait a few minutes.'
+                  : 'Demasiados mensajes. Espera unos minutos.')
+              : payload?.error === 'not_configured'
+                ? (document.documentElement.lang === 'en'
+                    ? 'Form not available right now. Write to us by email.'
+                    : 'El formulario no está disponible. Escríbenos por correo.')
+                : ui.error;
+          throw new Error(text);
+        }
+
+        form.reset();
+        if (msg) {
+          msg.textContent = ui.sent;
+          msg.className = 'text-xs dsp-alert';
+          msg.dataset.tone = 'success';
+          msg.hidden = false;
+          msg.classList.remove('hidden');
+        }
+      } catch (err: any) {
+        if (msg) {
+          msg.textContent = err?.message || ui.error;
+          msg.className = 'text-xs dsp-alert';
+          msg.dataset.tone = 'error';
+          msg.hidden = false;
+          msg.classList.remove('hidden');
+        }
+      } finally {
+        restore();
+      }
     });
   </script>
 </BaseLayout>

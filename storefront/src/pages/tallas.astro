@@ -17,6 +17,7 @@ const rows = [
   { size: '2XL', chest: '112–117', length: '79' },
   { size: '3XL', chest: '117–122', length: '81' },
 ];
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout
@@ -76,7 +77,7 @@ const rows = [
     </div>
 
     <div class="mt-14">
-      <a href="/tienda" class="btn-gold inline-block">{t.legal.viewCatalog}</a>
+      <a href={localize(lang, 'shop')} class="btn-gold inline-block">{t.legal.viewCatalog}</a>
     </div>
   </article>
 </BaseLayout>

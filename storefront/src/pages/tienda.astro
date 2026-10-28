@@ -87,6 +87,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
   const qs = params.toString();
   return `/tienda${qs ? `?${qs}` : ''}`;
 };
+import { localize } from '../lib/routes';
 ---
 
 <BaseLayout
@@ -110,7 +111,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
           </p>
         </div>
 
-        <a href="/carrito" class="btn-outline !min-h-[34px] !px-3 !py-1.5 !text-[11px] shrink-0">{t.shop.viewCart}</a>
+        <a href={localize(lang, 'cart')} class="btn-outline !min-h-[34px] !px-3 !py-1.5 !text-[11px] shrink-0">{t.shop.viewCart}</a>
       </div>
     </div>
   </section>
@@ -239,7 +240,7 @@ const buildUrl = (overrides: Record<string, string | undefined>) => {
               : t.shop.emptyCollection}
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/tienda" class="btn-gold">{t.shop.seeAll}</a>
+            <a href={localize(lang, 'shop')} class="btn-gold">{t.shop.seeAll}</a>
             <a href="/" class="btn-outline">{t.shop.goHome}</a>
           </div>
         </div>

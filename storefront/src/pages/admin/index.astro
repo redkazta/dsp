@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { localize } from '../../lib/routes';
 ---
 
 <AdminLayout title="Dashboard">
@@ -36,7 +37,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <p class="font-acentos text-sm text-white mb-1">Pedidos</p>
             <p class="text-xs text-white/80">Estatus y envíos</p>
           </a>
-          <a href="/tienda" target="_blank" rel="noopener" class="card p-6 hover:border-oro-brillo/60 transition-colors">
+          <a href={localize(lang, 'shop')} target="_blank" rel="noopener" class="card p-6 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Ver tienda</p>
             <p class="text-xs text-white/80">Como cliente</p>
           </a>
