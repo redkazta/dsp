@@ -36,7 +36,7 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
       class:list={[
         'grid',
         compact
-          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-2.5 gap-y-4 sm:gap-x-3 sm:gap-y-5 lg:gap-x-4 lg:gap-y-6 shop-grid--compact'
+          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-7 lg:gap-x-5 lg:gap-y-8 shop-grid--compact'
           : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16',
       ]}
     >
@@ -48,50 +48,92 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
 }
 
 <style>
-  /* Mismo marco 1:1, pero 30% más pequeño: el ancho de la rejilla ya lo
-     encoge; el alto del marco se limita para que no acapare la pantalla. */
+  /* Versión compacta de /tienda: mismas piezas, menos aire.
+     El marco mantiene el 1:1 pero con un techo de altura, así entran
+     jeans y camisas sin scroll. */
   .shop-grid--compact :global(.product-frame) {
-    max-height: clamp(110px, 16.5vh, 210px);
-    /* `aspect-ratio` es la fuente del alto: se sobreescribe con !important
-       porque vive en global.css y gana por orden de carga. */
+    max-height: clamp(132px, 20vh, 240px);
+    /* `aspect-ratio` vive en global.css y gana por orden de carga. */
     aspect-ratio: auto !important;
+    /* imprescindible: badges, flechas y CTA son `absolute` */
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* El texto va DEBAJO del marco, no encima: era el bug anterior cuando
+     el selector `a > div:last-child` le quitaba su `pt-4`. */
+
+  .shop-grid--compact :global(.product-card-wrap) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .shop-grid--compact :global(.product-card-wrap a) {
+    display: block;
+    min-width: 0;
   }
 
   .shop-grid--compact :global(.product-frame > img),
   .shop-grid--compact :global(.product-frame > picture > img) {
-    padding: 4%;
+    padding: 3%;
   }
 
-  .shop-grid--compact :global(.product-card-wrap a > div:last-child) {
-    padding-top: 0.6rem;
+  /* Título y precio: una línea cada uno, sin desbordes */
+  .shop-grid--compact :global(.product-card-wrap h3) {
+    font-size: 0.78rem;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
   }
 
-  .shop-grid--compact :global(h3) {
-    font-size: 0.875rem;
+  .shop-grid--compact :global(.product-card-wrap p) {
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
-  /* Badge de reflectivo y flechas del carrusel, a escala de la tarjeta. */
+  /* Badge de reflectivo y corazón, a escala de la tarjeta */
   .shop-grid--compact :global(.reflect-badge) {
-    top: 6px;
-    left: 6px;
-    min-width: 58px;
-    min-height: 40px;
-    padding: 4px 6px 3px;
+    top: 4px;
+    left: 4px;
+    min-width: 48px;
+    min-height: 32px;
+    padding: 3px 5px 2px;
   }
 
   .shop-grid--compact :global(.reflect-badge-label) {
-    font-size: 7px;
-    letter-spacing: 0.04em;
+    font-size: 6px;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
   }
 
   .shop-grid--compact :global(.reflect-badge-count) {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .shop-grid--compact :global(.wish-btn) {
-    top: 6px;
-    right: 6px;
-    width: 34px;
-    height: 34px;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .shop-grid--compact :global(.wish-btn svg) {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* El CTA "Ver producto" ocupaba un tercio de una tarjeta ya pequeña */
+  .shop-grid--compact :global(.product-cta > div) {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .shop-grid--compact :global(.product-cta span) {
+    font-size: 8px;
+    letter-spacing: 0.18em;
   }
 </style>
