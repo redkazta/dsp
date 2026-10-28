@@ -9,6 +9,16 @@ const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 const page = t.legal.contact;
 
+// Si hay sesión, el formulario llega con los datos de la cuenta puestos:
+// el visitante no tiene que escribirlos otra vez. En invitado, vacíos.
+const user = Astro.locals.user;
+const accountName = Astro.locals.fullName ?? Astro.locals.firstName ?? '';
+const accountEmail = user?.email ?? '';
+const isAuth = Boolean(user);
+
+/** Valor inicial de un campo: solo con sesión (invitado = vacío). */
+const prefill = (value: string) => (isAuth ? value : '');
+
 // Textos del script del navegador.
 const ui = {
   name: page.name,
@@ -22,6 +32,7 @@ const ui = {
   required: lang === 'en' ? 'This field is required' : 'Este campo es obligatorio',
   invalidEmail: lang === 'en' ? 'Enter a valid email' : 'Escribe un correo válido',
   tooShort: lang === 'en' ? 'Tell us a bit more' : 'Cuéntanos un poco más',
+  isAuth,
 };
 ---
 
@@ -50,6 +61,7 @@ const ui = {
             <input
               name="name"
               placeholder={page.name}
+              value={prefill(accountName)}
               required
               autocomplete="name"
               class="input-dark !min-h-[44px] !py-2 text-sm w-full"
@@ -61,9 +73,14 @@ const ui = {
               name="email"
               type="email"
               placeholder="Email"
+              value={prefill(accountEmail)}
               required
               autocomplete="email"
-              class="input-dark !min-h-[44px] !py-2 text-sm w-full"
+              readonly={isAuth}
+              class:list={[
+                'input-dark !min-h-[44px] !py-2 text-sm w-full',
+                isAuth ? 'opacity-80 cursor-default' : '',
+              ]}
             />
           </label>
         </div>
@@ -261,6 +278,8 @@ const ui = {
           throw new Error(text);
         }
 
+        // `reset()` vuelve al `value` del HTML, que en sesión ya trae los
+        // datos de la cuenta: el visitante no los pierde tras enviar.
         form.reset();
         if (msg) {
           msg.textContent = ui.sent;

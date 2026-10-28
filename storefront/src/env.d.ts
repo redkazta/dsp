@@ -32,6 +32,8 @@ declare namespace App {
     user: import('@supabase/supabase-js').User | null;
     isAuthenticated: boolean;
     firstName: string | null;
+    /** Nombre completo de la cuenta (o el de pila si no hay). */
+    fullName: string | null;
     phone: string | null;
     email: string | null;
     role: string | null;

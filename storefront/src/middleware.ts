@@ -60,6 +60,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   } = await supabase.auth.getUser();
 
   let firstName: string | null = null;
+  let fullName: string | null = null;
   let phone: string | null = null;
   let role: string | null = null;
 
@@ -93,6 +94,8 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
       (meta.given_name as string) ??
       (meta.first_name as string) ??
       (fallbackName.split(' ')[0] || (user.email ?? '').split('@')[0] || null);
+
+    fullName = profile?.full_name ?? (meta.full_name as string) ?? firstName ?? null;
 
     phone = profile?.phone ?? (meta.phone as string) ?? null;
 
@@ -134,6 +137,7 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   context.locals.user = user;
   context.locals.isAuthenticated = Boolean(user);
   context.locals.firstName = firstName;
+  context.locals.fullName = (fullName ?? '').trim() || null;
   context.locals.phone = phone;
   context.locals.email = user?.email ?? null;
   context.locals.role = role;

@@ -11,6 +11,8 @@
 CREATE TABLE IF NOT EXISTS public.contact_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES public.tenants(id) ON DELETE SET NULL,
+    -- Quien escribe: usuario con sesión (FK) o NULL si es invitado.
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     email TEXT NOT NULL,
     subject TEXT NOT NULL,
@@ -73,5 +75,16 @@ CREATE POLICY "contact_staff_delete" ON public.contact_messages
 CREATE INDEX IF NOT EXISTS idx_contact_messages_tenant
     ON public.contact_messages(tenant_id, created_at DESC);
 
+-- Mensajes de una misma cuenta.
+CREATE INDEX IF NOT EXISTS idx_contact_messages_user
+    ON public.contact_messages(user_id, created_at DESC);
+
 -- Verificación.
 SELECT count(*) AS mensajes FROM public.contact_messages;
+
+-- Si la tabla ya existía sin `user_id`, se añade aquí.
+ALTER TABLE public.contact_messages
+  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_contact_messages_user
+  ON public.contact_messages(user_id, created_at DESC);

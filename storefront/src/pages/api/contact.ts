@@ -13,7 +13,7 @@
  */
 import type { APIRoute } from 'astro';
 import type { AstroCookies } from 'astro';
-import { createSupabaseAdminClient } from '../../lib/supabase-server';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
 import { normalizeLang } from '../../lib/i18n';
 
@@ -82,6 +82,23 @@ export const POST: APIRoute = async ({
 
   const lang = normalizeLang(body?.lang ?? cookies.get('dsp_lang')?.value);
 
+  // La sesión la decide el servidor, no el navegador: un invitado no puede
+  // hacerse pasar por usuario enviando un id en el cuerpo.
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+  try {
+    const supabaseUser = createSupabaseServerClient(request, cookies);
+    const { data } = await supabaseUser.auth.getUser();
+    userId = data.user?.id ?? null;
+    userEmail = data.user?.email?.toLowerCase() ?? null;
+  } catch {
+    userId = null;
+  }
+
+  // Con sesión, el correo es el de la cuenta: evita suplantar a terceros
+  // desde un formulario autenticado.
+  const finalEmail = userEmail ?? email;
+
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     // Sin service role no se puede guardar: mejor decir la verdad que
@@ -91,8 +108,9 @@ export const POST: APIRoute = async ({
 
   const { error } = await supabase.from('contact_messages').insert({
     tenant_id: TENANT_ID,
+    user_id: userId,
     name,
-    email,
+    email: finalEmail,
     subject,
     message,
     lang,
