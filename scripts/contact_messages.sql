@@ -33,8 +33,7 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_status
 
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
--- Nadie lee desde el navegador: el envío pasa por /api/contact con
--- service role, y la lectura es solo del staff (admin).
+-- Los roles reales del panel son 'admin' y 'seller' (ver STAFF_ROLES).
 DROP POLICY IF EXISTS "contact_staff_read" ON public.contact_messages;
 CREATE POLICY "contact_staff_read" ON public.contact_messages
   FOR SELECT TO authenticated
@@ -42,7 +41,7 @@ CREATE POLICY "contact_staff_read" ON public.contact_messages
     EXISTS (
       SELECT 1 FROM public.customer_profiles p
        WHERE p.id = auth.uid()
-         AND p.role IN ('owner', 'admin', 'staff')
+         AND p.role IN ('admin', 'seller')
     )
   );
 
@@ -54,9 +53,25 @@ CREATE POLICY "contact_staff_update" ON public.contact_messages
     EXISTS (
       SELECT 1 FROM public.customer_profiles p
        WHERE p.id = auth.uid()
-         AND p.role IN ('owner', 'admin', 'staff')
+         AND p.role IN ('admin', 'seller')
     )
   );
+
+-- El staff puede borrar mensajes (basura o spam).
+DROP POLICY IF EXISTS "contact_staff_delete" ON public.contact_messages;
+CREATE POLICY "contact_staff_delete" ON public.contact_messages
+  FOR DELETE TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.customer_profiles p
+       WHERE p.id = auth.uid()
+         AND p.role IN ('admin', 'seller')
+    )
+  );
+
+-- El panel filtra por tenant y ordena por fecha.
+CREATE INDEX IF NOT EXISTS idx_contact_messages_tenant
+    ON public.contact_messages(tenant_id, created_at DESC);
 
 -- Verificación.
 SELECT count(*) AS mensajes FROM public.contact_messages;

@@ -1,0 +1,262 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Mensajes">
+  <div id="admin-loading" class="py-20 text-center text-sm text-white/80">Cargando…</div>
+
+  <div id="messages-view" class="hidden">
+    <!-- Encabezado -->
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <p class="section-label mb-2">Bandeja</p>
+        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto">Mensajes</h1>
+      </div>
+      <p id="msg-count" class="text-sm text-white/70"></p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="flex flex-col sm:flex-row gap-2 mb-5">
+      <div id="status-tabs" class="flex flex-wrap gap-1.5"></div>
+      <div class="flex-1"></div>
+      <input
+        id="msg-search"
+        type="search"
+        placeholder="Buscar nombre, correo, asunto…"
+        class="input-dark !min-h-[38px] !py-1.5 text-sm w-full sm:w-72"
+      />
+    </div>
+
+    <!-- Lista + detalle -->
+    <div class="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-5">
+      <div id="msg-list" class="space-y-1.5 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1"></div>
+
+      <div id="msg-detail" class="border-2 border-white/20 bg-negro-carbono p-6 min-h-[320px]">
+        <p class="text-sm text-white/60">Selecciona un mensaje para leerlo.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import {
+      CONTACT_STATUS_LABEL,
+      deleteContactMessage,
+      listContactMessages,
+      updateContactStatus,
+      type ContactMessage,
+      type ContactStatus,
+    } from '../../lib/admin';
+    import { TENANT_ID } from '../../lib/constants';
+    import { escapeHtml } from '../../lib/html';
+
+    const loading = document.getElementById('admin-loading')!;
+    const view = document.getElementById('messages-view')!;
+    const listEl = document.getElementById('msg-list')!;
+    const detailEl = document.getElementById('msg-detail')!;
+    const countEl = document.getElementById('msg-count')!;
+    const tabsEl = document.getElementById('status-tabs')!;
+    const searchEl = document.getElementById('msg-search') as HTMLInputElement;
+
+    let messages: ContactMessage[] = [];
+    let selectedId: string | null = null;
+    let filter: ContactStatus | 'all' = 'all';
+
+    const TABS: Array<{ value: ContactStatus | 'all'; label: string }> = [
+      { value: 'all', label: 'Todos' },
+      { value: 'new', label: 'Nuevos' },
+      { value: 'read', label: 'Leídos' },
+      { value: 'replied', label: 'Respondidos' },
+      { value: 'archived', label: 'Archivados' },
+    ];
+
+    /** Fecha corta y legible: "hoy 14:32", "ayer 09:10", "12 oct". */
+    function when(iso: string): string {
+      const date = new Date(iso);
+      const now = new Date();
+      const sameDay = date.toDateString() === now.toDateString();
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+
+      const time = date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+      if (sameDay) return `hoy ${time}`;
+      if (date.toDateString() === yesterday.toDateString()) return `ayer ${time}`;
+      return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    }
+
+    function paintTabs() {
+      tabsEl.innerHTML = TABS.map((tab) => {
+        const active = tab.value === filter;
+        const count =
+          tab.value === 'all'
+            ? messages.length
+            : messages.filter((m) => m.status === tab.value).length;
+
+        return `
+          <button type="button" data-tab="${tab.value}"
+            class="px-3 py-1.5 min-h-[34px] text-[11px] uppercase tracking-[0.16em] border-2 transition-colors ${
+              active
+                ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
+                : 'border-white/25 text-white/70 hover:border-oro-brillo hover:text-oro-brillo'
+            }">
+            ${tab.label}${count > 0 ? ` <span class="opacity-60 ml-1">${count}</span>` : ''}
+          </button>`;
+      }).join('');
+
+      tabsEl.querySelectorAll<HTMLElement>('[data-tab]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          filter = btn.dataset.tab as ContactStatus | 'all';
+          void load();
+        })
+      );
+    }
+
+    function paintList() {
+      const visible = messages.filter((m) => {
+        if (filter === 'all') return true;
+        return m.status === filter;
+      });
+
+      countEl.textContent = `${visible.length} ${visible.length === 1 ? 'mensaje' : 'mensajes'}`;
+
+      if (visible.length === 0) {
+        listEl.innerHTML = `<p class="text-sm text-white/60 p-4 border border-white/15">No hay mensajes con este filtro.</p>`;
+        return;
+      }
+
+      listEl.innerHTML = visible
+        .map((m) => {
+          const active = m.id === selectedId;
+          const isNew = m.status === 'new';
+
+          return `
+          <button type="button" data-id="${m.id}"
+            class="w-full text-left p-3.5 border-2 transition-colors ${
+              active
+                ? 'border-oro-brillo bg-oro-brillo/10'
+                : 'border-white/15 hover:border-white/40'
+            }">
+            <div class="flex items-baseline justify-between gap-3 mb-1">
+              <span class="font-acentos text-sm text-blancoRoto truncate ${isNew ? 'font-bold' : ''}">
+                ${isNew ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-oro-brillo mr-2 align-middle"></span>' : ''}
+                ${escapeHtml(m.name)}
+              </span>
+              <span class="text-[11px] text-white/50 whitespace-nowrap shrink-0">${when(m.created_at)}</span>
+            </div>
+            <p class="text-xs text-white/80 truncate">${escapeHtml(m.subject)}</p>
+            <p class="text-[11px] text-white/45 truncate mt-0.5">${escapeHtml(m.email)}</p>
+          </button>`;
+        })
+        .join('');
+
+      listEl.querySelectorAll<HTMLElement>('[data-id]').forEach((btn) =>
+        btn.addEventListener('click', () => void open(btn.dataset.id!))
+      );
+    }
+
+    function paintDetail(m: ContactMessage | null) {
+      if (!m) {
+        detailEl.innerHTML = `<p class="text-sm text-white/60">Selecciona un mensaje para leerlo.</p>`;
+        return;
+      }
+
+      const mailto =
+        `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(`Re: ${m.subject}`)}`;
+
+      detailEl.innerHTML = `
+        <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/15">
+          <div class="min-w-0">
+            <h2 class="font-titulos text-xl text-blancoRoto mb-1 break-words">${escapeHtml(m.subject)}</h2>
+            <p class="text-sm text-white/70 break-all">
+              ${escapeHtml(m.name)} · <a href="mailto:${encodeURIComponent(m.email)}" class="text-oro-brillo hover:underline">${escapeHtml(m.email)}</a>
+            </p>
+            <p class="text-[11px] uppercase tracking-wider text-white/45 mt-1.5">
+              ${new Date(m.created_at).toLocaleString('es-MX')} · ${escapeHtml(m.lang.toUpperCase())}
+            </p>
+          </div>
+          <span class="px-2.5 py-1 border text-[10px] uppercase tracking-[0.16em] whitespace-nowrap ${
+            m.status === 'new'
+              ? 'border-oro-brillo text-oro-brillo'
+              : 'border-white/25 text-white/60'
+          }">${CONTACT_STATUS_LABEL[m.status]}</span>
+        </div>
+
+        <div class="py-5 text-sm text-white/85 whitespace-pre-wrap leading-relaxed">${escapeHtml(m.message)}</div>
+
+        <div class="flex flex-wrap gap-2 pt-4 border-t border-white/15">
+          <a href="${mailto}" class="btn-gold !min-h-[40px] !px-4 !py-2 !text-[11px]">Responder por correo</a>
+          ${m.status !== 'replied' ? `<button type="button" data-act="replied" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-[11px]">Marcar respondido</button>` : ''}
+          ${m.status !== 'archived' ? `<button type="button" data-act="archived" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-[11px]">Archivar</button>` : ''}
+          <div class="flex-1"></div>
+          <button type="button" data-act="delete" class="!min-h-[40px] px-4 py-2 text-[11px] uppercase tracking-wider border-2 border-white/25 text-white/60 hover:border-red-400 hover:text-red-400 transition-colors">
+            Eliminar
+          </button>
+        </div>`;
+
+      detailEl.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const act = btn.dataset.act!;
+
+          if (act === 'delete') {
+            if (!confirm('¿Eliminar este mensaje? No se puede deshacer.')) return;
+            btn.setAttribute('disabled', 'true');
+            await deleteContactMessage(m.id).catch(() => {});
+            selectedId = null;
+            await load();
+            return;
+          }
+
+          await updateContactStatus(m.id, act as ContactStatus).catch(() => {});
+          await load();
+        })
+      );
+    }
+
+    /** Abre un mensaje y, si era nuevo, lo pasa a "leído". */
+    async function open(id: string) {
+      selectedId = id;
+      const current = messages.find((m) => m.id === id) ?? null;
+
+      if (current && current.status === 'new') {
+        current.status = 'read';
+        // Best effort: si falla, el mensaje se sigue leyendo igual.
+        void updateContactStatus(id, 'read').catch(() => {});
+      }
+
+      paintList();
+      paintDetail(current);
+    }
+
+    async function load() {
+      try {
+        messages = await listContactMessages(TENANT_ID, {
+          status: 'all',
+          search: searchEl.value,
+        });
+      } catch {
+        messages = [];
+      }
+
+      paintTabs();
+      paintList();
+
+      // Mantiene el detalle abierto tras recargar la lista.
+      const still = messages.find((m) => m.id === selectedId) ?? null;
+      paintDetail(still);
+    }
+
+    let searchTimer: number | undefined;
+    searchEl?.addEventListener('input', () => {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(() => void load(), 300);
+    });
+
+    (async () => {
+      await load();
+      loading.classList.add('hidden');
+      view.classList.remove('hidden');
+    })();
+  </script>
+</AdminLayout>

@@ -395,3 +395,87 @@ export async function getDashboardStats(tenantId: string) {
     customers: customersRes.data?.length ?? 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Mensajes de contacto
+// ---------------------------------------------------------------------------
+
+export type ContactStatus = 'new' | 'read' | 'replied' | 'archived';
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  lang: string;
+  status: ContactStatus;
+  user_agent: string | null;
+  created_at: string;
+}
+
+/** Etiquetas del estado, alineadas con el CHECK de la tabla. */
+export const CONTACT_STATUS_LABEL: Record<ContactStatus, string> = {
+  new: 'Nuevo',
+  read: 'Leído',
+  replied: 'Respondido',
+  archived: 'Archivado',
+};
+
+/**
+ * Bandeja de mensajes del formulario de contacto.
+ *
+ * `status` filtra por estado; `search` busca en nombre, correo, asunto y
+ * cuerpo. La lectura la permite RLS solo a `admin` y `seller`.
+ */
+export async function listContactMessages(
+  tenantId: string,
+  options: { status?: ContactStatus | 'all'; search?: string; limit?: number } = {}
+): Promise<ContactMessage[]> {
+  const { status = 'all', search = '', limit = 100 } = options;
+
+  let query = supabase
+    .from('contact_messages')
+    .select('id, name, email, subject, message, lang, status, user_agent, created_at')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (status !== 'all') query = query.eq('status', status);
+
+  // Se escapan las comas: rompen el filtro `or()` de PostgREST.
+  const term = search.trim().replace(/[%,()]/g, ' ').trim();
+  if (term) {
+    query = query.or(
+      `name.ilike.%${term}%,email.ilike.%${term}%,subject.ilike.%${term}%,message.ilike.%${term}%`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ContactMessage[];
+}
+
+/** Cuántos mensajes sin leer hay (para el badge del panel). */
+export async function countNewContactMessages(tenantId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('contact_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('status', 'new');
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/** Cambia el estado de un mensaje (leído, respondido, archivado). */
+export async function updateContactStatus(id: string, status: ContactStatus) {
+  const { error } = await supabase.from('contact_messages').update({ status }).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/** Borra un mensaje. Solo staff, por RLS. */
+export async function deleteContactMessage(id: string) {
+  const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}

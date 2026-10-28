@@ -15,6 +15,7 @@ const nav = [
   { href: '/admin', label: 'Dashboard', icon: 'M3 12h7V3H3v9Zm11 9h7v-9h-7v9ZM3 21h7v-6H3v6Zm11-12h7V3h-7v6Z' },
   { href: '/admin/productos', label: 'Productos', icon: 'M4 7h16v13H4zM4 7l2-4h12l2 4M9 11h6' },
   { href: '/admin/pedidos', label: 'Pedidos', icon: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4ZM3 6h18M16 10a4 4 0 0 1-8 0' },
+  { href: '/admin/mensajes', label: 'Mensajes', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
 ];
 ---
 
@@ -77,9 +78,9 @@ const nav = [
           nav.map((item) => (
             <a
               href={item.href}
-              class="flex-1 flex flex-col items-center justify-center gap-1 py-3 min-h-[56px] text-xs uppercase tracking-wider text-blancoRoto hover:text-oro-brillo transition-colors"
+              class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[54px] text-[10px] uppercase tracking-wider text-blancoRoto hover:text-oro-brillo transition-colors"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d={item.icon} />
               </svg>
               {item.label}
