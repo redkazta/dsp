@@ -346,7 +346,7 @@ const ui = {
                 </a>
               </div>
 
-              <p id="add-feedback" class="hidden text-sm text-oro-brillo mb-6 font-acentos"></p>
+              <p id="add-feedback" class="hidden text-sm mb-6 font-acentos tracking-wide" hidden></p>
 
               {/* Detalles */}
               <div class="border-t-2 border-white/25 pt-6 space-y-2">
@@ -536,6 +536,7 @@ const ui = {
     import { addToCart } from '../../lib/cart';
     import { sanitizeVariants } from '../../lib/product-variants';
     import { toggleWishlist, currentWishlist, hasSession, SESSION_ENDED_EVENT } from '../../lib/wishlist';
+    import { alert, busy, confirm, nudge, nudgeGroup } from '../../lib/ux';
 
     // El botón secundario de la ficha lleva directo al pago con el carrito
     // abierto, en vez de a una página intermedia sin acción clara.
@@ -606,12 +607,17 @@ const ui = {
         el.addEventListener('click', () => {
           selectedSize = (el as HTMLElement).dataset.size!;
           paint('.size-btn', 'size', selectedSize);
+          // Elegir opción descarta el aviso pendiente: ya está resuelto.
+          feedback.classList.add('hidden');
+          feedback.hidden = true;
         })
       );
       document.querySelectorAll('.color-btn').forEach((el) =>
         el.addEventListener('click', () => {
           selectedColor = (el as HTMLElement).dataset.color!;
           paint('.color-btn', 'color', selectedColor);
+          feedback.classList.add('hidden');
+          feedback.hidden = true;
         })
       );
 
@@ -619,21 +625,22 @@ const ui = {
       paint('.color-btn', 'color', selectedColor);
 
       btn.addEventListener('click', () => {
+        // Falta la talla: el botón se sacude y el foco salta al grupo.
         if (sizes.length > 0 && !selectedSize) {
-          feedback.textContent = uiText('selectSizeError');
-          feedback.classList.remove('hidden');
+          nudgeGroup('.size-btn');
+          alert(feedback, uiText('selectSizeError'));
           return;
         }
         if (colors.length > 0 && !selectedColor) {
-          feedback.textContent = uiText('selectColorError');
-          feedback.classList.remove('hidden');
+          nudgeGroup('.color-btn');
+          alert(feedback, uiText('selectColorError'));
           return;
         }
 
         const variant = findVariant();
         if (!variant) {
-          feedback.textContent = uiText('combinationUnavailable');
-          feedback.classList.remove('hidden');
+          nudge(document.getElementById('size-options'));
+          alert(feedback, uiText('combinationUnavailable'));
           return;
         }
 
@@ -649,12 +656,9 @@ const ui = {
           color: variant.color ?? null,
         });
 
-        feedback.textContent = '✓ ' + uiText('addedToCart');
-        feedback.classList.remove('hidden');
-        setTimeout(() => feedback.classList.add('hidden'), 2500);
-
-        // Solo se confirma con el aviso flotante: no se abre ningún panel,
-        // así se puede seguir comprando sin cerrar nada.
+        // Confirmación en el propio botón + destello; el aviso flotante
+        // centrado lo emite `StoreDrawer` desde `cart:updated`.
+        confirm(btn);
       });
     }
 

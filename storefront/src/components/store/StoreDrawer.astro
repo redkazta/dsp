@@ -1212,6 +1212,15 @@ const ui = {
     const added = takeLastAdded();
     if (!added) return;
 
+    // El contador del header salta para señalar dónde quedó la pieza.
+    const badge = document.getElementById('cart-count');
+    if (badge) {
+      badge.classList.remove('dsp-bump');
+      void badge.offsetWidth;
+      badge.classList.add('dsp-bump');
+      window.setTimeout(() => badge.classList.remove('dsp-bump'), 600);
+    }
+
     showFlashToast(uiText('cartAddedTitle'), {
       tone: 'cart',
       detail: [added.name, added.variantName].filter(Boolean).join(' · '),

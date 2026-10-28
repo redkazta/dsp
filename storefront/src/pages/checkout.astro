@@ -361,6 +361,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
   <script>
     import { getCart, refreshCartPrices, formatMXN, startCartSync } from '../lib/cart';
+    import { nudge, busy } from '../lib/ux';
     import { shippingCostFor, STANDARD_SHIPPING } from '../lib/pricing';
     import { escapeHtml, friendlyError } from '../lib/html';
 
@@ -421,12 +422,14 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       const parent = field.closest('.space-y-2') || field.parentElement;
 
       if (!isValid) {
-        field.classList.add('invalid');
+        // Sacudida + anillo en el propio campo: la mirada va justo ahí.
+        nudge(field, { focus: false });
         if (parent) {
           let errorDiv = parent.querySelector('.error-message') as HTMLElement | null;
           if (!errorDiv) {
             errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message mt-1 text-xs text-red-400';
+            errorDiv.className = 'error-message dsp-alert mt-1.5 text-xs';
+            errorDiv.setAttribute('data-tone', 'error');
             parent.appendChild(errorDiv);
           }
           errorDiv.textContent = errorMessage;
@@ -443,10 +446,24 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     function validateAllFields(): boolean {
       const inputs = form.querySelectorAll('input[required], textarea[required]');
       let isValid = true;
+      let firstInvalid: HTMLElement | null = null;
 
       inputs.forEach((input) => {
-        if (!validateField(input as HTMLInputElement | HTMLTextAreaElement)) isValid = false;
+        const ok = validateField(input as HTMLInputElement | HTMLTextAreaElement);
+        if (!ok) {
+          isValid = false;
+          if (!firstInvalid) firstInvalid = input as HTMLElement;
+        }
       });
+
+      // Lleva el foco al primer campo que falla, no deja al usuario buscando.
+      if (firstInvalid) {
+        (firstInvalid as HTMLElement).focus({ preventScroll: true });
+        (firstInvalid as HTMLElement).scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
 
       return isValid;
     }
@@ -490,12 +507,21 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     function showError(message: string) {
       alertDiv.textContent = message;
       alertDiv.classList.remove('hidden');
+      alertDiv.classList.add('dsp-alert');
+      alertDiv.setAttribute('data-tone', 'error');
       alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       errorEl.textContent = message;
       errorEl.classList.remove('hidden');
     }
 
+    /** Restaura el botón de pago si el intento se queda a medias. */
+    let restorePay: (() => void) | null = null;
+
     function restoreButton() {
+      if (restorePay) {
+        restorePay();
+        restorePay = null;
+      }
       payBtn.disabled = false;
       payBtn.textContent = uiText('pay');
     }
@@ -526,8 +552,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         return;
       }
 
-      payBtn.disabled = true;
-      payBtn.textContent = uiText('opening');
+      // `busy` pone spinner y bloquea el botón mientras se abre Stripe.
+      restorePay = busy(payBtn, uiText('opening'));
 
       try {
         const res = await fetch('/api/checkout', {
