@@ -43,7 +43,7 @@ export const ROUTES: Record<string, RouteEntry> = {
   contact: { es: '/contacto', en: '/contact' },
   about: { es: '/nosotros', en: '/about' },
   cart: { es: '/carrito', en: '/cart' },
-  favorites: { es: '/favoritos', en: '/favorites' },
+  favorites: { es: '/favoritos', en: '/wishlist' },
   login: { es: '/entrar', en: '/login' },
   register: { es: '/registro', en: '/signup' },
   recover: { es: '/recuperar', en: '/recover' },

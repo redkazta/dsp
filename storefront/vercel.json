@@ -4,6 +4,11 @@
   "buildCommand": "npm run build:clean",
   "redirects": [
     {
+      "source": "/favorites",
+      "destination": "/wishlist",
+      "permanent": true
+    },
+    {
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "dinerosobreproblemas.com" }],
       "destination": "https://www.dinerosobreproblemas.com/$1",

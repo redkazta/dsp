@@ -20,7 +20,9 @@ async function api(
 ): Promise<WishlistResponse> {
   const res = await fetch(`/api/wishlist${query}`, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    // Content-Type explícito también cuando no hay cuerpo: Astro solo exige
+    // mismo `Origin` para peticiones sin tipo, y un proxy puede borrar el body.
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -48,7 +50,7 @@ export async function toggleWishlistRemote(productId: string) {
 
 /** Quita un producto. */
 export async function deleteWishlistRemote(productId: string) {
-  // El id va en la query, no en el cuerpo: algunos proxies descartan el body
-  // de un DELETE y el servidor recibía un producto vacío (400).
-  return api('DELETE', undefined, `?productId=${encodeURIComponent(productId)}`);
+  // El id va también en la query: si el proxy descarta el body del DELETE,
+  // el servidor aún lo recibe. El body se mantiene como respaldo.
+  return api('DELETE', { productId }, `?productId=${encodeURIComponent(productId)}`);
 }

@@ -238,6 +238,11 @@ export const copy = {
       wishAddedTitle: 'Producto guardado en favoritos',
       wishRemovedTitle: 'Producto eliminado de favoritos',
       addedTitle: 'Producto añadido',
+      pickSize: 'Escoge talla',
+      chooseQty: 'Escoge la cantidad',
+      accept: 'Aceptar',
+      alreadyInCart: 'Ya está en tu carrito',
+      otherSizeInCart: 'Ya tienes esta pieza en otra talla',
     },
 
     // ---------------- Carrito ----------------
@@ -997,6 +1002,11 @@ export const copy = {
       wishAddedTitle: 'Product saved to wishlist',
       wishRemovedTitle: 'Product removed from wishlist',
       addedTitle: 'Product added',
+      pickSize: 'Choose a size',
+      chooseQty: 'Choose the quantity',
+      accept: 'Accept',
+      alreadyInCart: 'Already in your cart',
+      otherSizeInCart: 'You already have this piece in another size',
     },
 
     // ---------------- Cart ----------------

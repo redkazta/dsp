@@ -13,6 +13,16 @@ const t = getCopy(lang);
 
 const ui = {
   chooseSize: t.account.chooseSize,
+  addToCart: t.product.addToCart,
+  accept: t.product.accept,
+  pickSize: t.product.pickSize,
+  chooseQty: t.product.chooseQty,
+  selectSizeError: t.product.selectSizeError,
+  soldOut: t.product.soldOut,
+  addedToCart: t.product.cartAddedTitle,
+  alreadyInCart: t.product.alreadyInCart,
+  otherSizeInCart: t.product.otherSizeInCart,
+  cancel: t.common.cancel,
   pieceOne: t.checkout.pieceOne,
   pieceMany: t.checkout.pieceMany,
   reflective: t.product.reflective,
@@ -52,13 +62,29 @@ const items: WishlistItem[] = rows.map((r) => ({
 /** Datos extra para animar el reflejo en la tarjeta (no se guardan en wishlist_items). */
 const reflectById = new Map<string, { isReflective: boolean; images: string[] }>();
 
+/**
+ * Una talla por producto, con la variante de más stock de esa talla.
+ * Es lo que alimenta el flujo "elige talla → cantidad → carrito" sin abrir
+ * la ficha ni pedir nada al servidor desde el navegador.
+ */
+type WishVariant = {
+  id: string;
+  size: string | null;
+  color: string | null;
+  name: string;
+  price: number;
+  stock: number;
+};
+
+const variantsById = new Map<string, WishVariant[]>();
+
 // Refresca precio/nombre con el catálogo y detecta piezas fuera de venta.
 const stale: string[] = [];
 
 if (items.length > 0) {
   const { data: products } = await supabase
     .from('products')
-    .select('id, name, name_en, slug, base_price, is_reflective, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
+    .select('id, name, name_en, slug, base_price, is_reflective, is_active, is_deleted, tenant_id, product_variants(id, name, size, color, price, stock, is_deleted), product_images(url, position)')
     .in('id', items.map((i) => i.productId));
 
   const byId = new Map((products ?? []).map((p: any) => [p.id, p]));
@@ -84,6 +110,24 @@ if (items.length > 0) {
       isReflective: Boolean(p.is_reflective),
       images: images.map((img: any) => img.url).filter(Boolean),
     });
+
+    // Una entrada por talla; si hay varios colores, gana el de más stock.
+    const bySize = new Map<string, WishVariant>();
+    for (const v of (p.product_variants ?? []) as any[]) {
+      if (v.is_deleted) continue;
+      const key = v.size ?? v.name ?? '';
+      const candidate: WishVariant = {
+        id: v.id,
+        size: v.size ?? null,
+        color: v.color ?? null,
+        name: v.name ?? '',
+        price: Number(v.price) || 0,
+        stock: Number(v.stock) || 0,
+      };
+      const prev = bySize.get(key);
+      if (!prev || candidate.stock > prev.stock) bySize.set(key, candidate);
+    }
+    variantsById.set(item.productId, [...bySize.values()]);
   }
 }
 
@@ -134,6 +178,7 @@ import { localize } from '../lib/routes';
       class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-x-8"
       data-items={JSON.stringify(available)}
       data-reflect={JSON.stringify([...reflectById])}
+      data-variants={JSON.stringify([...variantsById])}
     >
     </div>
   </div>
@@ -149,6 +194,9 @@ import { localize } from '../lib/routes';
     import { pruneLocalWishlist } from '../lib/wishlist-local';
     import { escapeHtml, safeUrl } from '../lib/html';
     import { planReflectImages } from '../lib/reflective';
+    import { addToCart, getCart } from '../lib/cart';
+    import { showFlashToast } from '../lib/flash-toast';
+    import { nudge } from '../lib/ux';
 
     /** Textos resueltos en servidor. */
     const ui = JSON.parse(document.getElementById('wish-ui')?.textContent || '{}') as Record<string, string>;
@@ -175,6 +223,29 @@ import { localize } from '../lib/routes';
     /** Texto del badge (resuelto en servidor). */
     const reflectiveLabel = uiText('reflective');
 
+    type WishVariant = {
+      id: string;
+      size: string | null;
+      color: string | null;
+      name: string;
+      price: number;
+      stock: number;
+    };
+
+    /** Tallas disponibles por producto (una por talla, la de más stock). */
+    const variantsById = new Map<string, WishVariant[]>(
+      (() => {
+        try {
+          return JSON.parse(grid.dataset.variants || '[]');
+        } catch {
+          return [];
+        }
+      })()
+    );
+
+    /** Producto por id, para armar la pieza del carrito desde la tarjeta. */
+    const itemsById = new Map<string, WishlistItem>();
+
     const money = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     function card(item: WishlistItem) {
@@ -187,6 +258,9 @@ import { localize } from '../lib/routes';
         Boolean(meta?.isReflective)
       );
       const animated = Boolean(meta) && plan.animatable;
+
+      const variants = variantsById.get(item.productId) ?? [];
+      const inStock = variants.some((v) => v.stock > 0);
 
       return `
         <article data-wish-row="${escapeHtml(item.productId)}">
@@ -203,14 +277,198 @@ import { localize } from '../lib/routes';
               <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">${money(item.price)}</p>
             </div>
           </a>
-          <div class="mt-3 flex gap-2">
-            <a href="${href}" class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1">${uiText('chooseSize')}</a>
-            <button type="button" data-wish-remove="${escapeHtml(item.productId)}"
-              class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
-              ${uiText('remove')}
-            </button>
+
+          <div class="mt-3" data-wish-actions>
+            <div class="flex gap-2" data-wish-idle>
+              <button type="button" data-wish-add
+                class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1"
+                ${inStock ? '' : 'disabled aria-disabled="true"'}>
+                ${escapeHtml(inStock ? uiText('addToCart') : uiText('soldOut'))}
+              </button>
+              <button type="button" data-wish-remove="${escapeHtml(item.productId)}"
+                class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-red-400 hover:text-red-400">
+                ${uiText('remove')}
+              </button>
+            </div>
+
+            <div class="hidden" data-wish-flow>
+              <p class="text-[11px] uppercase tracking-[0.15em] text-white/60" data-flow-label></p>
+              <div class="flex flex-wrap gap-2 mt-2" data-flow-sizes></div>
+              <div class="hidden items-center gap-2 mt-3" data-flow-qty>
+                <button type="button" data-qty="-1" aria-label="−"
+                  class="w-9 h-9 border-2 border-white/40 text-lg leading-none text-white/80 hover:border-oro-brillo hover:text-oro-brillo">−</button>
+                <span data-qty-value class="min-w-[2ch] text-center font-acentos text-lg text-blancoRoto">1</span>
+                <button type="button" data-qty="1" aria-label="+"
+                  class="w-9 h-9 border-2 border-white/40 text-lg leading-none text-white/80 hover:border-oro-brillo hover:text-oro-brillo">+</button>
+              </div>
+              <p class="hidden text-xs text-red-400 mt-2" data-flow-msg role="alert"></p>
+              <div class="flex gap-2 mt-3">
+                <button type="button" data-flow-accept
+                  class="btn-gold !min-h-[44px] !px-4 !py-2 !text-xs flex-1"></button>
+                <button type="button" data-flow-cancel
+                  class="min-h-[44px] px-3 border-2 border-white/40 text-xs uppercase tracking-wider text-white/80 hover:border-white/80">
+                  ${uiText('cancel')}
+                </button>
+              </div>
+            </div>
           </div>
         </article>`;
+    }
+
+    /**
+     * Flujo de una tarjeta: "Add to cart" → talla → cantidad → carrito.
+     * Cada paso valida el anterior: no hay cantidad sin talla con stock.
+     */
+    function bindCard(row: HTMLElement, item: WishlistItem) {
+      const idle = row.querySelector<HTMLElement>('[data-wish-idle]');
+      const flow = row.querySelector<HTMLElement>('[data-wish-flow]');
+      const label = row.querySelector<HTMLElement>('[data-flow-label]');
+      const sizesBox = row.querySelector<HTMLElement>('[data-flow-sizes]');
+      const qtyBox = row.querySelector<HTMLElement>('[data-flow-qty]');
+      const qtyValue = row.querySelector<HTMLElement>('[data-qty-value]');
+      const msg = row.querySelector<HTMLElement>('[data-flow-msg]');
+      const accept = row.querySelector<HTMLButtonElement>('[data-flow-accept]');
+      const cancel = row.querySelector<HTMLButtonElement>('[data-flow-cancel]');
+      const addBtn = row.querySelector<HTMLButtonElement>('[data-wish-add]');
+
+      if (!idle || !flow || !label || !sizesBox || !qtyBox || !qtyValue || !msg) return;
+      if (!accept || !cancel || !addBtn) return;
+
+      const variants = variantsById.get(item.productId) ?? [];
+      let step: 'idle' | 'size' | 'qty' = 'idle';
+      let selected: WishVariant | null = null;
+      let qty = 1;
+
+      const maxQty = () => Math.max(1, Math.min(5, selected?.stock || 1));
+
+      const setMsg = (text: string) => {
+        msg.textContent = text;
+        msg.classList.toggle('hidden', !text);
+      };
+
+      const paintQty = () => {
+        qtyValue.textContent = String(qty);
+      };
+
+      const reset = () => {
+        step = 'idle';
+        selected = null;
+        qty = 1;
+        idle.classList.remove('hidden');
+        flow.classList.add('hidden');
+        setMsg('');
+      };
+
+      const renderSizes = () => {
+        sizesBox.innerHTML = variants
+          .map((v, i) => {
+            const out = v.stock <= 0;
+            const active = selected?.id === v.id;
+            return `<button type="button" data-size="${i}" ${out ? 'disabled' : ''}
+              class="min-h-[36px] px-3 border-2 text-xs uppercase tracking-wider ${
+                out
+                  ? 'border-white/15 text-white/30 line-through cursor-not-allowed'
+                  : active
+                    ? 'border-oro-brillo text-oro-brillo'
+                    : 'border-white/40 text-white/80 hover:border-white/80'
+              }">${escapeHtml(v.size || v.name || '—')}</button>`;
+          })
+          .join('');
+
+        sizesBox.querySelectorAll<HTMLButtonElement>('[data-size]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const v = variants[Number(b.dataset.size)];
+            if (!v || v.stock <= 0) return;
+            selected = v;
+            qty = 1;
+            paintQty();
+            setMsg('');
+            renderSizes();
+          })
+        );
+      };
+
+      const add = () => {
+        if (!selected) return;
+
+        const cart = getCart();
+        const sameProduct = cart.filter((c) => c.productId === item.productId);
+        const sameVariant = sameProduct.some((c) => c.variantId === selected!.id);
+
+        addToCart({
+          variantId: selected.id,
+          productId: item.productId,
+          name: item.name,
+          variantName: selected.name || selected.size || '',
+          price: selected.price || item.price,
+          qty,
+          image: item.image ?? undefined,
+          size: selected.size,
+          color: selected.color,
+        });
+
+        // Aviso honesto: no se pisa nada del carrito, solo se informa.
+        if (sameVariant) {
+          showFlashToast(uiText('alreadyInCart'), { detail: item.name, tone: 'cart' });
+        } else if (sameProduct.length > 0) {
+          showFlashToast(uiText('otherSizeInCart'), { detail: item.name, tone: 'cart' });
+        } else {
+          showFlashToast(uiText('addedToCart'), { detail: item.name, tone: 'cart' });
+        }
+
+        reset();
+      };
+
+      addBtn.addEventListener('click', () => {
+        if (!variants.some((v) => v.stock > 0)) return;
+
+        step = 'size';
+        selected = null;
+        qty = 1;
+        paintQty();
+        idle.classList.add('hidden');
+        flow.classList.remove('hidden');
+        label.textContent = uiText('pickSize');
+        qtyBox.classList.add('hidden');
+        qtyBox.classList.remove('flex');
+        accept.textContent = uiText('accept');
+        setMsg('');
+        renderSizes();
+      });
+
+      cancel.addEventListener('click', reset);
+
+      accept.addEventListener('click', () => {
+        if (step === 'size') {
+          // Paso 1: sin talla (o con talla agotada) no se avanza.
+          if (!selected || selected.stock <= 0) {
+            setMsg(uiText('selectSizeError'));
+            nudge(sizesBox);
+            return;
+          }
+
+          step = 'qty';
+          qty = 1;
+          paintQty();
+          label.textContent = uiText('chooseQty');
+          qtyBox.classList.remove('hidden');
+          qtyBox.classList.add('flex');
+          accept.textContent = uiText('addToCart');
+          setMsg('');
+          return;
+        }
+
+        // Paso 2: el segundo "Aceptar" ya agrega al carrito.
+        if (step === 'qty') add();
+      });
+
+      qtyBox.querySelectorAll<HTMLButtonElement>('[data-qty]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const dir = Number(b.dataset.qty ?? 0);
+          qty = Math.min(maxQty(), Math.max(1, qty + dir));
+          paintQty();
+        })
+      );
     }
 
     function render(items: WishlistItem[]) {
@@ -224,21 +482,29 @@ import { localize } from '../lib/routes';
       }
 
       empty.classList.add('hidden');
+
+      itemsById.clear();
+      items.forEach((i) => itemsById.set(i.productId, i));
+
       grid.innerHTML = items.map(card).join('');
 
       // El controlador del reflejo se registra al cargar la página: avisarle
       // de las tarjetas repintadas para que también se animen.
       document.dispatchEvent(new CustomEvent('reflect:refresh'));
 
-      grid.querySelectorAll<HTMLButtonElement>('[data-wish-remove]').forEach((b) =>
-        b.addEventListener('click', async () => {
+      grid.querySelectorAll<HTMLElement>('[data-wish-row]').forEach((row) => {
+        const item = itemsById.get(row.dataset.wishRow ?? '');
+
+        row.querySelector<HTMLButtonElement>('[data-wish-remove]')?.addEventListener('click', async (e) => {
+          const b = e.currentTarget as HTMLButtonElement;
           b.disabled = true;
-          const name =
-            b.closest('article')?.querySelector('h3')?.textContent?.trim() ?? '';
+          const name = row.querySelector('h3')?.textContent?.trim() ?? '';
           // El aviso centrado lo emite `StoreDrawer` desde `wishlist:removed`.
-          await removeFromWishlist(b.dataset.wishRemove!, name);
-        })
-      );
+          await removeFromWishlist(row.dataset.wishRow!, name);
+        });
+
+        if (item) bindCard(row, item);
+      });
     }
 
     window.addEventListener('wishlist:updated', (e) => {
