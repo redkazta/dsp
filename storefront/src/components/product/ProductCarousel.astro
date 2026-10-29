@@ -16,6 +16,8 @@ export interface Props {
   products: any[];
   href?: string;
   hrefLabel?: string;
+  /** Piezas visibles en desktop (3 = fotos más grandes a todo lo ancho). */
+  perView?: 3 | 4;
 }
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
@@ -27,6 +29,7 @@ const {
   products,
   href = localize(lang, 'shop'),
   hrefLabel = 'Ver todo',
+  perView = 4,
 } = Astro.props;
 
 const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -78,7 +81,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
       ) : (
         <div
           id={trackId}
-          class="carousel-track"
+          class={`carousel-track${perView === 3 ? ' carousel-track--three' : ''}`}
           role="list"
           aria-label={`${title}: piezas`}
         >
@@ -127,6 +130,10 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
     .carousel-track {
       grid-auto-columns: 23.5%;
       gap: 1.5rem;
+    }
+
+    .carousel-track--three {
+      grid-auto-columns: 31%;
     }
   }
 

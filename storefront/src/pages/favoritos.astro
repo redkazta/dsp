@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { TENANT_ID } from '../lib/constants';
 import type { WishlistItem } from '../lib/wishlist-local';
@@ -136,19 +137,45 @@ if (items.length > 0) {
 // no debe tocar datos. Si el catálogo falla un instante, el favorito vuelve
 // solo cuando la pieza regresa; antes se eliminaba en silencio.
 const available = items.filter((i) => !stale.includes(i.productId));
+
+/** Sugerencias: piezas activas que aún no están en favoritos. */
+let suggestions: any[] = [];
+
+{
+  const excluded = new Set(available.map((i) => i.productId));
+
+  try {
+    const { data } = await supabase
+      .from('products')
+      .select(
+        'id, name, name_en, slug, base_price, is_reflective, categories(id, name, slug), product_variants(price), product_images(url, alt_text, position)'
+      )
+      .eq('tenant_id', TENANT_ID)
+      .eq('is_active', true)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(12);
+
+    suggestions = (data ?? []).filter((p: any) => !excluded.has(p.id)).slice(0, 9);
+  } catch {
+    suggestions = [];
+  }
+}
 import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.account.wishlistMetaTitle} description={t.cart.emptyText}>
   <script type="application/json" id="wish-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/30 bg-noise">
-    <div class="page-container py-12 sm:py-16">
-      <p class="section-label mb-3">{t.account.listLabel}</p>
-      <h1 class="font-titulos text-4xl sm:text-5xl lg:text-6xl text-blancoRoto">{t.account.wishlistTitle}</h1>
-      <p id="wish-summary" class="mt-3 text-lg text-white/80">
-        {available.length}
-        {available.length === 1 ? t.checkout.pieceOne : t.checkout.pieceMany}
-      </p>
+    <div class="page-container py-6 sm:py-8">
+      <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h1 class="font-titulos text-2xl sm:text-3xl text-blancoRoto">{t.account.wishlistTitle}</h1>
+        <p id="wish-summary" class="text-sm text-white/70">
+          {available.length}
+          {available.length === 1 ? t.checkout.pieceOne : t.checkout.pieceMany}
+        </p>
+      </div>
+      <p class="section-label mt-1">{t.account.listLabel}</p>
     </div>
   </section>
 
@@ -169,13 +196,26 @@ import { localize } from '../lib/routes';
 
     <div
       id="wish-grid"
-      class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 lg:gap-x-8"
+      class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 gap-y-8 sm:gap-x-4 lg:gap-x-6"
       data-items={JSON.stringify(available)}
       data-reflect={JSON.stringify([...reflectById])}
       data-variants={JSON.stringify([...variantsById])}
     >
     </div>
   </div>
+
+  {
+    suggestions.length > 0 && (
+      <ProductCarousel
+        title={t.product.related}
+        subtitle={t.shop.collection}
+        products={suggestions}
+        href={localize(lang, 'shop')}
+        hrefLabel={t.shop.seeAll}
+        perView={3}
+      />
+    )
+  }
 
   <script>
     import '../lib/reflect-anim';

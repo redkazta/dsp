@@ -423,32 +423,6 @@ const jsonLd = {
       </div>
     </div>
 
-    <!-- Trust badges -->
-    <section class="site-trust border-t-2 border-white/25 bg-negro-carbono">
-      <div class="page-container py-10 sm:py-12 grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          [
-            { t: t.trust.shippingTitle, d: t.trust.shippingText, icon: 'M5 12h14M12 5l7 7-7 7' },
-            { t: t.trust.secureTitle, d: t.trust.secureText, icon: 'M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6Z' },
-            { t: t.trust.returnsTitle, d: t.trust.returnsText, icon: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5' },
-            { t: t.trust.supportTitle, d: t.trust.supportText, icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
-          ].map((item) => (
-            <div class="flex items-start gap-4">
-              <div class="shrink-0 w-11 h-11 border-2 border-oro-brillo/70 flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d={item.icon} />
-                </svg>
-              </div>
-              <div>
-                <h4 class="font-acentos text-xs uppercase tracking-[0.2em] text-blancoRoto mb-1">{item.t}</h4>
-                <p class="text-sm text-muted leading-relaxed">{item.d}</p>
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </section>
-
     <!-- Footer -->
     <footer class="site-footer border-t-2 border-white/25 bg-negro-profundo">
       <div class="page-container py-12 sm:py-16 lg:py-20">
@@ -778,10 +752,9 @@ const jsonLd = {
 </html>
 
 <style>
-  /* Home a pantalla completa: el footer y los badges no se muestran para que
-     la página no genere scroll. El resto del sitio los conserva. */
-  [data-home='1'] .site-footer,
-  [data-home='1'] .site-trust {
+  /* Home a pantalla completa: el footer no se muestra para que la página no
+     genere scroll. El resto del sitio lo conserva. */
+  [data-home='1'] .site-footer {
     display: none;
   }
 
