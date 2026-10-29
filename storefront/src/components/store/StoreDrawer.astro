@@ -530,6 +530,24 @@ import { localize } from '../../lib/routes';
     width: auto;
   }
 
+  /* Cancelar / Agregar dentro de una pieza. */
+  .mini-spec-actions {
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+
+  .mini-spec-actions .mini-action {
+    min-height: 30px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  /* Pie bloqueado mientras hay un selector abierto. */
+  .mini-cta.is-locked {
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
   .mini-action {
     display: flex;
     align-items: center;
@@ -1044,6 +1062,13 @@ import { localize } from '../../lib/routes';
   let lastFocus: HTMLElement | null = null;
   let currentWish: WishlistItem[] = serverWishlist;
 
+  /**
+   * Silencia el aviso global de "añadido" mientras mostramos uno propio con
+   * todas las piezas y sus specs. Se declara aquí porque el listener de
+   * `cart:updated` se registra antes que el resto del código de favoritos.
+   */
+  let cartToastMuteUntil = 0;
+
   const money = (n: number) => `$${formatMXN(n)}`;
 
   function setBadge(el: HTMLElement, count: number) {
@@ -1301,6 +1326,9 @@ import { localize } from '../../lib/routes';
 
     // Un cambio de precio (misma cantidad) no es un alta ni una baja.
     if (!changed) return;
+
+    // Varias piezas agregadas a la vez ya muestran su propio aviso.
+    if (Date.now() < cartToastMuteUntil) return;
 
     // Quién lo hizo lo dicen los marcadores: solo hay valor cuando la acción
     // salió de ESTA pestaña. Una recarga o un cambio de otra pestaña llegan
@@ -1612,32 +1640,6 @@ import { localize } from '../../lib/routes';
     return rest > 0 ? `${shown.join(', ')} (+${rest})` : shown.join(', ');
   }
 
-  /**
-   * Añade una sola pieza de favoritos al carrito actual.
-   * Devuelve false si no tiene variante con stock.
-   */
-  async function addWishItemToCart(productId: string): Promise<boolean> {
-    const item = currentWish.find((w) => w.productId === productId);
-    if (!item) return false;
-
-    const variant = await variantFor(productId);
-    if (!variant || variant.stock <= 0) return false;
-
-    addToCart({
-      variantId: variant.id,
-      productId,
-      slug: item.slug ?? null,
-      name: item.name,
-      variantName: [variant.size, variant.color].filter(Boolean).join(' · ') || variant.name,
-      price: variant.price || item.price,
-      qty: 1,
-      image: item.image ?? undefined,
-      size: variant.size,
-      color: variant.color,
-    });
-    return true;
-  }
-
   // ---------- Mini favoritos: "Add all" con talla y cantidad ----------
   type SpecVariant = {
     id: string;
@@ -1651,6 +1653,8 @@ import { localize } from '../../lib/routes';
   const specVariants = new Map<string, SpecVariant[]>();
   const specDraft = new Map<string, { variantId: string; qty: number }>();
   let wishSpecOpen = false;
+  /** Pieza con su selector abierto (flujo individual). */
+  let specOnlyId: string | null = null;
 
   const specLabel = (v: SpecVariant) =>
     [v.size, v.color].filter(Boolean).join(' · ') || v.name || '—';
@@ -1681,9 +1685,151 @@ import { localize } from '../../lib/routes';
     await ensureSpecVariants(items.map((i) => i.productId));
 
     specDraft.clear();
+    specOnlyId = null;
     items.forEach((i) => specDraft.set(i.productId, { variantId: '', qty: 1 }));
     wishSpecOpen = true;
     renderMiniWish();
+  }
+
+  /** Selector de talla y cantidad de UNA pieza, con sus propios botones. */
+  async function openItemSpec(productId: string) {
+    await ensureSpecVariants([productId]);
+    specDraft.set(productId, { variantId: '', qty: 1 });
+    wishSpecOpen = false;
+    specOnlyId = productId;
+    renderMiniWish();
+  }
+
+  function cancelItemSpec() {
+    if (specOnlyId) specDraft.delete(specOnlyId);
+    specOnlyId = null;
+    renderMiniWish();
+  }
+
+  function confirmItemSpec(productId: string) {
+    const item = currentWish.find((i) => i.productId === productId);
+    const draft = specDraft.get(productId);
+    const row = miniWishBody.querySelector<HTMLElement>(`[data-spec-row="${productId}"]`);
+    const msg = row?.querySelector<HTMLElement>('[data-spec-msg]');
+
+    if (!item || !draft?.variantId) {
+      if (msg) {
+        msg.textContent = uiText('specMissing');
+        msg.hidden = false;
+      }
+      nudge(row?.querySelector('[data-spec-size]'));
+      return;
+    }
+
+    const variant = specVariants.get(productId)?.find((v) => v.id === draft.variantId);
+    if (!variant) return;
+
+    // El aviso de "añadido" lo emite el listener global de `cart:updated`.
+    addToCart({
+      variantId: variant.id,
+      productId,
+      slug: item.slug ?? null,
+      name: item.name,
+      variantName: specLabel(variant),
+      price: variant.price || item.price,
+      qty: draft.qty,
+      image: item.image ?? undefined,
+      size: variant.size,
+      color: variant.color,
+    });
+
+    void removeManyFromWishlist([productId]).catch(() => {});
+
+    specDraft.delete(productId);
+    specOnlyId = null;
+    renderMiniWish();
+  }
+
+  /** Marca HTML del selector; `withActions` añade Cancelar / Agregar. */
+  function specControlsHtml(item: WishlistItem, withActions: boolean): string {
+    const id = escapeHtml(item.productId);
+    const draft = specDraft.get(item.productId) ?? { variantId: '', qty: 1 };
+    const variants = specVariants.get(item.productId) ?? [];
+
+    const options = variants
+      .map((v) => {
+        const out = v.stock <= 0;
+        const label = `${specLabel(v)}${out ? ` — ${uiText('soldOut')}` : ''}`;
+        return `<option value="${escapeHtml(v.id)}" ${out ? 'disabled' : ''} ${
+          draft.variantId === v.id ? 'selected' : ''
+        }>${escapeHtml(label)}</option>`;
+      })
+      .join('');
+
+    return `
+      <div class="mini-spec">
+        <select class="mini-select" data-spec-size="${id}" aria-label="${escapeHtml(uiText('specSize'))}">
+          <option value="">${escapeHtml(uiText('specSize'))}</option>
+          ${options}
+        </select>
+        <div class="mini-qty">
+          <button type="button" data-spec-qty="${id}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
+          <span data-spec-qty-value>${draft.qty}</span>
+          <button type="button" data-spec-qty="${id}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
+        </div>
+      </div>
+      <p class="mini-spec-msg" data-spec-msg hidden></p>
+      ${
+        withActions
+          ? `<div class="mini-actions mini-actions--split mini-spec-actions">
+               <button type="button" class="mini-action" data-spec-cancel="${id}">${escapeHtml(uiText('cancel'))}</button>
+               <button type="button" class="mini-action mini-action--gold" data-spec-accept="${id}">${escapeHtml(uiText('specReady'))}</button>
+             </div>`
+          : ''
+      }`;
+  }
+
+  function bindSpecControls(root: HTMLElement) {
+    root.querySelectorAll<HTMLSelectElement>('[data-spec-size]').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const id = sel.dataset.specSize!;
+        const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
+        draft.variantId = sel.value;
+
+        // La cantidad no puede pasar del stock de la talla elegida.
+        const variant = specVariants.get(id)?.find((v) => v.id === sel.value);
+        const max = Math.max(1, Math.min(5, variant?.stock || 5));
+        draft.qty = Math.min(draft.qty, max);
+        specDraft.set(id, draft);
+
+        const row = sel.closest('[data-spec-row]');
+        const msg = row?.querySelector<HTMLElement>('[data-spec-msg]');
+        const value = row?.querySelector<HTMLElement>('[data-spec-qty-value]');
+        if (msg) msg.hidden = true;
+        if (value) value.textContent = String(draft.qty);
+      });
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-spec-qty]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.specQty!;
+        const dir = Number(btn.dataset.dir ?? 1);
+        const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
+        const variant = specVariants.get(id)?.find((v) => v.id === draft.variantId);
+        const max = Math.max(1, Math.min(5, variant?.stock || 5));
+
+        draft.qty = Math.min(max, Math.max(1, draft.qty + dir));
+        specDraft.set(id, draft);
+
+        const value = btn
+          .closest('[data-spec-row]')
+          ?.querySelector<HTMLElement>('[data-spec-qty-value]');
+        if (value) value.textContent = String(draft.qty);
+      });
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-spec-cancel]').forEach((btn) => {
+      btn.addEventListener('click', () => cancelItemSpec());
+    });
+
+    root.querySelectorAll<HTMLElement>('[data-spec-accept]').forEach((btn) => {
+      btn.addEventListener('click', () => confirmItemSpec(btn.dataset.specAccept!));
+    });
   }
 
   function closeWishSpecs() {
@@ -1742,6 +1888,9 @@ import { localize } from '../../lib/routes';
     if (added.length === 0) return;
 
     added.forEach((piece) => addToCart(piece));
+
+    // Un solo aviso con todas las specs; se silencia el global de cada pieza.
+    cartToastMuteUntil = Date.now() + 900;
     showFlashToast(uiText('cartAddedTitle'), { tone: 'cart', detail: describePieces(added) });
 
     // Ya están en el carrito: salen de favoritos.
@@ -1767,10 +1916,28 @@ import { localize } from '../../lib/routes';
     const footSpec = document.querySelector<HTMLElement>('[data-wish-foot-spec]');
     const empty = currentWish.length === 0;
 
-    if (empty) wishSpecOpen = false;
+    if (empty) {
+      wishSpecOpen = false;
+      specOnlyId = null;
+    }
 
-    if (addAll) addAll.disabled = empty;
-    if (newCart) newCart.disabled = empty;
+    // Si la pieza abierta ya no está (se quitó en otra pestaña), se cierra.
+    if (specOnlyId && !currentWish.some((i) => i.productId === specOnlyId)) {
+      specOnlyId = null;
+    }
+
+    // Mientras hay un selector abierto (individual o "add all") el pie no
+    // se puede tocar: ni Add all, ni carrito nuevo, ni "ver todos".
+    const locked = wishSpecOpen || specOnlyId !== null;
+    if (addAll) addAll.disabled = empty || locked;
+    if (newCart) newCart.disabled = empty || locked;
+
+    const seeAll = document.querySelector<HTMLAnchorElement>('#mini-wishlist .mini-cta');
+    if (seeAll) {
+      seeAll.classList.toggle('is-locked', locked);
+      if (locked) seeAll.setAttribute('aria-disabled', 'true');
+      else seeAll.removeAttribute('aria-disabled');
+    }
     if (footDefault) footDefault.style.display = wishSpecOpen ? 'none' : '';
     if (footSpec) footSpec.style.display = wishSpecOpen ? 'flex' : 'none';
 
@@ -1785,18 +1952,6 @@ import { localize } from '../../lib/routes';
         .map((i) => {
           const img = safeUrl(i.image);
           const href = productHref(i.slug ?? i.productId);
-          const draft = specDraft.get(i.productId) ?? { variantId: '', qty: 1 };
-          const variants = specVariants.get(i.productId) ?? [];
-
-          const options = variants
-            .map((v) => {
-              const out = v.stock <= 0;
-              const label = `${specLabel(v)}${out ? ` — ${uiText('soldOut')}` : ''}`;
-              return `<option value="${escapeHtml(v.id)}" ${out ? 'disabled' : ''} ${
-                draft.variantId === v.id ? 'selected' : ''
-              }>${escapeHtml(label)}</option>`;
-            })
-            .join('');
 
           return `
         <div class="mini-item mini-item--spec" data-spec-row="${escapeHtml(i.productId)}">
@@ -1804,61 +1959,13 @@ import { localize } from '../../lib/routes';
           <div class="mini-info">
             <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
             <span class="mini-price">$${formatMXN(i.price)}</span>
-            <div class="mini-spec">
-              <select class="mini-select" data-spec-size="${escapeHtml(i.productId)}" aria-label="${escapeHtml(uiText('specSize'))}">
-                <option value="">${escapeHtml(uiText('specSize'))}</option>
-                ${options}
-              </select>
-              <div class="mini-qty">
-                <button type="button" data-spec-qty="${escapeHtml(i.productId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
-                <span data-spec-qty-value>${draft.qty}</span>
-                <button type="button" data-spec-qty="${escapeHtml(i.productId)}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
-              </div>
-            </div>
-            <p class="mini-spec-msg" data-spec-msg hidden></p>
+            ${specControlsHtml(i, false)}
           </div>
         </div>`;
         })
         .join('');
 
-      miniWishBody.querySelectorAll<HTMLSelectElement>('[data-spec-size]').forEach((sel) => {
-        sel.addEventListener('change', () => {
-          const id = sel.dataset.specSize!;
-          const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
-          draft.variantId = sel.value;
-
-          // La cantidad no puede pasar del stock de la talla elegida.
-          const variant = specVariants.get(id)?.find((v) => v.id === sel.value);
-          const max = Math.max(1, Math.min(5, variant?.stock || 5));
-          draft.qty = Math.min(draft.qty, max);
-          specDraft.set(id, draft);
-
-          const row = sel.closest('[data-spec-row]');
-          const msg = row?.querySelector<HTMLElement>('[data-spec-msg]');
-          const value = row?.querySelector<HTMLElement>('[data-spec-qty-value]');
-          if (msg) msg.hidden = true;
-          if (value) value.textContent = String(draft.qty);
-        });
-      });
-
-      miniWishBody.querySelectorAll<HTMLElement>('[data-spec-qty]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.specQty!;
-          const dir = Number(btn.dataset.dir ?? 1);
-          const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
-          const variant = specVariants.get(id)?.find((v) => v.id === draft.variantId);
-          const max = Math.max(1, Math.min(5, variant?.stock || 5));
-
-          draft.qty = Math.min(max, Math.max(1, draft.qty + dir));
-          specDraft.set(id, draft);
-
-          const value = btn
-            .closest('[data-spec-row]')
-            ?.querySelector<HTMLElement>('[data-spec-qty-value]');
-          if (value) value.textContent = String(draft.qty);
-        });
-      });
-
+      bindSpecControls(miniWishBody);
       return;
     }
 
@@ -1867,59 +1974,37 @@ import { localize } from '../../lib/routes';
       .map((i) => {
         const img = safeUrl(i.image);
         const href = productHref(i.slug ?? i.productId);
-        const inCart = getCart().find((c) => c.productId === i.productId);
+        const open = specOnlyId === i.productId;
 
         return `
-        <div class="mini-item">
+        <div class="mini-item${open ? ' mini-item--spec' : ''}" data-spec-row="${escapeHtml(i.productId)}">
           <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
           <div class="mini-info">
             <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
             <span class="mini-price">$${formatMXN(i.price)}</span>
-            <div class="mini-row-actions">
-              ${
-                inCart
-                  ? `<div class="mini-qty">
-                       <button type="button" data-mini-qty="wish:${escapeHtml(i.productId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
-                       <span>${inCart.qty}</span>
-                       <button type="button" data-mini-qty="wish:${escapeHtml(i.productId)}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
-                     </div>`
-                  : `<button type="button" class="mini-chip" data-mini-add-wish="${escapeHtml(i.productId)}">${escapeHtml(uiText('addOneToCart'))}</button>`
-              }
-              <button
-                type="button"
-                class="mini-remove"
-                data-mini-remove="wish:${escapeHtml(i.productId)}"
-                aria-label="${escapeHtml(uiText('removeWish'))}"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
-                </svg>
-              </button>
-            </div>
+            ${
+              open
+                ? specControlsHtml(i, true)
+                : `<div class="mini-row-actions">
+                     <button type="button" class="mini-chip" data-mini-add-wish="${escapeHtml(i.productId)}">${escapeHtml(uiText('addOneToCart'))}</button>
+                     <button type="button" class="mini-remove" data-mini-remove="wish:${escapeHtml(i.productId)}" aria-label="${escapeHtml(uiText('removeWish'))}">
+                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                         <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                       </svg>
+                     </button>
+                   </div>`
+            }
           </div>
         </div>`;
       })
       .join('');
 
-    // Añadir una pieza suelta al carrito actual.
+    // "Add to cart" abre talla + cantidad para esa pieza (no agrega directo).
     miniWishBody.querySelectorAll<HTMLElement>('[data-mini-add-wish]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const name = rowName(btn.closest('.mini-item'));
-        btn.setAttribute('disabled', 'true');
-        const ok = await addWishItemToCart(btn.dataset.miniAddWish!);
-
-        if (!ok) {
-          btn.removeAttribute('disabled');
-          btn.textContent = uiText('nothingAdded');
-          showFlashToast(uiText('nothingAdded'), { tone: 'info', detail: name });
-          return;
-        }
-
-        // El aviso lo emite el listener global de `cart:updated`.
-        // Si funcionó, `cart:updated` repinta y el botón pasa a −/+ qty.
-      });
+      btn.addEventListener('click', () => void openItemSpec(btn.dataset.miniAddWish!));
     });
 
+    bindSpecControls(miniWishBody);
     bindMiniQuantityControls(miniWishBody);
   }
 
