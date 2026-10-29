@@ -2,6 +2,14 @@
   "framework": "astro",
   "installCommand": "npm ci",
   "buildCommand": "npm run build:clean",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "dinerosobreproblemas.com" }],
+      "destination": "https://www.dinerosobreproblemas.com/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

@@ -10,13 +10,14 @@
  */
 
 import { createHmac } from 'node:crypto';
+import { serverEnv } from './env';
 
 // Tipos de Node: el proyecto no trae `@types/node` (no hay lockfile para
 // instalarlo sin riesgo). La firma del módulo vive en `src/env.d.ts`.
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
-const secretKey = () => (import.meta.env.STRIPE_SECRET_KEY as string | undefined) ?? '';
+const secretKey = () => serverEnv('STRIPE_SECRET_KEY') ?? '';
 const publishableKey = () => (import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY as string | undefined) ?? '';
 
 /** ¿Está configurado el pago real? Si no, el checkout no se ofrece. */

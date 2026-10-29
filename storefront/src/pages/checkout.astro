@@ -4,6 +4,7 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../lib/i18n';
 import { localize } from '../lib/routes';
+import { isStripeConfigured } from '../lib/stripe';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -32,9 +33,7 @@ const ui = {
 
 const { firstName, email, phone } = Astro.locals;
 
-const paymentAvailable = Boolean(
-  import.meta.env.STRIPE_SECRET_KEY && import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
-);
+const paymentAvailable = isStripeConfigured();
 const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 

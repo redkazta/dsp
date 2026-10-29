@@ -102,7 +102,10 @@ export const POST: APIRoute = async ({
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
     // Sin service role no se puede guardar: mejor decir la verdad que
-    // fingir que se envió.
+    // fingir que se envió. El log dice exactamente qué falta en Vercel.
+    console.error(
+      '[contact] falta SUPABASE_SERVICE_ROLE_KEY (Vercel → Settings → Environment Variables, scope Production). El mensaje no se guardó.'
+    );
     return json({ error: 'not_configured' }, 503);
   }
 

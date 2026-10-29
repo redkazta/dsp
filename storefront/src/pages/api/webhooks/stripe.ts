@@ -13,13 +13,14 @@
  *   - charge.refunded                          → reembolso hecho desde Stripe
  *
  * Configura en Stripe → Developers → Webhooks:
- *   URL: https://dspstorefront.vercel.app/api/webhooks/stripe
+ *   URL: https://www.dinerosobreproblemas.com/api/webhooks/stripe
  *
  * La idempotencia la da `applyPaidStatus`: repetir un evento no duplica
  * pedidos, piezas ni filas de `payments`.
  */
 import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
+import { serverEnv } from '../../../lib/env';
 import { verifyWebhookSignature, type StripeEvent } from '../../../lib/stripe';
 import { applyPaidStatus, applyFailedStatus, applyRefundedStatus } from '../../../lib/checkout';
 import { sendOrderConfirmation } from '../../../lib/resend';
@@ -33,7 +34,7 @@ const reply = (body: unknown, status: number) =>
   });
 
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
-  const secret = import.meta.env.STRIPE_WEBHOOK_SECRET;
+  const secret = serverEnv('STRIPE_WEBHOOK_SECRET');
 
   if (!secret) {
     console.error('[webhook] STRIPE_WEBHOOK_SECRET no configurado');

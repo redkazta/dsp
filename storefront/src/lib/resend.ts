@@ -6,6 +6,8 @@
  *   RESEND_DOMAIN  → dominio verificado (ej. dinerossobreproblemas.com)
  */
 
+import { serverEnv } from './env';
+
 const RESEND_API = 'https://api.resend.com/emails';
 
 export async function sendOrderConfirmation({
@@ -19,8 +21,8 @@ export async function sendOrderConfirmation({
   customerName: string;
   total: string;
 }) {
-  const apiKey = (import.meta.env.RESEND_API_KEY as string | undefined) ?? '';
-  const domain = (import.meta.env.RESEND_DOMAIN as string | undefined) ?? 'dinerosobreproblemas.com';
+  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
+  const domain = serverEnv('RESEND_DOMAIN') ?? 'dinerosobreproblemas.com';
 
   if (!apiKey) {
     console.warn('[resend] RESEND_API_KEY no configurado; no se envía confirmación.');
@@ -80,9 +82,9 @@ export async function sendContactNotification({
   message: string;
   lang: string;
 }) {
-  const apiKey = (import.meta.env.RESEND_API_KEY as string | undefined) ?? '';
-  const domain = (import.meta.env.RESEND_DOMAIN as string | undefined) ?? 'dinerosobreproblemas.com';
-  const to = (import.meta.env.CONTACT_EMAIL as string | undefined) ?? `hola@${domain}`;
+  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
+  const domain = serverEnv('RESEND_DOMAIN') ?? 'dinerosobreproblemas.com';
+  const to = serverEnv('CONTACT_EMAIL') ?? `hola@${domain}`;
 
   if (!apiKey) return { ok: false, reason: 'no_key' };
 

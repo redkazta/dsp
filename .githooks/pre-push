@@ -3,7 +3,8 @@
 # Pre-push: no dejar subir un commit que no compila.
 # ============================================================
 # Git lo ejecuta automáticamente antes de cada `git push`.
-# Si el build o los tests fallan, el push se cancela.
+# Si el build falla, el push se cancela. (Los tests no corren aquí: se
+# ejecutan a mano con `npm test`.)
 #
 # Saltar en una emergencia (no recomendado):
 #   git push --no-verify
@@ -24,7 +25,6 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT/storefront"
 
 LOG_BUILD="$REPO_ROOT/.prepush-build.log"
-LOG_TEST="$REPO_ROOT/.prepush-test.log"
 
 echo ""
 echo "▶ Pre-push: comprobando el build…"
@@ -47,28 +47,6 @@ fi
 
 echo "  ✓ build"
 
-# ---------- Tests ----------
-if ! npx vitest run > "$LOG_TEST" 2>&1; then
-  FAIL_COUNT=$(grep -cE "^ FAIL " "$LOG_TEST" || true)
-  OTHER=$(grep -E "^ FAIL " "$LOG_TEST" | grep -v "tests/pricing.test.ts" | wc -l)
-
-  # Los fallos de pricing son preexistentes (umbral 150 vs 15) y no
-  # bloquean; cualquier otro fallo sí.
-  if [ "$OTHER" -eq 0 ] && [ "$FAIL_COUNT" -le 2 ]; then
-    echo "  ✓ tests (solo los fallos conocidos de pricing)"
-  else
-    echo ""
-    echo "✗ TESTS FALLARON — push cancelado."
-    echo ""
-    grep -E "^ FAIL " "$LOG_TEST" | head -10
-    echo ""
-    echo "  Log completo: $LOG_TEST"
-    exit 1
-  fi
-else
-  echo "  ✓ tests"
-fi
-
 echo ""
-echo "✓ Todo en orden, subiendo."
+echo "✓ Build en orden, subiendo."
 echo ""

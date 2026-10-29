@@ -2,15 +2,17 @@
  * Supabase Server Client (SSR)
  *
  * Reglas:
- * - Las variables `PUBLIC_*` se leen en tiempo de ejecución (`import.meta.env`),
- *   no se hornean en el bundle: cambiar de proyecto es cambiar .env en Vercel.
+ * - Las variables `PUBLIC_*` son públicas por diseño (RLS protege los datos).
  * - El service role NUNCA se expone al navegador. Solo lo usa el cliente
- *   "admin" para el checkout (crear pedidos ya validados en servidor).
+ *   "admin" para el checkout y el formulario de contacto.
+ * - Las variables de servidor se leen con `serverEnv()`, que mira
+ *   `process.env` en runtime: `import.meta.env` las deja grabadas al compilar.
  */
 
 import { createServerClient, parseCookieHeader } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import type { AstroCookies } from 'astro';
+import { serverEnv } from './env';
 
 /** Respaldo: la anon key es pública por diseño (RLS protege los datos). */
 const FALLBACK_URL = 'https://dzrxwmyxxhjonhbfgfvo.supabase.co';
@@ -44,7 +46,7 @@ export function createSupabaseServerClient(request: Request, cookies: AstroCooki
 
 /** ¿Está configurada la llave de servicio? (checkout sin RLS de cliente) */
 export function hasServiceRole() {
-  return Boolean(import.meta.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(serverEnv('SUPABASE_SERVICE_ROLE_KEY'));
 }
 
 /**
@@ -52,7 +54,7 @@ export function hasServiceRole() {
  * Si no hay llave, devuelve null y el checkout cae al flujo RLS (que exige sesión).
  */
 export function createSupabaseAdminClient() {
-  const key = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serverEnv('SUPABASE_SERVICE_ROLE_KEY');
   if (!key) return null;
 
   const { url } = getSupabaseConfig();

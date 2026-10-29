@@ -636,7 +636,7 @@ export const copy = {
           {
             title: '1. Quiénes somos',
             p: [
-              'Dinero Sobre Problemas («DSP», «nosotros») opera la tienda en línea disponible en dspstorefront.vercel.app. Esta política explica qué datos personales recopilamos, con qué finalidad y cómo los protegemos.',
+              'Dinero Sobre Problemas («DSP», «nosotros») opera la tienda en línea disponible en www.dinerosobreproblemas.com. Esta política explica qué datos personales recopilamos, con qué finalidad y cómo los protegemos.',
             ],
           },
           {
@@ -713,7 +713,7 @@ export const copy = {
           {
             title: '1. Aceptación',
             p: [
-              'Al comprar en dspstorefront.vercel.app aceptas estos términos. Si no estás de acuerdo, te pedimos no realizar compras.',
+              'Al comprar en www.dinerosobreproblemas.com aceptas estos términos. Si no estás de acuerdo, te pedimos no realizar compras.',
             ],
           },
           {
@@ -1391,7 +1391,7 @@ export const copy = {
           {
             title: '1. Who we are',
             p: [
-              'Dinero Sobre Problemas ("DSP", "we") operates the online store available at dspstorefront.vercel.app. This policy explains what personal data we collect, for what purpose and how we protect it.',
+              'Dinero Sobre Problemas ("DSP", "we") operates the online store available at www.dinerosobreproblemas.com. This policy explains what personal data we collect, for what purpose and how we protect it.',
             ],
           },
           {
@@ -1468,7 +1468,7 @@ export const copy = {
           {
             title: '1. Acceptance',
             p: [
-              'By purchasing at dspstorefront.vercel.app you accept these terms. If you do not agree, please do not place an order.',
+              'By purchasing at www.dinerosobreproblemas.com you accept these terms. If you do not agree, please do not place an order.',
             ],
           },
           {

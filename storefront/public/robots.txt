@@ -1,4 +1,15 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dinerosobreproblemas.com/sitemap-index.xml
+# Nada privado ni transaccional: no aporta y solo gasta presupuesto de rastreo.
+Disallow: /admin
+Disallow: /api
+Disallow: /cuenta
+Disallow: /checkout
+Disallow: /confirmacion
+Disallow: /entrar
+Disallow: /registro
+Disallow: /recuperar
+Disallow: /nueva-password
+
+Sitemap: https://www.dinerosobreproblemas.com/sitemap.xml
