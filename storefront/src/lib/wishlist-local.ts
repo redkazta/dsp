@@ -73,3 +73,15 @@ export function removeLocalWishlist(productId: string, name = '') {
     })
   );
 }
+
+/**
+ * Quita varias piezas de golpe sin avisos de "eliminado": se usa cuando se
+ * pasan al carrito, donde el aviso relevante es el de la compra.
+ */
+export function removeManyLocalWishlist(productIds: string[]): WishlistItem[] {
+  const ids = new Set(productIds);
+  const current = getLocalWishlist();
+  const next = current.filter((i) => !ids.has(String(i.productId)));
+  if (next.length !== current.length) writeLocal(next);
+  return next;
+}

@@ -54,3 +54,8 @@ export async function deleteWishlistRemote(productId: string) {
   // el servidor aún lo recibe. El body se mantiene como respaldo.
   return api('DELETE', { productId }, `?productId=${encodeURIComponent(productId)}`);
 }
+
+/** Quita varias piezas en una sola petición. */
+export async function deleteManyWishlistRemote(productIds: string[]) {
+  return api('DELETE', undefined, `?productIds=${productIds.map(encodeURIComponent).join(',')}`);
+}

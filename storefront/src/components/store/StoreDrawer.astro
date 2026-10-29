@@ -339,26 +339,36 @@ import { localize } from '../../lib/routes';
     padding: 12px;
   }
 
+  /* Talla + cantidad: rejilla fija. El ancho lo manda el contenedor, no el
+     texto de la opción elegida (por eso no se descuadra al seleccionar). */
   .mini-spec {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
     gap: 8px;
     margin-top: 8px;
-    flex-wrap: wrap;
   }
 
   .mini-select {
-    flex: 1 1 110px;
+    width: 100%;
     min-width: 0;
-    min-height: 30px;
-    padding: 0 8px;
+    height: 32px;
+    padding: 0 26px 0 8px;
     border: 1px solid #ffffff;
-    background: #000000;
+    border-radius: 0;
+    background-color: #000000;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 11px 7px;
     color: #ffffff;
     font-family: 'Space Grotesk', Inter, sans-serif;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    appearance: none;
+    -webkit-appearance: none;
+    text-overflow: ellipsis;
   }
 
   .mini-select option {
@@ -369,6 +379,11 @@ import { localize } from '../../lib/routes';
   .mini-select:focus-visible {
     outline: 2px solid #ffe28a;
     outline-offset: 2px;
+  }
+
+  .mini-spec .mini-qty {
+    flex: 0 0 auto;
+    height: 32px;
   }
 
   .mini-spec-msg {
@@ -383,10 +398,6 @@ import { localize } from '../../lib/routes';
 
   .mini-item:hover {
     background: rgba(255, 226, 138, 0.05);
-  }
-
-  .mini-item:last-child {
-    border-bottom: 0;
   }
 
   .mini-thumb {
@@ -985,6 +996,7 @@ import { localize } from '../../lib/routes';
     SESSION_ENDED_EVENT,
     initWishlistView,
     removeFromWishlist,
+    removeManyFromWishlist,
     type WishlistItem,
   } from '../../lib/wishlist';
   import { FREE_SHIPPING_THRESHOLD } from '../../lib/pricing';
@@ -1717,6 +1729,9 @@ import { localize } from '../../lib/routes';
     added.forEach((piece) => addToCart(piece));
     showFlashToast(uiText('cartAddedTitle'), { tone: 'cart', detail: describePieces(added) });
 
+    // Ya están en el carrito: salen de favoritos.
+    void removeManyFromWishlist(added.map((piece) => piece.productId)).catch(() => {});
+
     wishSpecOpen = false;
     specDraft.clear();
     renderMiniWish();
@@ -2019,6 +2034,7 @@ import { localize } from '../../lib/routes';
         tone: 'cart',
         detail: describePieces(pieces),
       });
+      void removeManyFromWishlist(pieces.map((piece) => piece.productId)).catch(() => {});
     } else {
       showFlashToast(uiText('nothingAdded'), { tone: 'info' });
     }

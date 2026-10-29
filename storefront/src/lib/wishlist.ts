@@ -19,9 +19,11 @@ import {
   getLocalWishlist,
   isLocalWishlisted,
   removeLocalWishlist,
+  removeManyLocalWishlist,
   toggleLocalWishlist,
 } from './wishlist-local';
 import {
+  deleteManyWishlistRemote,
   deleteWishlistRemote,
   fetchWishlist,
   mergeWishlist,
@@ -187,6 +189,25 @@ export function endWishlistSession(): WishlistItem[] {
   emit(local);
   window.dispatchEvent(new CustomEvent(SESSION_ENDED_EVENT, { detail: local }));
   return local;
+}
+
+/**
+ * Quita varias piezas (p. ej. las que acaban de pasar al carrito).
+ * Sin avisos de "eliminado": el aviso relevante es el de la compra.
+ */
+export async function removeManyFromWishlist(productIds: string[]) {
+  const ids = [...new Set(productIds.filter(Boolean))];
+  if (ids.length === 0) return;
+
+  if (!(await hasSession())) {
+    removeManyLocalWishlist(ids);
+    broadcastWishlistChange(getLocalWishlist().length);
+    return;
+  }
+
+  const { items } = await deleteManyWishlistRemote(ids);
+  emit(items);
+  broadcastWishlistChange(items.length);
 }
 
 /**

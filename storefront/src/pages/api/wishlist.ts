@@ -195,17 +195,39 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   const { supabase, user } = await resolveUser(request, cookies);
   if (!user) return json({ error: 'Inicia sesión para editar favoritos.', guest: true }, 401);
 
-  // El id se acepta por query (camino normal: un DELETE puede perder el
-  // cuerpo al pasar por un proxy) y, como respaldo, en el body.
-  const fromQuery = new URL(request.url).searchParams.get('productId');
-  const body = fromQuery ? null : await request.json().catch(() => ({}));
-  const productId = max(fromQuery ?? (body as any)?.productId, 40);
+  // Los ids se aceptan por query (`productIds=a,b,c` para bajar varias piezas
+  // de golpe, `productId=a` para una) y, como respaldo, en el body.
+  const url = new URL(request.url);
+  const many = url.searchParams.get('productIds');
+  const single = url.searchParams.get('productId');
 
-  if (!UUID.test(productId)) {
-    console.warn('[wishlist] DELETE con producto inválido:', JSON.stringify(productId).slice(0, 60));
+  const raw = many ? many.split(',') : single ? [single] : [];
+  const body = raw.length > 0 ? null : await request.json().catch(() => ({}));
+
+  const ids = [...new Set((raw.length > 0 ? raw : [(body as any)?.productId])
+    .map((v) => max(v, 40))
+    .filter((v) => UUID.test(v)))];
+
+  if (ids.length === 0) {
+    console.warn('[wishlist] DELETE sin productos válidos');
     return json({ error: 'Producto inválido' }, 400);
   }
 
-  await deleteWishlistRow(supabase, user.id, productId);
-  return json({ items: await listItems(supabase, user.id) });
+  const { data, error } = await supabase
+    .from('wishlist_items')
+    .delete()
+    .eq('user_id', user.id)
+    .in('product_id', ids)
+    .select('id');
+
+  if (error) return json({ error: 'No se pudo quitar el favorito' }, 500);
+
+  const rows = data?.length ?? 0;
+  if (rows > ids.length) {
+    console.warn(
+      `[wishlist] se borraron ${rows} filas para ${ids.length} productos: hay duplicados (aplica scripts/wishlist_dedupe.sql)`
+    );
+  }
+
+  return json({ items: await listItems(supabase, user.id), deleted: rows });
 };
