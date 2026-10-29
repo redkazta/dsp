@@ -211,7 +211,7 @@ export async function refreshCartPrices(): Promise<{
   const { supabase } = await import('./supabase');
   const { data, error } = await supabase
     .from('product_variants')
-    .select('id, name, slug, size, color, price, is_deleted, products(id, name, slug, is_active, is_deleted, product_images(url, position))')
+    .select('id, name, size, color, price, is_deleted, products(id, name, slug, is_active, is_deleted, product_images(url, position))')
     .in('id', cart.map((i) => i.variantId));
 
   if (error) return { cart, removed: [] };
