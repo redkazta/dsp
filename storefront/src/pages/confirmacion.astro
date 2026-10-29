@@ -4,7 +4,8 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { createSupabaseServerClient, createSupabaseAdminClient } from '../lib/supabase-server';
 import { confirmSessionOnReturn } from '../lib/checkout';
-import { getCustomerOrder } from '../lib/customer-orders';
+import { retrieveCheckoutSession } from '../lib/stripe';
+import { getCustomerOrder, getOrderByIdOrNumber } from '../lib/customer-orders';
 import {
   STATUS_FLOW,
   orderLabels,
@@ -21,24 +22,50 @@ const { status: STATUS_LABEL, hint: STATUS_HINT } = orderLabels(lang);
 
 const user = Astro.locals.user;
 const orderParam = (Astro.url.searchParams.get('order') ?? '').trim();
+const sessionId = (Astro.url.searchParams.get('session_id') ?? '').trim();
+const returning = Astro.url.searchParams.get('stripe') === 'return';
+const db = createSupabaseAdminClient();
 
 let order: Awaited<ReturnType<typeof getCustomerOrder>> = null;
-if (user && orderParam) {
+
+if (orderParam && user) {
   const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
   order = await getCustomerOrder(supabase, user.id, orderParam);
 }
 
+/**
+ * Invitado que acaba de pagar: el id de sesión de Stripe es el permiso.
+ * Se comprueba que esa sesión apunte a este pedido; si ya está pagada, se
+ * aplica en el acto (el webhook puede tardar unos segundos).
+ */
+if (!order && orderParam && sessionId && db) {
+  try {
+    const candidate = await getOrderByIdOrNumber(db, orderParam);
+
+    if (candidate) {
+      const session = await retrieveCheckoutSession(sessionId).catch(() => null);
+      const ref = session?.metadata?.order_id ?? session?.client_reference_id ?? null;
+
+      if (ref === candidate.id) {
+        if (session?.payment_status === 'paid') {
+          await confirmSessionOnReturn({ db, sessionId });
+        }
+
+        order = (await getOrderByIdOrNumber(db, orderParam)) ?? candidate;
+      }
+    }
+  } catch (err: any) {
+    console.error('[confirmacion] invitado', err?.message);
+  }
+}
+
 // Al volver del Checkout de Stripe, si el pago todavía no se refleja se le
 // pregunta a Stripe directamente (el webhook puede tardar unos segundos).
-// Solo el servidor puede leer el pedido, y `stripe=return` solo lo pone
-// nuestra propia success_url.
-const returning = Astro.url.searchParams.get('stripe') === 'return';
-const sessionId = (Astro.url.searchParams.get('session_id') ?? '').trim();
-const db = createSupabaseAdminClient();
+const returningSession = returning && Boolean(sessionId);
 
 if (db && order && order.payment_status !== 'approved') {
   try {
-    if (returning && sessionId) {
+    if (returningSession) {
       await confirmSessionOnReturn({ db, sessionId });
     }
 

@@ -414,7 +414,7 @@ export async function startStripeCheckout({
       shippingLabel: lang === 'en' ? 'Standard shipping' : 'Envío estándar',
       clientReference: order.id,
       customerEmail: customer.email,
-      successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return`,
+      successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${origin}/checkout?canceled=1`,
     });
 

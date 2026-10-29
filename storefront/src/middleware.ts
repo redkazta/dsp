@@ -21,8 +21,9 @@ const PUBLIC_FILE = /\.(?:css|js|mjs|map|svg|png|jpe?g|webp|avif|gif|ico|woff2?|
 /** Se pueden visitar con o sin sesión. */
 const PUBLIC_PAGES = new Set(['/entrar', '/registro', '/recuperar', '/nueva-password']);
 
-/** Exigen sesión. */
-const PRIVATE_PREFIXES = ['/cuenta', '/checkout', '/confirmacion'];
+/** Exigen sesión. `/confirmacion` queda fuera: es la vuelta de Stripe y un
+ *  invitado que pagó también tiene derecho a ver su pedido. */
+const PRIVATE_PREFIXES = ['/cuenta', '/checkout'];
 
 const isStaffRole = (role: string | null) =>
   role !== null && (STAFF_ROLES as readonly string[]).includes(role);

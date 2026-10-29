@@ -78,6 +78,24 @@ export async function listCustomerOrders(supabase: SupabaseClient, userId: strin
 }
 
 /** Un pedido por UUID o por folio (`DSP-001042`), siempre del dueño. */
+/**
+ * Pedido por id o folio SIN filtrar por usuario.
+ * Solo para uso con el cliente admin: la autorización se valida antes
+ * (sesión del comprador o un `session_id` de Stripe que apunte al pedido).
+ */
+export async function getOrderByIdOrNumber(supabase: SupabaseClient, idOrNumber: string) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrNumber);
+
+  const { data } = await supabase
+    .from('orders')
+    .select(SELECT)
+    .eq(isUuid ? 'id' : 'order_number', idOrNumber)
+    .eq('is_deleted', false)
+    .maybeSingle();
+
+  return data ? sortHistory(data) : null;
+}
+
 export async function getCustomerOrder(
   supabase: SupabaseClient,
   userId: string,

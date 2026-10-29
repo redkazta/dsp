@@ -39,11 +39,13 @@ export const POST: APIRoute = async ({
   request,
   cookies,
   url,
+  site,
   locals,
 }: {
   request: Request;
   cookies: AstroCookies;
   url: URL;
+  site: URL | undefined;
   locals: App.Locals;
 }) => {
   const sessionClient = createSupabaseServerClient(request, cookies);
@@ -73,7 +75,9 @@ export const POST: APIRoute = async ({
     userId: user?.id ?? null,
     customer,
     requestedItems: payload?.items,
-    origin: url.origin,
+    // El origen del request puede ser interno detrás del proxy; el dominio
+    // público sale de `site` (astro.config → SITE_URL).
+    origin: site?.origin ?? url.origin,
     returnPath: typeof payload?.returnPath === 'string' ? payload.returnPath : null,
     lang: locals.lang === 'en' ? 'en' : 'es',
   });
