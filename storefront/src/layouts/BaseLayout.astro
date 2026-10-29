@@ -73,13 +73,18 @@ if (isAuth && Astro.locals.user) {
       .order('created_at', { ascending: false })
       .limit(30);
 
-    drawerWishlist = (data ?? []).map((row: any) => ({
-      productId: row.product_id,
-      slug: row.product_slug,
-      name: row.product_name ?? '',
-      price: Number(row.price ?? 0),
-      image: row.image_url,
-    }));
+    drawerWishlist = (data ?? [])
+      .filter(
+        (row: any, index: number, all: any[]) =>
+          all.findIndex((other) => other.product_id === row.product_id) === index
+      )
+      .map((row: any) => ({
+        productId: row.product_id,
+        slug: row.product_slug,
+        name: row.product_name ?? '',
+        price: Number(row.price ?? 0),
+        image: row.image_url,
+      }));
   } catch {
     drawerWishlist = [];
   }

@@ -43,14 +43,47 @@ async function resolveUser(request: Request, cookies: AstroCookies) {
   return { supabase, user };
 }
 
+/**
+ * Baja de una pieza. Devuelve cuántas filas se borraron: si es más de una
+ * hay duplicados en la base (falta el UNIQUE `user_id, product_id`), y se
+ * avisa en el log para poder limpiarlo.
+ */
+async function deleteWishlistRow(supabase: SupabaseClient, userId: string, productId: string) {
+  const { data, error } = await supabase
+    .from('wishlist_items')
+    .delete()
+    .eq('user_id', userId)
+    .eq('product_id', productId)
+    .select('id');
+
+  const rows = data?.length ?? 0;
+  if (rows > 1) {
+    console.warn(
+      `[wishlist] se borraron ${rows} filas para el producto ${productId}: hay duplicados (aplica scripts/wishlist_dedupe.sql)`
+    );
+  }
+
+  return { rows, error };
+}
+
 async function listItems(supabase: SupabaseClient, userId: string) {
   const { data } = await supabase
     .from('wishlist_items')
-    .select('product_id, product_slug, product_name, price, image_url')
+    .select('id, product_id, product_slug, product_name, price, image_url')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  return (data ?? []).map(toItem);
+  // Un producto = una fila. Si en la base quedaron duplicados de antes del
+  // UNIQUE, mostrarlos aquí duplicaría tarjetas y una baja parecería doble.
+  const seen = new Set<string>();
+  return (data ?? [])
+    .filter((row: any) => {
+      const key = String(row.product_id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map(toItem);
 }
 
 /** Lee de catálogo lo mínimo para guardar un favorito confiable. */
@@ -145,7 +178,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     .maybeSingle();
 
   if (existing) {
-    await supabase.from('wishlist_items').delete().eq('user_id', user.id).eq('product_id', productId);
+    await deleteWishlistRow(supabase, user.id, productId);
     return json({ items: await listItems(supabase, user.id), active: false });
   }
 
@@ -173,6 +206,6 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
     return json({ error: 'Producto inválido' }, 400);
   }
 
-  await supabase.from('wishlist_items').delete().eq('user_id', user.id).eq('product_id', productId);
+  await deleteWishlistRow(supabase, user.id, productId);
   return json({ items: await listItems(supabase, user.id) });
 };

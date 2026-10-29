@@ -131,16 +131,9 @@ if (items.length > 0) {
   }
 }
 
-// Limpia huérfanos (best-effort: si falla, lo hace el endpoint en el siguiente toque)
-if (stale.length > 0 && user) {
-  const { error } = await supabase
-    .from('wishlist_items')
-    .delete()
-    .eq('user_id', user.id)
-    .in('product_id', stale);
-  void error;
-}
-
+// Las piezas fuera de venta solo se OCULTAN, no se borran: una página GET
+// no debe tocar datos. Si el catálogo falla un instante, el favorito vuelve
+// solo cuando la pieza regresa; antes se eliminaba en silencio.
 const available = items.filter((i) => !stale.includes(i.productId));
 import { localize } from '../lib/routes';
 ---
