@@ -914,6 +914,12 @@ import { localize } from '../../lib/routes';
   import { FREE_SHIPPING_THRESHOLD } from '../../lib/pricing';
   import { escapeHtml, safeUrl } from '../../lib/html';
   import { showFlashToast } from '../../lib/flash-toast';
+  import { localize } from '../../lib/routes';
+
+  /** Idioma activo (el middleware lo deja en `<html data-lang>`). */
+  const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
+  const productHref = (slugOrId: string | null | undefined) =>
+    localize(pageLang, 'products', slugOrId || '');
 
   type Tab = 'cart' | 'wishlist';
 
@@ -1073,7 +1079,7 @@ import { localize } from '../../lib/routes';
             <p class="text-sm text-oro-brillo mt-1">${money(i.price)}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
+            <a href="${productHref(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
               ${escapeHtml(uiText('openPiece'))}
             </a>
             <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
@@ -1333,7 +1339,7 @@ import { localize } from '../../lib/routes';
       .slice(0, 3)
       .map((i) => {
         const img = safeUrl(i.image);
-        const href = `/producto/${encodeURIComponent(i.productId)}`;
+        const href = productHref(i.slug ?? i.productId);
 
         return `
         <div class="mini-item">
@@ -1507,6 +1513,7 @@ import { localize } from '../../lib/routes';
     addToCart({
       variantId: variant.id,
       productId,
+      slug: item.slug ?? null,
       name: item.name,
       variantName: [variant.size, variant.color].filter(Boolean).join(' · ') || variant.name,
       price: variant.price || item.price,
@@ -1542,7 +1549,7 @@ import { localize } from '../../lib/routes';
       .slice(0, 3)
       .map((i) => {
         const img = safeUrl(i.image);
-        const href = `/producto/${encodeURIComponent(i.slug ?? i.productId)}`;
+        const href = productHref(i.slug ?? i.productId);
         const inCart = getCart().find((c) => c.productId === i.productId);
 
         return `

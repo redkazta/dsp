@@ -13,6 +13,8 @@
 import { COUNT_STEP_MS, ROTATION_MS } from '../../lib/reflect-timing';
 import type { HomeSlide } from '../../lib/home-products';
 import type { Copy } from '../../lib/i18n';
+import type { Lang } from '../../lib/i18n';
+import { localize } from '../../lib/routes';
 import { planReflectImages } from '../../lib/reflective';
 import ReflectBadge from '../product/ReflectBadge.astro';
 
@@ -23,6 +25,7 @@ interface Props {
 }
 
 const { slides, t, currency = 'USD' } = Astro.props;
+const lang = (Astro.locals.lang ?? 'es') as Lang;
 
 /** Un segundo de la cuenta atrás (misma fuente que el carrusel). */
 const REFLECT_MS = COUNT_STEP_MS;
@@ -74,7 +77,7 @@ const plans = list.map((item) =>
         return (
           <article class="hero-slide" data-hero-slide>
             <a
-              href={item.slug ? `/producto/${item.slug}` : '/tienda'}
+              href={item.slug ? localize(lang, 'products', item.slug) : localize(lang, 'shop')}
               class="hero-link"
               aria-label={`${item.name} — ${t.hero.ctaFull}`}
             >

@@ -23,8 +23,16 @@ const { data: product, error: productError } = await getProductBySlugOrId(TENANT
   () => ({ data: null, error: true })
 );
 
+// Una sola URL por pieza: si entraron por UUID (o por un slug viejo) se
+// redirige 301 al slug actual, en el idioma activo. Los enlaces internos ya
+// usan slug; esto cubre los que se compartieron antes.
+const productSlug = (product as any)?.slug as string | null | undefined;
+if (product && productSlug && param !== productSlug) {
+  return Astro.redirect(localize(lang, 'products', productSlug), 301);
+}
+
 // Canonical: si entraron por UUID, apunta al slug
-const canonicalSlug = (product as any)?.slug ?? param;
+const canonicalSlug = productSlug ?? param;
 
 const related = product
   ? await getRelatedProducts(TENANT_SLUG, (product as any).category_id ?? null, (product as any).id, 4)
@@ -320,6 +328,7 @@ import { localize } from '../../lib/routes';
                 <button
                   id="add-to-cart"
                   data-product-id={product.id}
+                  data-product-slug={product.slug ?? product.id}
                   data-product-name={title}
                   data-image={images[0]?.url ?? ''}
                   data-variants={JSON.stringify(variants)}
@@ -648,6 +657,7 @@ import { localize } from '../../lib/routes';
         addToCart({
           variantId: variant.id,
           productId: btn.dataset.productId!,
+          slug: btn.dataset.productSlug || null,
           name: btn.dataset.productName!,
           variantName: [variant.size, variant.color].filter(Boolean).join(' · '),
           price: Number(variant.price),

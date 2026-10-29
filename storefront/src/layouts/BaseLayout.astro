@@ -394,7 +394,9 @@ const jsonLd = {
     </main>
 
     <!-- Buscador global (⌘K / Ctrl+K) -->
-    <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label={t.header.search}>
+    <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label={t.header.search}
+      data-empty={t.common.noResults}
+      data-product-base={lang === 'en' ? '/product' : '/producto'}>
       <button type="button" id="search-backdrop" class="search-backdrop" aria-label={t.header.close}></button>
       <div class="search-panel">
         <div class="search-field">
@@ -675,6 +677,11 @@ const jsonLd = {
       const searchBackdrop = document.getElementById('search-backdrop');
       let searchTimer: number | undefined;
 
+      // El script va compilado: los textos y la base de la URL vienen del
+      // marcado (donde sí hay idioma), no de variables de frontmatter.
+      const searchEmptyLabel = searchDialog?.dataset.empty ?? '';
+      const productBase = searchDialog?.dataset.productBase ?? '/producto';
+
       function setSearchOpen(open: boolean) {
         if (!searchDialog) return;
         searchDialog.classList.toggle('hidden', !open);
@@ -691,7 +698,7 @@ const jsonLd = {
 
         if (items.length === 0) {
           searchResults.innerHTML = '';
-          searchHint.textContent = t.common.noResults;
+          searchHint.textContent = searchEmptyLabel;
           return;
         }
 
@@ -700,7 +707,7 @@ const jsonLd = {
           .map((p) => {
             const img = safeUrl(p.image);
             return `
-          <a href="/producto/${encodeURIComponent(p.slug)}" role="option" class="search-item">
+          <a href="${productBase}/${encodeURIComponent(p.slug ?? p.id)}" role="option" class="search-item">
             <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : ''}</span>
             <span class="min-w-0 flex-1">
               <span class="search-item-name">${escapeHtml(p.name)}</span>

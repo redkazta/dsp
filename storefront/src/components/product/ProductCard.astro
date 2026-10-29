@@ -9,6 +9,7 @@
 import { getCopy, type Lang } from '../../lib/i18n';
 import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 import { productName } from '../../lib/product-texts';
+import { localize } from '../../lib/routes';
 import ReflectBadge from './ReflectBadge.astro';
 
 export interface Props {
@@ -27,7 +28,8 @@ const { product } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
-const href = `/producto/${product.slug || product.id}`;
+// Siempre por slug: es la URL que se indexa y la que se comparte.
+const href = localize(lang, 'products', product.slug || product.id);
 const price = product.product_variants?.[0]?.price ?? product.base_price;
 
 // Nombre en el idioma activo (cae al español si falta la traducción).

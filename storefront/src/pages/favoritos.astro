@@ -197,6 +197,7 @@ import { localize } from '../lib/routes';
     import { addToCart, getCart } from '../lib/cart';
     import { showFlashToast } from '../lib/flash-toast';
     import { nudge } from '../lib/ux';
+    import { localize } from '../lib/routes';
 
     /** Textos resueltos en servidor. */
     const ui = JSON.parse(document.getElementById('wish-ui')?.textContent || '{}') as Record<string, string>;
@@ -207,6 +208,7 @@ import { localize } from '../lib/routes';
     const loading = document.getElementById('wish-loading')!;
     const summary = document.getElementById('wish-summary')!;
     const isAuth = document.documentElement.dataset.auth === '1';
+    const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
     const serverItems: WishlistItem[] = JSON.parse(grid.dataset.items ?? '[]');
 
     /** Piezas reflectivas: isReflective + galería, para animar el marco. */
@@ -249,7 +251,7 @@ import { localize } from '../lib/routes';
     const money = (n: number) => `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     function card(item: WishlistItem) {
-      const href = `/producto/${encodeURIComponent(item.slug ?? item.productId)}`;
+      const href = localize(pageLang, 'products', item.slug ?? item.productId);
       const img = safeUrl(item.image);
 
       const meta = reflectById.get(item.productId);
@@ -398,6 +400,7 @@ import { localize } from '../lib/routes';
         addToCart({
           variantId: selected.id,
           productId: item.productId,
+          slug: item.slug ?? null,
           name: item.name,
           variantName: selected.name || selected.size || '',
           price: selected.price || item.price,

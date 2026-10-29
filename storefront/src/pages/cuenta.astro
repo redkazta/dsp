@@ -325,6 +325,9 @@ import { localize } from '../lib/routes';
     import { signOut, updateProfile } from '../lib/auth';
     import { endWishlistSession, removeFromWishlist, type WishlistItem } from '../lib/wishlist';
     import { escapeHtml, safeUrl } from '../lib/html';
+    import { localize } from '../lib/routes';
+
+    const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
 
     /** Textos para el HTML generado en el navegador. */
     const labels = JSON.parse(document.getElementById('account-ui')?.textContent || '{}') as Record<
@@ -405,7 +408,7 @@ import { localize } from '../lib/routes';
             <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-            <a href="/producto/${encodeURIComponent(i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">${escapeHtml(labels.view)}</a>
+            <a href="${localize(pageLang, 'products', i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">${escapeHtml(labels.view)}</a>
             <button type="button" data-wish-remove="${escapeHtml(i.productId)}"
               class="min-h-[40px] px-3 text-xs uppercase tracking-wider text-muted hover:text-red-400">
               ${escapeHtml(labels.remove)}
