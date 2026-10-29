@@ -86,7 +86,7 @@ const breadcrumbLd = product
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: t.shop.breadcrumbHome, item: Astro.site },
-        { '@type': 'ListItem', position: 2, name: t.shop.breadcrumb, item: new URL('/tienda', Astro.site ?? Astro.url.origin).toString() },
+        { '@type': 'ListItem', position: 2, name: t.shop.breadcrumb, item: new URL(localize(lang, 'shop'), Astro.site ?? Astro.url.origin).toString() },
         { '@type': 'ListItem', position: 3, name: title },
       ],
     }

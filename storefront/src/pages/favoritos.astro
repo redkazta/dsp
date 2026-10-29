@@ -16,8 +16,11 @@ const ui = {
   addToCart: t.product.addToCart,
   accept: t.product.accept,
   pickSize: t.product.pickSize,
+  pickColor: t.product.pickColor,
   chooseQty: t.product.chooseQty,
   selectSizeError: t.product.selectSizeError,
+  selectColorError: t.product.selectColorError,
+  outOfStock: t.product.outOfStockSize,
   soldOut: t.product.soldOut,
   addedToCart: t.product.cartAddedTitle,
   alreadyInCart: t.product.alreadyInCart,
@@ -111,23 +114,21 @@ if (items.length > 0) {
       images: images.map((img: any) => img.url).filter(Boolean),
     });
 
-    // Una entrada por talla; si hay varios colores, gana el de más stock.
-    const bySize = new Map<string, WishVariant>();
-    for (const v of (p.product_variants ?? []) as any[]) {
-      if (v.is_deleted) continue;
-      const key = v.size ?? v.name ?? '';
-      const candidate: WishVariant = {
-        id: v.id,
-        size: v.size ?? null,
-        color: v.color ?? null,
-        name: v.name ?? '',
-        price: Number(v.price) || 0,
-        stock: Number(v.stock) || 0,
-      };
-      const prev = bySize.get(key);
-      if (!prev || candidate.stock > prev.stock) bySize.set(key, candidate);
-    }
-    variantsById.set(item.productId, [...bySize.values()]);
+    // Todas las variantes (talla · color): el flujo de la tarjeta pregunta
+    // talla y, si la pieza tiene más de un color, también el color.
+    variantsById.set(
+      item.productId,
+      ((p.product_variants ?? []) as any[])
+        .filter((v) => !v.is_deleted)
+        .map((v) => ({
+          id: v.id,
+          size: v.size ?? null,
+          color: v.color ?? null,
+          name: v.name ?? '',
+          price: Number(v.price) || 0,
+          stock: Number(v.stock) || 0,
+        }))
+    );
   }
 }
 
@@ -289,6 +290,7 @@ import { localize } from '../lib/routes';
             <div class="hidden" data-wish-flow>
               <p class="text-[11px] uppercase tracking-[0.15em] text-white/60" data-flow-label></p>
               <div class="flex flex-wrap gap-2 mt-2" data-flow-sizes></div>
+              <div class="hidden flex-wrap gap-2 mt-2" data-flow-colors></div>
               <div class="hidden items-center gap-2 mt-3" data-flow-qty>
                 <button type="button" data-qty="-1" aria-label="−"
                   class="w-9 h-9 border-2 border-white/40 text-lg leading-none text-white/80 hover:border-oro-brillo hover:text-oro-brillo">−</button>
@@ -319,6 +321,7 @@ import { localize } from '../lib/routes';
       const flow = row.querySelector<HTMLElement>('[data-wish-flow]');
       const label = row.querySelector<HTMLElement>('[data-flow-label]');
       const sizesBox = row.querySelector<HTMLElement>('[data-flow-sizes]');
+      const colorsBox = row.querySelector<HTMLElement>('[data-flow-colors]');
       const qtyBox = row.querySelector<HTMLElement>('[data-flow-qty]');
       const qtyValue = row.querySelector<HTMLElement>('[data-qty-value]');
       const msg = row.querySelector<HTMLElement>('[data-flow-msg]');
@@ -326,15 +329,33 @@ import { localize } from '../lib/routes';
       const cancel = row.querySelector<HTMLButtonElement>('[data-flow-cancel]');
       const addBtn = row.querySelector<HTMLButtonElement>('[data-wish-add]');
 
-      if (!idle || !flow || !label || !sizesBox || !qtyBox || !qtyValue || !msg) return;
+      if (!idle || !flow || !label || !sizesBox || !colorsBox || !qtyBox || !qtyValue || !msg) return;
       if (!accept || !cancel || !addBtn) return;
 
-      const variants = variantsById.get(item.productId) ?? [];
-      let step: 'idle' | 'size' | 'qty' = 'idle';
+      const allVariants = variantsById.get(item.productId) ?? [];
+      const sizeKey = (v: WishVariant) => v.size || v.name || '—';
+      const colorKey = (v: WishVariant) => v.color || v.name || '—';
+      const sizes = [...new Set(allVariants.map(sizeKey))];
+
+      const variantsOfSize = (size: string) => allVariants.filter((v) => sizeKey(v) === size);
+      const stockOfSize = (size: string) =>
+        variantsOfSize(size).reduce((n, v) => n + Math.max(0, v.stock), 0);
+
+      let step: 'idle' | 'size' | 'color' | 'qty' = 'idle';
+      let selectedSize: string | null = null;
       let selected: WishVariant | null = null;
       let qty = 1;
 
       const maxQty = () => Math.max(1, Math.min(5, selected?.stock || 1));
+
+      const chipClass = (active: boolean, out: boolean) =>
+        `min-h-[36px] px-3 border-2 text-xs uppercase tracking-wider ${
+          out
+            ? 'border-white/15 text-white/30 line-through cursor-not-allowed'
+            : active
+              ? 'border-oro-brillo text-oro-brillo'
+              : 'border-white/40 text-white/80 hover:border-white/80'
+        }`;
 
       const setMsg = (text: string) => {
         msg.textContent = text;
@@ -345,40 +366,103 @@ import { localize } from '../lib/routes';
         qtyValue.textContent = String(qty);
       };
 
+      const hideQty = () => {
+        qtyBox.classList.add('hidden');
+        qtyBox.classList.remove('flex');
+      };
+
+      const hideColors = () => {
+        colorsBox.classList.add('hidden');
+        colorsBox.classList.remove('flex');
+        colorsBox.innerHTML = '';
+      };
+
+      const goQty = () => {
+        step = 'qty';
+        qty = 1;
+        paintQty();
+        label.textContent = uiText('chooseQty');
+        qtyBox.classList.remove('hidden');
+        qtyBox.classList.add('flex');
+        accept.textContent = uiText('addToCart');
+        setMsg('');
+      };
+
       const reset = () => {
         step = 'idle';
+        selectedSize = null;
         selected = null;
         qty = 1;
         idle.classList.remove('hidden');
         flow.classList.add('hidden');
+        hideQty();
+        hideColors();
         setMsg('');
       };
 
       const renderSizes = () => {
-        sizesBox.innerHTML = variants
-          .map((v, i) => {
-            const out = v.stock <= 0;
-            const active = selected?.id === v.id;
-            return `<button type="button" data-size="${i}" ${out ? 'disabled' : ''}
-              class="min-h-[36px] px-3 border-2 text-xs uppercase tracking-wider ${
-                out
-                  ? 'border-white/15 text-white/30 line-through cursor-not-allowed'
-                  : active
-                    ? 'border-oro-brillo text-oro-brillo'
-                    : 'border-white/40 text-white/80 hover:border-white/80'
-              }">${escapeHtml(v.size || v.name || '—')}</button>`;
+        sizesBox.innerHTML = sizes
+          .map((size) => {
+            const out = stockOfSize(size) <= 0;
+            const active = selectedSize === size;
+            return `<button type="button" data-size="${escapeHtml(size)}" ${out ? 'disabled' : ''}
+              class="${chipClass(active, out)}">${escapeHtml(size)}</button>`;
           })
           .join('');
 
         sizesBox.querySelectorAll<HTMLButtonElement>('[data-size]').forEach((b) =>
           b.addEventListener('click', () => {
-            const v = variants[Number(b.dataset.size)];
+            const size = b.dataset.size ?? '';
+            if (stockOfSize(size) <= 0) return;
+
+            selectedSize = size;
+            selected = null;
+            qty = 1;
+            paintQty();
+            setMsg('');
+            hideQty();
+
+            // Cambiar de talla reinicia el paso: el color depende de ella.
+            if (step === 'qty' || step === 'color') {
+              step = 'size';
+              label.textContent = uiText('pickSize');
+              accept.textContent = uiText('accept');
+            }
+
+            renderSizes();
+            hideColors();
+          })
+        );
+      };
+
+      const renderColors = () => {
+        const opts = selectedSize ? variantsOfSize(selectedSize) : [];
+
+        if (opts.length <= 1) {
+          hideColors();
+          return;
+        }
+
+        colorsBox.classList.remove('hidden');
+        colorsBox.classList.add('flex');
+        colorsBox.innerHTML = opts
+          .map((v) => {
+            const out = v.stock <= 0;
+            const active = selected?.id === v.id;
+            return `<button type="button" data-color="${escapeHtml(v.id)}" ${out ? 'disabled' : ''}
+              class="${chipClass(active, out)}">${escapeHtml(colorKey(v))}</button>`;
+          })
+          .join('');
+
+        colorsBox.querySelectorAll<HTMLButtonElement>('[data-color]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const v = opts.find((o) => o.id === b.dataset.color);
             if (!v || v.stock <= 0) return;
             selected = v;
             qty = 1;
             paintQty();
             setMsg('');
-            renderSizes();
+            renderColors();
           })
         );
       };
@@ -395,7 +479,8 @@ import { localize } from '../lib/routes';
           productId: item.productId,
           slug: item.slug ?? null,
           name: item.name,
-          variantName: selected.name || selected.size || '',
+          variantName:
+            [selected.size, selected.color].filter(Boolean).join(' · ') || selected.name,
           price: selected.price || item.price,
           qty,
           image: item.image ?? undefined,
@@ -416,17 +501,18 @@ import { localize } from '../lib/routes';
       };
 
       addBtn.addEventListener('click', () => {
-        if (!variants.some((v) => v.stock > 0)) return;
+        if (!allVariants.some((v) => v.stock > 0)) return;
 
         step = 'size';
+        selectedSize = null;
         selected = null;
         qty = 1;
         paintQty();
         idle.classList.add('hidden');
         flow.classList.remove('hidden');
         label.textContent = uiText('pickSize');
-        qtyBox.classList.add('hidden');
-        qtyBox.classList.remove('flex');
+        hideQty();
+        hideColors();
         accept.textContent = uiText('accept');
         setMsg('');
         renderSizes();
@@ -435,26 +521,47 @@ import { localize } from '../lib/routes';
       cancel.addEventListener('click', reset);
 
       accept.addEventListener('click', () => {
+        // Paso 1: talla.
         if (step === 'size') {
-          // Paso 1: sin talla (o con talla agotada) no se avanza.
-          if (!selected || selected.stock <= 0) {
+          if (!selectedSize || stockOfSize(selectedSize) <= 0) {
             setMsg(uiText('selectSizeError'));
             nudge(sizesBox);
             return;
           }
 
-          step = 'qty';
-          qty = 1;
-          paintQty();
-          label.textContent = uiText('chooseQty');
-          qtyBox.classList.remove('hidden');
-          qtyBox.classList.add('flex');
-          accept.textContent = uiText('addToCart');
-          setMsg('');
+          const opts = variantsOfSize(selectedSize).filter((v) => v.stock > 0);
+
+          // Paso 2 (solo si aplica): color.
+          if (opts.length > 1) {
+            step = 'color';
+            selected = null;
+            label.textContent = uiText('pickColor');
+            renderColors();
+            setMsg('');
+            return;
+          }
+
+          selected = opts[0] ?? null;
+          if (!selected) {
+            setMsg(uiText('outOfStock'));
+            return;
+          }
+
+          goQty();
           return;
         }
 
-        // Paso 2: el segundo "Aceptar" ya agrega al carrito.
+        if (step === 'color') {
+          if (!selected || selected.stock <= 0) {
+            setMsg(uiText('selectColorError'));
+            nudge(colorsBox);
+            return;
+          }
+          goQty();
+          return;
+        }
+
+        // Paso final: el segundo "Aceptar" ya agrega al carrito.
         if (step === 'qty') add();
       });
 

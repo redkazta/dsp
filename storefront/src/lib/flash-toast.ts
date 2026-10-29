@@ -48,6 +48,11 @@ export function showFlashToast(
 ): void {
   if (typeof document === 'undefined' || !title) return;
 
+  // El texto llega ya traducido, pero puede incluir nombres de producto:
+  // se escapa antes de entrar en `innerHTML`.
+  const esc = (value: string) =>
+    value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
   const el = host();
   const tone = options.tone ?? 'info';
   const fill = tone === 'wish' ? 'currentColor' : 'none';
@@ -58,8 +63,8 @@ export function showFlashToast(
       <svg width="30" height="30" viewBox="0 0 24 24" fill="${fill}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[tone]}</svg>
     </span>
     <span class="dsp-flash-text">
-      <strong>${title}</strong>
-      ${options.detail ? `<span>${options.detail}</span>` : ''}
+      <strong>${esc(title)}</strong>
+      ${options.detail ? `<span>${esc(options.detail)}</span>` : ''}
     </span>
   `;
 

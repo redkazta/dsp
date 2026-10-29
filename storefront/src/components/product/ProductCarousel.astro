@@ -8,6 +8,7 @@
  */
 import ProductCard from './ProductCard.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
+import { localize } from '../../lib/routes';
 
 export interface Props {
   title: string;
@@ -24,7 +25,7 @@ const {
   title,
   subtitle,
   products,
-  href = '/tienda',
+  href = localize(lang, 'shop'),
   hrefLabel = 'Ver todo',
 } = Astro.props;
 

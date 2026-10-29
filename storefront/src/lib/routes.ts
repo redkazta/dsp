@@ -61,6 +61,29 @@ export type RouteKey = keyof typeof ROUTES;
 export const CANONICAL_LANG: Lang = 'es';
 
 /**
+ * Idioma activo en el navegador.
+ * El middleware lo publica en `<html data-lang>`; los scripts lo leen de ahí
+ * en vez de repetir la lógica (o de suponer español).
+ */
+export function clientLang(): Lang {
+  if (typeof document === 'undefined') return CANONICAL_LANG;
+  return document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
+}
+
+/**
+ * URL de una ruta en el idioma activo, para scripts del navegador.
+ *
+ *   route('favorites')                 → '/wishlist'  (en inglés)
+ *   route('products', 'camisa-violet') → '/product/camisa-violet'
+ *
+ * Es el equivalente de `localize(lang, …)` sin tener que arrastrar `lang`
+ * por cada componente: la fuente sigue siendo `ROUTES`.
+ */
+export function route(key: RouteKey, param?: string | null, query?: string): string {
+  return localize(clientLang(), key, param, query);
+}
+
+/**
  * Todos los alias EN que el middleware debe reescribir.
  * Se generan del mapa: no hay listas paralelas que se desincronicen.
  */

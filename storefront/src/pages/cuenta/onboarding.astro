@@ -165,6 +165,7 @@ import { localize } from '../../lib/routes';
 
 <script>
   import { supabase } from '../../lib/supabase';
+  import { route } from '../../lib/routes';
 
   const form = document.getElementById('onboarding-form') as HTMLFormElement;
   const submit = document.getElementById('onboarding-submit') as HTMLButtonElement;
@@ -200,7 +201,7 @@ import { localize } from '../../lib/routes';
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id;
       if (!userId) {
-        window.location.href = '/entrar';
+        window.location.href = route('login');
         return;
       }
 
