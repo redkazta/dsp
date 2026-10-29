@@ -72,6 +72,11 @@ const ui = {
   newCartReady: lang === 'en' ? 'New cart ready' : 'Carrito nuevo listo',
   itemOne: lang === 'en' ? 'item' : 'pieza',
   itemMany: lang === 'en' ? 'items' : 'piezas',
+  cancel: lang === 'en' ? 'Cancel' : 'Cancelar',
+  specReady: lang === 'en' ? 'Add' : 'Agregar',
+  specSize: lang === 'en' ? 'Size' : 'Talla',
+  specMissing: lang === 'en' ? 'Choose a size first' : 'Elige la talla primero',
+  specQty: lang === 'en' ? 'Quantity' : 'Cantidad',
 };
 import { localize } from '../../lib/routes';
 ---
@@ -103,12 +108,20 @@ import { localize } from '../../lib/routes';
           {ui.wishLoginPrompt}
           <a href={localize(lang, 'login')} class="mini-hint-link">{ui.wishLoginCta}</a>
         </p>
-        <div class="mini-actions">
+        <div class="mini-actions" data-wish-foot-default>
           <button type="button" id="mini-wish-add-all" class="mini-action mini-action--gold">
             {ui.addAllToCart}
           </button>
           <button type="button" id="mini-wish-new-cart" class="mini-action">
             {ui.newCartFromWish}
+          </button>
+        </div>
+        <div class="mini-actions mini-actions--split" data-wish-foot-spec style="display:none">
+          <button type="button" id="mini-wish-spec-cancel" class="mini-action">
+            {ui.cancel}
+          </button>
+          <button type="button" id="mini-wish-spec-add" class="mini-action mini-action--gold">
+            {ui.specReady}
           </button>
         </div>
         <a href={localize(lang, 'favorites')} class="mini-cta">{ui.seeAll}</a>
@@ -303,16 +316,69 @@ import { localize } from '../../lib/routes';
     overscroll-behavior: contain;
   }
 
-  /* Cada pieza: foto a la izquierda a toda la altura, detalles a la derecha. */
+  /* Cada pieza: foto a la izquierda a toda la altura, detalles a la derecha.
+     Cada una se segmenta con contorno blanco completo (sin grises). */
   .mini-item {
     display: flex;
     align-items: stretch;
     gap: 12px;
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    margin: 8px 10px;
+    border: 2px solid #ffffff;
     position: relative;
     text-decoration: none;
     transition: background-color 0.18s ease;
+  }
+
+  .mini-item:hover {
+    background: rgba(255, 226, 138, 0.05);
+  }
+
+  /* Modo "elegir talla y cantidad": mismo contorno, un poco más de aire. */
+  .mini-item--spec {
+    padding: 12px;
+  }
+
+  .mini-spec {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mini-select {
+    flex: 1 1 110px;
+    min-width: 0;
+    min-height: 30px;
+    padding: 0 8px;
+    border: 1px solid #ffffff;
+    background: #000000;
+    color: #ffffff;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .mini-select option {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .mini-select:focus-visible {
+    outline: 2px solid #ffe28a;
+    outline-offset: 2px;
+  }
+
+  .mini-spec-msg {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #ff8a8a;
+  }
+
+  .mini-item--spec .mini-qty {
+    border-color: #ffffff;
   }
 
   .mini-item:hover {
@@ -329,7 +395,7 @@ import { localize } from '../../lib/routes';
     align-self: stretch;
     min-height: 86px;
     background: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid #ffffff;
     overflow: hidden;
     display: block;
   }
@@ -371,7 +437,7 @@ import { localize } from '../../lib/routes';
   .mini-meta {
     font-size: 11.5px;
     line-height: 1.35;
-    color: rgba(255, 255, 255, 0.7);
+    color: #ffffff;
   }
 
   .mini-price {
@@ -443,6 +509,16 @@ import { localize } from '../../lib/routes';
     margin-bottom: 10px;
   }
 
+  /* Cancelar / Agregar: mitad y mitad. */
+  .mini-actions--split {
+    flex-direction: row;
+  }
+
+  .mini-actions--split .mini-action {
+    flex: 1 1 0;
+    width: auto;
+  }
+
   .mini-action {
     display: flex;
     align-items: center;
@@ -498,7 +574,7 @@ import { localize } from '../../lib/routes';
   .mini-qty {
     display: inline-flex;
     align-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.32);
+    border: 1px solid #ffffff;
   }
 
   .mini-qty button {
@@ -915,6 +991,7 @@ import { localize } from '../../lib/routes';
   import { escapeHtml, safeUrl } from '../../lib/html';
   import { showFlashToast } from '../../lib/flash-toast';
   import { localize, route } from '../../lib/routes';
+  import { nudge } from '../../lib/ux';
 
   /** Idioma activo (el middleware lo deja en `<html data-lang>`). */
   const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
@@ -1534,6 +1611,117 @@ import { localize } from '../../lib/routes';
     return true;
   }
 
+  // ---------- Mini favoritos: "Add all" con talla y cantidad ----------
+  type SpecVariant = {
+    id: string;
+    name: string;
+    size: string | null;
+    color: string | null;
+    price: number;
+    stock: number;
+  };
+
+  const specVariants = new Map<string, SpecVariant[]>();
+  const specDraft = new Map<string, { variantId: string; qty: number }>();
+  let wishSpecOpen = false;
+
+  const specLabel = (v: SpecVariant) =>
+    [v.size, v.color].filter(Boolean).join(' · ') || v.name || '—';
+
+  /** Tallas de las piezas visibles, en una sola petición y con caché. */
+  async function ensureSpecVariants(ids: string[]) {
+    const missing = ids.filter((id) => !specVariants.has(id));
+    if (missing.length === 0) return;
+
+    try {
+      const res = await fetch(
+        `/api/variant?products=${missing.map(encodeURIComponent).join(',')}`
+      );
+      const json = await res.json().catch(() => ({}));
+      for (const id of missing) {
+        const list = (json?.variants?.[id] ?? []) as SpecVariant[];
+        specVariants.set(id, Array.isArray(list) ? list : []);
+      }
+    } catch {
+      for (const id of missing) specVariants.set(id, []);
+    }
+  }
+
+  async function openWishSpecs() {
+    const items = currentWish;
+    if (items.length === 0) return;
+
+    await ensureSpecVariants(items.map((i) => i.productId));
+
+    specDraft.clear();
+    items.forEach((i) => specDraft.set(i.productId, { variantId: '', qty: 1 }));
+    wishSpecOpen = true;
+    renderMiniWish();
+  }
+
+  function closeWishSpecs() {
+    wishSpecOpen = false;
+    specDraft.clear();
+    renderMiniWish();
+  }
+
+  /** Valida talla en TODAS las piezas y luego las agrega. */
+  function confirmWishSpecs() {
+    const items = currentWish;
+    let missing = false;
+
+    for (const item of items) {
+      const draft = specDraft.get(item.productId);
+      const row = miniWishBody.querySelector<HTMLElement>(
+        `[data-spec-row="${item.productId}"]`
+      );
+      const msg = row?.querySelector<HTMLElement>('[data-spec-msg]');
+
+      if (!draft?.variantId) {
+        if (msg) {
+          msg.textContent = uiText('specMissing');
+          msg.hidden = false;
+        }
+        nudge(row?.querySelector('[data-spec-size]'));
+        missing = true;
+      } else if (msg) {
+        msg.hidden = true;
+      }
+    }
+
+    if (missing) return;
+
+    const added: CartItem[] = [];
+
+    for (const item of items) {
+      const draft = specDraft.get(item.productId);
+      const variant = specVariants.get(item.productId)?.find((v) => v.id === draft?.variantId);
+      if (!draft || !variant) continue;
+
+      added.push({
+        variantId: variant.id,
+        productId: item.productId,
+        slug: item.slug ?? null,
+        name: item.name,
+        variantName: specLabel(variant),
+        price: variant.price || item.price,
+        qty: draft.qty,
+        image: item.image ?? undefined,
+        size: variant.size,
+        color: variant.color,
+      });
+    }
+
+    if (added.length === 0) return;
+
+    added.forEach((piece) => addToCart(piece));
+    showFlashToast(uiText('cartAddedTitle'), { tone: 'cart', detail: describePieces(added) });
+
+    wishSpecOpen = false;
+    specDraft.clear();
+    renderMiniWish();
+  }
+
   function renderMiniWish() {
     miniWishCount.textContent = String(currentWish.length);
 
@@ -1545,12 +1733,102 @@ import { localize } from '../../lib/routes';
 
     const addAll = document.getElementById('mini-wish-add-all') as HTMLButtonElement | null;
     const newCart = document.getElementById('mini-wish-new-cart') as HTMLButtonElement | null;
+    const footDefault = document.querySelector<HTMLElement>('[data-wish-foot-default]');
+    const footSpec = document.querySelector<HTMLElement>('[data-wish-foot-spec]');
     const empty = currentWish.length === 0;
+
+    if (empty) wishSpecOpen = false;
+
     if (addAll) addAll.disabled = empty;
     if (newCart) newCart.disabled = empty;
+    if (footDefault) footDefault.style.display = wishSpecOpen ? 'none' : '';
+    if (footSpec) footSpec.style.display = wishSpecOpen ? 'flex' : 'none';
 
     if (empty) {
       miniWishBody.innerHTML = `<div class="mini-empty">${escapeHtml(uiText('emptyWish'))}</div>`;
+      return;
+    }
+
+    // Modo elegir talla y cantidad (solo después de pulsar "Add all").
+    if (wishSpecOpen) {
+      miniWishBody.innerHTML = currentWish
+        .map((i) => {
+          const img = safeUrl(i.image);
+          const href = productHref(i.slug ?? i.productId);
+          const draft = specDraft.get(i.productId) ?? { variantId: '', qty: 1 };
+          const variants = specVariants.get(i.productId) ?? [];
+
+          const options = variants
+            .map((v) => {
+              const out = v.stock <= 0;
+              const label = `${specLabel(v)}${out ? ` — ${uiText('soldOut')}` : ''}`;
+              return `<option value="${escapeHtml(v.id)}" ${out ? 'disabled' : ''} ${
+                draft.variantId === v.id ? 'selected' : ''
+              }>${escapeHtml(label)}</option>`;
+            })
+            .join('');
+
+          return `
+        <div class="mini-item mini-item--spec" data-spec-row="${escapeHtml(i.productId)}">
+          <a class="mini-thumb" href="${href}">${img ? `<img src="${img}" alt="">` : ''}</a>
+          <div class="mini-info">
+            <a class="mini-name" href="${href}">${escapeHtml(i.name)}</a>
+            <span class="mini-price">$${formatMXN(i.price)}</span>
+            <div class="mini-spec">
+              <select class="mini-select" data-spec-size="${escapeHtml(i.productId)}" aria-label="${escapeHtml(uiText('specSize'))}">
+                <option value="">${escapeHtml(uiText('specSize'))}</option>
+                ${options}
+              </select>
+              <div class="mini-qty">
+                <button type="button" data-spec-qty="${escapeHtml(i.productId)}" data-dir="-1" aria-label="${escapeHtml(uiText('removeOne'))}">−</button>
+                <span data-spec-qty-value>${draft.qty}</span>
+                <button type="button" data-spec-qty="${escapeHtml(i.productId)}" data-dir="1" aria-label="${escapeHtml(uiText('addOne'))}">+</button>
+              </div>
+            </div>
+            <p class="mini-spec-msg" data-spec-msg hidden></p>
+          </div>
+        </div>`;
+        })
+        .join('');
+
+      miniWishBody.querySelectorAll<HTMLSelectElement>('[data-spec-size]').forEach((sel) => {
+        sel.addEventListener('change', () => {
+          const id = sel.dataset.specSize!;
+          const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
+          draft.variantId = sel.value;
+
+          // La cantidad no puede pasar del stock de la talla elegida.
+          const variant = specVariants.get(id)?.find((v) => v.id === sel.value);
+          const max = Math.max(1, Math.min(5, variant?.stock || 5));
+          draft.qty = Math.min(draft.qty, max);
+          specDraft.set(id, draft);
+
+          const row = sel.closest('[data-spec-row]');
+          const msg = row?.querySelector<HTMLElement>('[data-spec-msg]');
+          const value = row?.querySelector<HTMLElement>('[data-spec-qty-value]');
+          if (msg) msg.hidden = true;
+          if (value) value.textContent = String(draft.qty);
+        });
+      });
+
+      miniWishBody.querySelectorAll<HTMLElement>('[data-spec-qty]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.specQty!;
+          const dir = Number(btn.dataset.dir ?? 1);
+          const draft = specDraft.get(id) ?? { variantId: '', qty: 1 };
+          const variant = specVariants.get(id)?.find((v) => v.id === draft.variantId);
+          const max = Math.max(1, Math.min(5, variant?.stock || 5));
+
+          draft.qty = Math.min(max, Math.max(1, draft.qty + dir));
+          specDraft.set(id, draft);
+
+          const value = btn
+            .closest('[data-spec-row]')
+            ?.querySelector<HTMLElement>('[data-spec-qty-value]');
+          if (value) value.textContent = String(draft.qty);
+        });
+      });
+
       return;
     }
 
@@ -1712,27 +1990,20 @@ import { localize } from '../../lib/routes';
   window.addEventListener('cart:updated', () => renderMiniCart());
   window.addEventListener('wishlist:updated', () => renderMiniWish());
 
-  // "Añadir todo al carrito" y "carrito nuevo con estos"
+  // "Añadir todo al carrito": abre el selector de talla y cantidad.
   document.getElementById('mini-wish-add-all')?.addEventListener('click', async (e) => {
-    const btn = e.currentTarget as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = uiText('working');
+    e.preventDefault();
+    await openWishSpecs();
+  });
 
-    const pieces = await wishItemsToCart(false);
-    const n = pieces.length;
-    btn.textContent = n > 0 ? `${uiText('addedN')} ${n}` : uiText('nothingAdded');
-    if (n > 0) {
-      showFlashToast(uiText('cartAddedTitle'), {
-        tone: 'cart',
-        detail: describePieces(pieces),
-      });
-    } else {
-      showFlashToast(uiText('nothingAdded'), { tone: 'info' });
-    }
-    window.setTimeout(() => {
-      btn.textContent = uiText('addAllToCart');
-      btn.disabled = currentWish.length === 0;
-    }, 1600);
+  document.getElementById('mini-wish-spec-cancel')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeWishSpecs();
+  });
+
+  document.getElementById('mini-wish-spec-add')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    confirmWishSpecs();
   });
 
   document.getElementById('mini-wish-new-cart')?.addEventListener('click', async (e) => {
