@@ -497,6 +497,11 @@ export const copy = {
       tracking: 'Seguimiento',
       pieces: 'Piezas',
       shippingSection: 'Envío',
+      orderLabel: 'Pedido',
+      quantity: 'Cantidad',
+      refreshHint: 'Si ya pagaste, esto puede tardar unos segundos:',
+      refreshCta: 'actualizar',
+      rejectedHint: 'Si tu pago fue rechazado, el pedido quedará cancelado y no se fabricará.',
     },
 
     // ---------------- 404 ----------------
@@ -1258,6 +1263,11 @@ export const copy = {
       tracking: 'Tracking',
       pieces: 'Pieces',
       shippingSection: 'Shipping',
+      orderLabel: 'Order',
+      quantity: 'Quantity',
+      refreshHint: 'If you already paid, this can take a few seconds:',
+      refreshCta: 'refresh',
+      rejectedHint: 'If your payment was declined, the order is cancelled and nothing gets made.',
     },
 
     // ---------------- 404 ----------------

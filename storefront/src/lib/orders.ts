@@ -151,8 +151,8 @@ export function formatOrderMoney(n: number) {
   })}`;
 }
 
-export function formatOrderDate(iso: string) {
-  return new Date(iso).toLocaleDateString('es-MX', {
+export function formatOrderDate(iso: string, lang: 'es' | 'en' = 'es') {
+  return new Date(iso).toLocaleDateString(lang === 'en' ? 'en-US' : 'es-MX', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',

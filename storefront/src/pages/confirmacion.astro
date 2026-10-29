@@ -132,38 +132,61 @@ import { localize } from '../lib/routes';
     ) : (
       <div id="conf-content">
         <section class="border-b-2 border-white/25 bg-noise">
-          <div class="page-container py-12 sm:py-16 text-center">
-            <div class="w-16 h-16 mx-auto mb-7 border-2 border-oro-brillo flex items-center justify-center">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
-                {isPaid ? <path d="m5 13 4 4L19 7" /> : <circle cx="12" cy="12" r="9" />}
-              </svg>
+          <div class="page-container py-5 sm:py-6">
+            <div class="flex items-center gap-4 sm:gap-6">
+              <img
+                src="/img/logo/DSP.jpg"
+                alt={t.brand}
+                width="56"
+                height="56"
+                class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 object-contain border-2 border-white bg-black"
+              />
+
+              <div class="min-w-0 flex-1">
+                <p class="section-label">{isPaid ? t.account.paidApproved : t.account.paidPending}</p>
+                <h1 class="font-titulos text-xl sm:text-2xl lg:text-3xl text-blancoRoto leading-tight mt-1">
+                  {isPaid
+                    ? `${t.account.thankYou}, ${(order.contact_name ?? t.account.customerFallback).split(' ')[0]}`
+                    : t.account.confirmingPayment}
+                </h1>
+                <p class="text-xs sm:text-sm text-white/80 mt-1">
+                  {t.order.orderLabel}{' '}
+                  <span class="font-acentos text-oro-brillo">{order.order_number ?? order.id.slice(0, 8)}</span>
+                  {' · '}
+                  {formatOrderDate(order.created_at, lang)}
+                </p>
+              </div>
+
+              <span
+                class={`hidden sm:inline-flex shrink-0 items-center gap-2 border-2 px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] ${
+                  isPaid ? 'border-oro-brillo text-oro-brillo' : 'border-white text-white'
+                }`}
+              >
+                <span class={`w-1.5 h-1.5 rounded-full ${isPaid ? 'bg-oro-brillo' : 'bg-white'}`}></span>
+                {STATUS_LABEL[order.status as OrderStatus]}
+              </span>
             </div>
-            <p class="section-label mb-4">{isPaid ? t.account.paidApproved : t.account.paidPending}</p>
-            <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4">
-              {isPaid ? `${t.account.thankYou}, ${(order.contact_name ?? t.account.customerFallback).split(' ')[0]}` : t.account.confirmingPayment}
-            </h1>
-            <div class="gold-line mx-auto mb-6"></div>
-            <p class="text-base text-white/80">
-              Pedido <span class="font-acentos text-oro-brillo">{order.order_number ?? order.id.slice(0, 8)}</span> ·{' '}
-              {formatOrderDate(order.created_at)}
-            </p>
+
             {!isPaid && (
-              <p class="mt-4 max-w-xl mx-auto text-sm text-white/80 leading-relaxed">
-                Si ya pagaste, esto puede tardar unos segundos:{' '}
-                <a href={Astro.url.pathname + Astro.url.search} class="text-oro-brillo underline underline-offset-2">
-                  actualizar
-                </a>.
-                Si tu pago fue rechazado, el pedido quedará cancelado y no se fabricará.
+              <p class="mt-3 text-xs text-white/80 leading-relaxed">
+                {t.order.refreshHint}{' '}
+                <a
+                  href={Astro.url.pathname + Astro.url.search}
+                  class="text-oro-brillo underline underline-offset-2"
+                >
+                  {t.order.refreshCta}
+                </a>
+                . {t.order.rejectedHint}
               </p>
             )}
           </div>
         </section>
 
-        <div class="page-container py-10 sm:py-14">
+        <div class="page-container py-6 sm:py-8">
           <div class="grid lg:grid-cols-3 gap-8 lg:gap-10">
             <section class="lg:col-span-2">
-              <h2 class="section-label mb-5">{t.order.tracking}</h2>
-              <div class="card p-6 sm:p-8">
+              <h2 class="section-label mb-3">{t.order.tracking}</h2>
+              <div class="card p-5 sm:p-6">
                 {isClosed ? (
                   <>
                     <div class="flex items-center gap-3 mb-3">
@@ -232,7 +255,7 @@ import { localize } from '../lib/routes';
                 )}
               </div>
 
-              <h2 class="section-label mt-10 mb-5">{t.order.pieces}</h2>
+              <h2 class="section-label mt-8 mb-3">{t.order.pieces}</h2>
               <div class="card divide-y-2 divide-white/15">
                 {order.order_items.map((i) => (
                   <div class="flex gap-4 p-4 sm:p-5">
@@ -244,7 +267,7 @@ import { localize } from '../lib/routes';
                     <div class="flex-1 min-w-0">
                       <p class="font-acentos text-base text-blancoRoto">{i.product_name ?? t.common.piece}</p>
                       <p class="text-sm text-white/80">
-                        {[i.size, i.color].filter(Boolean).join(' · ') || i.variant_name || ''} · Cantidad {i.quantity}
+                        {[i.size, i.color].filter(Boolean).join(' · ') || i.variant_name || ''} · {t.order.quantity} {i.quantity}
                       </p>
                     </div>
                     <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">
@@ -255,9 +278,9 @@ import { localize } from '../lib/routes';
               </div>
             </section>
 
-            <aside class="space-y-6">
-              <div class="card p-6">
-                <h2 class="section-label mb-4">{t.cart.summary}</h2>
+            <aside class="space-y-4">
+              <div class="card p-5">
+                <h2 class="section-label mb-3">{t.cart.summary}</h2>
                 <div class="space-y-3 text-base">
                   <div class="flex justify-between">
                     <span class="text-white/80">{t.cart.subtotal}</span>
@@ -278,8 +301,8 @@ import { localize } from '../lib/routes';
                 </div>
               </div>
 
-              <div class="card p-6">
-                <h2 class="section-label mb-4">{t.order.shippingSection}</h2>
+              <div class="card p-5">
+                <h2 class="section-label mb-3">{t.order.shippingSection}</h2>
                 <div class="text-base text-white/80 leading-relaxed">
                   <p class="text-blancoRoto mb-1">{order.contact_name ?? ''}</p>
                   <p>{order.shipping_street ?? ''}</p>
