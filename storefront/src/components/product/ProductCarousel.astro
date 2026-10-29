@@ -18,6 +18,8 @@ export interface Props {
   hrefLabel?: string;
   /** Piezas visibles en desktop (3 = fotos más grandes a todo lo ancho). */
   perView?: 3 | 4;
+  /** Versión baja: tarjetas ~40% más bajas para caber junto a otro contenido. */
+  compact?: boolean;
 }
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
@@ -30,6 +32,7 @@ const {
   href = localize(lang, 'shop'),
   hrefLabel = 'Ver todo',
   perView = 4,
+  compact = false,
 } = Astro.props;
 
 const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -38,12 +41,14 @@ const trackId = `track-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id), p])).values()];
 ---
 
-<section class="py-14 sm:py-20">
+<section class={compact ? 'py-8 sm:py-10' : 'py-14 sm:py-20'}>
   <div class="page-container">
-    <div class="flex flex-wrap items-end justify-between gap-4 mb-8 sm:mb-10">
+    <div class={`flex flex-wrap items-end justify-between gap-4 ${compact ? 'mb-3' : 'mb-8 sm:mb-10'}`}>
       <div>
-        <p class="section-label mb-3">{subtitle ?? 'Colección'}</p>
-        <h2 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto leading-none">
+        <p class={`section-label ${compact ? 'mb-1' : 'mb-3'}`}>{subtitle ?? 'Colección'}</p>
+        <h2
+          class={`font-titulos ${compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-blancoRoto leading-none`}
+        >
           {title}
         </h2>
       </div>
@@ -81,7 +86,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
       ) : (
         <div
           id={trackId}
-          class={`carousel-track${perView === 3 ? ' carousel-track--three' : ''}`}
+          class={`carousel-track${perView === 3 ? ' carousel-track--three' : ''}${compact ? ' carousel-track--compact' : ''}`}
           role="list"
           aria-label={`${title}: piezas`}
         >
@@ -135,6 +140,21 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
     .carousel-track--three {
       grid-auto-columns: 31%;
     }
+  }
+
+  /* Versión compacta: la foto ocupa ~60% del alto y el texto se reduce.
+     `:global` porque estas piezas viven dentro de ProductCard. */
+  .carousel-track--compact :global(.product-frame) {
+    aspect-ratio: 1 / 0.62;
+  }
+
+  .carousel-track--compact :global(.pt-4) {
+    padding-top: 0.5rem;
+  }
+
+  .carousel-track--compact :global(h3),
+  .carousel-track--compact :global(p) {
+    font-size: 0.875rem;
   }
 
   .carousel-arrow {

@@ -167,7 +167,7 @@ import { localize } from '../lib/routes';
 <BaseLayout title={t.account.wishlistMetaTitle} description={t.cart.emptyText}>
   <script type="application/json" id="wish-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/30 bg-noise">
-    <div class="page-container py-6 sm:py-8">
+    <div class="page-container py-3 sm:py-4">
       <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <h1 class="font-titulos text-2xl sm:text-3xl text-blancoRoto">{t.account.wishlistTitle}</h1>
         <p id="wish-summary" class="text-sm text-white/70">
@@ -179,7 +179,7 @@ import { localize } from '../lib/routes';
     </div>
   </section>
 
-  <div class="page-container py-10 sm:py-14">
+  <div class="page-container py-4 sm:py-6">
     <div id="wish-empty" class={available.length === 0 && user ? '' : 'hidden'}>
       <div class="text-center py-16">
         <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-3">{t.account.wishlistEmptyTitle}</p>
@@ -213,6 +213,7 @@ import { localize } from '../lib/routes';
         href={localize(lang, 'shop')}
         hrefLabel={t.shop.seeAll}
         perView={3}
+        compact
       />
     )
   }
