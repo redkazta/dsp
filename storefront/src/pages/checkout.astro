@@ -3,6 +3,7 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../lib/i18n';
+import { localize } from '../lib/routes';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -35,7 +36,6 @@ const paymentAvailable = Boolean(
   import.meta.env.STRIPE_SECRET_KEY && import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY
 );
 const canceled = Astro.url.searchParams.get('canceled') === '1';
-import { localize } from '../lib/routes';
 ---
 
 <BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription}>
