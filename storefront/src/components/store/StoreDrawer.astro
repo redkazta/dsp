@@ -1379,6 +1379,21 @@ import { localize } from '../../lib/routes';
   const triggers = [...document.querySelectorAll<HTMLElement>('.store-trigger')];
   const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+  /**
+   * Un clic dentro del panel puede reacomodar su contenido (cancelar el
+   * selector de talla encoge las filas). Ese reacomodo deja el cursor fuera
+   * del panel y dispara un `mouseleave` que NO debe cerrarlo: se ignora uno.
+   */
+  let ignoreNextLeave = false;
+  document.querySelectorAll<HTMLElement>('.mini-panel').forEach((panel) => {
+    panel.addEventListener('pointerdown', () => {
+      ignoreNextLeave = true;
+      window.setTimeout(() => {
+        ignoreNextLeave = false;
+      }, 450);
+    });
+  });
+
   let closeTimer: number | undefined;
 
   // ---------- Aviso de acciones dentro de los mini paneles ----------
@@ -1966,7 +1981,13 @@ import { localize } from '../../lib/routes';
       // otros 14px. Sin esto hay que apuntar con precisión para que no se
       // cierre al bajar el mouse.
       t.addEventListener('mouseenter', () => showMini(tab));
-      t.addEventListener('mouseleave', () => hideMini());
+      t.addEventListener('mouseleave', () => {
+        if (ignoreNextLeave) {
+          ignoreNextLeave = false;
+          return;
+        }
+        hideMini();
+      });
 
       // Teclado: el foco mantiene el panel abierto, pero solo si el foco entra
       // en el propio icono. Así al volver el foco al botón (p. ej. al cerrar
