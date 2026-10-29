@@ -39,8 +39,19 @@ export type { WishlistItem };
 /** Clave de localStorage: una sola fuente para leer y limpiar. */
 export const LOCAL_WISHLIST_KEY = 'dsp_wishlist';
 
+/** Última lista conocida: permite avisar sin esperar al servidor. */
+let knownWishlist: WishlistItem[] = [];
+
 function emit(items: WishlistItem[]) {
+  knownWishlist = items;
   window.dispatchEvent(new CustomEvent('wishlist:updated', { detail: items }));
+}
+
+/** Aviso inmediato; el servidor después confirma o corrige. */
+function announce(action: 'added' | 'removed', productId: string, name: string) {
+  window.dispatchEvent(
+    new CustomEvent(`wishlist:${action}`, { detail: { productId, name } })
+  );
 }
 
 async function localItems(): Promise<WishlistItem[]> {
@@ -190,14 +201,19 @@ export async function toggleWishlist(item: WishlistItem): Promise<boolean> {
     return active;
   }
 
+  // Aviso inmediato: el panel confirma sin esperar la respuesta del servidor.
+  const willAdd = !knownWishlist.some((i) => i.productId === item.productId);
+  announce(willAdd ? 'added' : 'removed', item.productId, item.name);
+
   const { items, active } = await toggleWishlistRemote(item.productId);
   emit(items);
   broadcastWishlistChange(items.length);
-  window.dispatchEvent(
-    new CustomEvent(active ? 'wishlist:added' : 'wishlist:removed', {
-      detail: { productId: item.productId, name: item.name },
-    })
-  );
+
+  // El servidor manda: solo se corrige si el estado real era otro.
+  if (Boolean(active) !== willAdd) {
+    announce(active ? 'added' : 'removed', item.productId, item.name);
+  }
+
   return Boolean(active);
 }
 
@@ -214,14 +230,11 @@ export async function removeFromWishlist(productId: string, name = '') {
     return;
   }
 
+  announce('removed', productId, name);
+
   const { items } = await deleteWishlistRemote(productId);
   emit(items);
   broadcastWishlistChange(items.length);
-
-  // Igual que `toggleWishlist`: quien quita un favorito confirma con aviso.
-  window.dispatchEvent(
-    new CustomEvent('wishlist:removed', { detail: { productId, name } })
-  );
 }
 
 export async function isInWishlist(productId: string): Promise<boolean> {

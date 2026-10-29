@@ -1202,14 +1202,13 @@ import { localize } from '../../lib/routes';
 
     // Un cambio de precio (misma cantidad) no es un "añadido".
     if (signature === lastCartSignature) return;
-    const firstRender = lastCartSignature === '';
     lastCartSignature = signature;
 
-    // Primera lectura (otra pestaña, recarga): no hubo acción del usuario.
-    if (firstRender) return;
-
-    // Cambio hecho en OTRA pestaña: el carrito se repinta, pero no se lanza
-    // un aviso que el usuario no provocó en esta pantalla.
+    // Quién añadió lo dice `takeLastAdded()`: solo devuelve algo cuando la
+    // acción salió de ESTA pestaña. Una recarga o un cambio hecho en otra
+    // pestaña llegan con el valor vacío y no muestran aviso. (Antes había
+    // aquí un `if (firstRender) return`, que se comía justo el primer
+    // añadido sobre un carrito vacío.)
     const added = takeLastAdded();
     if (!added) return;
 
