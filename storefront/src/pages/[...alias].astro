@@ -1,0 +1,27 @@
+---
+/**
+ * Shim de rutas localizadas ES/EN.
+ *
+ * No pinta nada por sí mismo: existe para que Vercel registre las URLs
+ * inglesas (`/shop`, `/contact`, `/product/x`…) como rutas reales. Sin esta
+ * entrada, el adaptador manda cualquier path desconocido al catch-all con
+ * status 404 y el rewrite del middleware nunca llega a renderizar.
+ *
+ * El middleware es quien resuelve el alias, fija el idioma y reescribe a la
+ * página canónica. Aquí solo queda el caso de que el rewrite no se haya
+ * aplicado (por ejemplo, al prerenderizar o en tests).
+ */
+export const prerender = false;
+
+import { aliasToCanonical } from '../lib/routes';
+
+const canonical = aliasToCanonical(Astro.url.pathname);
+
+if (canonical) {
+  return Astro.rewrite(canonical);
+}
+
+// Cualquier otra ruta no listada conserva el comportamiento de 404.
+const notFound = await Astro.rewrite('/404');
+return new Response(notFound.body, { status: 404, headers: notFound.headers });
+---

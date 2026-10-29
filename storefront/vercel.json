@@ -1,21 +1,7 @@
 {
   "framework": "astro",
-  "rewrites": [
-    { "source": "/shop", "destination": "/tienda" },
-    { "source": "/contact", "destination": "/contacto" },
-    { "source": "/about", "destination": "/nosotros" },
-    { "source": "/cart", "destination": "/carrito" },
-    { "source": "/favorites", "destination": "/favoritos" },
-    { "source": "/login", "destination": "/entrar" },
-    { "source": "/signup", "destination": "/registro" },
-    { "source": "/recover", "destination": "/recuperar" },
-    { "source": "/sizing", "destination": "/tallas" },
-    { "source": "/shipping", "destination": "/envios" },
-    { "source": "/returns", "destination": "/devoluciones" },
-    { "source": "/privacy", "destination": "/privacidad" },
-    { "source": "/terms", "destination": "/terminos" },
-    { "source": "/product/:slug", "destination": "/producto/:slug" }
-  ],
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:clean",
   "headers": [
     {
       "source": "/(.*)",

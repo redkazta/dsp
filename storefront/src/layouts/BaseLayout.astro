@@ -28,7 +28,10 @@ const {
   homeScreen = false,
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+// La URL que ve el visitante manda para el canonical: en `/contact` no debe
+// apuntar a `/contacto` aunque el render interno venga de un rewrite.
+const publicPathname = (Astro as any).originPathname ?? Astro.url.pathname;
+const canonical = new URL(publicPathname, Astro.site ?? Astro.url.origin).toString();
 
 // Para el enlace del idioma: volver a la MISMA página en el otro idioma
 // (/tienda → /shop, /producto/x → /product/x), no al inicio.

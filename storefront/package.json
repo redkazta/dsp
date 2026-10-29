@@ -10,6 +10,8 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
+    "build:clean": "npm run clean && astro build",
+    "clean": "rm -rf node_modules/.vite node_modules/.cache .astro dist",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",

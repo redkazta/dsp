@@ -42,15 +42,12 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
 
   // ---------- Rutas localizadas ----------
   // `/shop` sirve la misma página que `/tienda`, sin cambiar la URL del
-  // navegador. Se reescribe ANTES de resolver sesión para que todo lo de
-  // abajo (guardas de /cuenta, etc.) trabaje con la ruta canónica.
+  // navegador. El rewrite se hace al final, cuando `locals` ya trae sesión e
+  // idioma: si se devolviera aquí, la página reescrita se renderizaría sin
+  // `Astro.locals.lang` (se caía a español) y sin usuario.
   const canonical = aliasToCanonical(pathname);
-  if (canonical) {
-    // `rewrite` de Astro 5: renderiza otra página conservando la URL.
-    return context.rewrite(canonical);
-  }
 
-  // A partir de aquí se compara siempre contra la ruta canónica.
+  // Las guardas se comparan siempre contra la ruta canónica.
   const route = canonicalPath(pathname);
 
   const supabase = createSupabaseServerClient(context.request, context.cookies);
@@ -143,14 +140,23 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
   context.locals.role = role;
   context.locals.isStaff = isStaff;
 
-  // ---------- Idioma (cookie propia o Accept-Language) ----------
-  // Se resuelve en servidor: el HTML sale ya traducido, sin parpadeo.
+  // ---------- Idioma ----------
+  // La URL manda: si se entró por el alias inglés (`/shop`, `/contact`…) la
+  // página se sirve en inglés aunque la cookie diga otra cosa. `originPathname`
+  // conserva la ruta original incluso después de un `rewrite`, así que también
+  // funciona en la segunda pasada del middleware.
+  const originPath = (context as any).originPathname ?? pathname;
+  const cameFromAlias = Boolean(aliasToCanonical(originPath));
   const cookieLang = context.cookies.get(LANG_COOKIE)?.value;
-  context.locals.lang = cookieLang
-    ? normalizeLang(cookieLang)
-    : langFromAcceptHeader(context.request.headers.get('accept-language'));
+  context.locals.lang = cameFromAlias
+    ? 'en'
+    : cookieLang
+      ? normalizeLang(cookieLang)
+      : langFromAcceptHeader(context.request.headers.get('accept-language'));
 
-  const response = await next();
+  // `rewrite` de Astro 5: renderiza la página canónica conservando la URL del
+  // navegador. Se hace aquí, con `locals` ya resuelto.
+  const response = canonical ? await context.rewrite(canonical) : await next();
 
   if (response.headers.get('content-type')?.includes('text/html')) {
     // Las cookies del refresh que escribe `next()` deben conservarse
