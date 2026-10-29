@@ -2083,7 +2083,15 @@ import { localize } from '../../lib/routes';
         showMini(tab);
       });
       t.addEventListener('focusout', (e) => {
-        if (!t.contains((e as FocusEvent).relatedTarget as Node | null)) hideMini();
+        const next = (e as FocusEvent).relatedTarget as Node | null;
+
+        // `null` significa que el elemento con foco desapareció del DOM (un
+        // re-render del panel). Eso NO es salir: cerrar aquí hacía que
+        // Cancelar / Agregar / Add to cart cerraran el mini panel.
+        if (!next) return;
+        if (t.contains(next)) return;
+
+        hideMini();
       });
     });
   }
