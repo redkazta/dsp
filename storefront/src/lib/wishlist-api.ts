@@ -13,8 +13,12 @@ interface WishlistResponse {
   guest?: boolean;
 }
 
-async function api(method: 'GET' | 'POST' | 'DELETE', body?: unknown): Promise<WishlistResponse> {
-  const res = await fetch('/api/wishlist', {
+async function api(
+  method: 'GET' | 'POST' | 'DELETE',
+  body?: unknown,
+  query = ''
+): Promise<WishlistResponse> {
+  const res = await fetch(`/api/wishlist${query}`, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -44,5 +48,7 @@ export async function toggleWishlistRemote(productId: string) {
 
 /** Quita un producto. */
 export async function deleteWishlistRemote(productId: string) {
-  return api('DELETE', { productId });
+  // El id va en la query, no en el cuerpo: algunos proxies descartan el body
+  // de un DELETE y el servidor recibía un producto vacío (400).
+  return api('DELETE', undefined, `?productId=${encodeURIComponent(productId)}`);
 }

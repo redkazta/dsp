@@ -202,6 +202,10 @@ export async function toggleWishlist(item: WishlistItem): Promise<boolean> {
 }
 
 export async function removeFromWishlist(productId: string, name = '') {
+  // Ítem sin id (dato viejo del navegador): no hay nada que borrar en el
+  // servidor y llamar al API solo devuelve un 400.
+  if (!productId) return;
+
   if (!(await hasSession())) {
     // `removeLocalWishlist` ya emite `wishlist:removed` (rescatando el
     // nombre guardado si no llega) y `wishlist:updated`.

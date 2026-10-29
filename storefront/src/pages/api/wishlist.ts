@@ -162,9 +162,16 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   const { supabase, user } = await resolveUser(request, cookies);
   if (!user) return json({ error: 'Inicia sesión para editar favoritos.', guest: true }, 401);
 
-  const body = await request.json().catch(() => ({}));
-  const productId = max((body as any)?.productId, 40);
-  if (!UUID.test(productId)) return json({ error: 'Producto inválido' }, 400);
+  // El id se acepta por query (camino normal: un DELETE puede perder el
+  // cuerpo al pasar por un proxy) y, como respaldo, en el body.
+  const fromQuery = new URL(request.url).searchParams.get('productId');
+  const body = fromQuery ? null : await request.json().catch(() => ({}));
+  const productId = max(fromQuery ?? (body as any)?.productId, 40);
+
+  if (!UUID.test(productId)) {
+    console.warn('[wishlist] DELETE con producto inválido:', JSON.stringify(productId).slice(0, 60));
+    return json({ error: 'Producto inválido' }, 400);
+  }
 
   await supabase.from('wishlist_items').delete().eq('user_id', user.id).eq('product_id', productId);
   return json({ items: await listItems(supabase, user.id) });
