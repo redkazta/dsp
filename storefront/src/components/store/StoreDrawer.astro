@@ -901,6 +901,7 @@ import { localize } from '../../lib/routes';
     saveCart,
     startCartSync,
     takeLastAdded,
+    takeLastRemoved,
     type CartItem,
   } from '../../lib/cart';
   import type { VariantOption } from '../../lib/product-variants';
@@ -1189,10 +1190,10 @@ import { localize } from '../../lib/routes';
   let lastCartSignature = '';
   window.addEventListener('cart:updated', () => {
     const items = getCart();
-    if (items.length === 0) {
-      lastCartSignature = '';
-      return;
-    }
+
+    // Se consumen siempre para que una marca vieja no dispare un aviso luego.
+    const added = takeLastAdded();
+    const removed = takeLastRemoved();
 
     // Orden fijo por variante: solo cuenta qué hay y cuánto, no el orden.
     const signature = items
@@ -1200,31 +1201,38 @@ import { localize } from '../../lib/routes';
       .sort()
       .join('|');
 
-    // Un cambio de precio (misma cantidad) no es un "añadido".
-    if (signature === lastCartSignature) return;
+    const changed = signature !== lastCartSignature;
     lastCartSignature = signature;
 
-    // Quién añadió lo dice `takeLastAdded()`: solo devuelve algo cuando la
-    // acción salió de ESTA pestaña. Una recarga o un cambio hecho en otra
-    // pestaña llegan con el valor vacío y no muestran aviso. (Antes había
-    // aquí un `if (firstRender) return`, que se comía justo el primer
-    // añadido sobre un carrito vacío.)
-    const added = takeLastAdded();
-    if (!added) return;
+    // Un cambio de precio (misma cantidad) no es un alta ni una baja.
+    if (!changed) return;
 
-    // El contador del header salta para señalar dónde quedó la pieza.
-    const badge = document.getElementById('cart-count');
-    if (badge) {
-      badge.classList.remove('dsp-bump');
-      void badge.offsetWidth;
-      badge.classList.add('dsp-bump');
-      window.setTimeout(() => badge.classList.remove('dsp-bump'), 600);
+    // Quién lo hizo lo dicen los marcadores: solo hay valor cuando la acción
+    // salió de ESTA pestaña. Una recarga o un cambio de otra pestaña llegan
+    // con ambos vacíos y no muestran aviso.
+    if (added) {
+      // El contador del header salta para señalar dónde quedó la pieza.
+      const badge = document.getElementById('cart-count');
+      if (badge) {
+        badge.classList.remove('dsp-bump');
+        void badge.offsetWidth;
+        badge.classList.add('dsp-bump');
+        window.setTimeout(() => badge.classList.remove('dsp-bump'), 600);
+      }
+
+      showFlashToast(uiText('cartAddedTitle'), {
+        tone: 'cart',
+        detail: [added.name, added.variantName].filter(Boolean).join(' · '),
+      });
+      return;
     }
 
-    showFlashToast(uiText('cartAddedTitle'), {
-      tone: 'cart',
-      detail: [added.name, added.variantName].filter(Boolean).join(' · '),
-    });
+    if (removed) {
+      showFlashToast(uiText('cartRemovedTitle'), {
+        tone: 'cart',
+        detail: [removed.name, removed.variantName].filter(Boolean).join(' · '),
+      });
+    }
   });
 
   window.addEventListener('wishlist:removed', (e: Event) => {
@@ -1384,10 +1392,6 @@ import { localize } from '../../lib/routes';
           if (scope === 'cart') {
             await fadeOutRow(btn.closest('.mini-item') as HTMLElement | null);
             removeFromCart(item.variantId);
-            showFlashToast(uiText('cartRemovedTitle'), {
-              tone: 'cart',
-              detail: item.name,
-            });
           } else {
             miniNotify(uiText('minQtyWish'));
           }
@@ -1413,7 +1417,6 @@ import { localize } from '../../lib/routes';
           const variantId = getCart().find((i) => i.variantId === id)?.variantId ?? id;
           await fadeOutRow(row);
           removeFromCart(variantId);
-          showFlashToast(uiText('cartRemovedTitle'), { tone: 'cart', detail: name });
           return;
         }
 

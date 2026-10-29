@@ -108,9 +108,18 @@ export interface LastAdded {
 
 let lastAdded: LastAdded | null = null;
 
+/** Última pieza quitada del carrito (para el aviso de "eliminado"). */
+let lastRemoved: LastAdded | null = null;
+
 export function takeLastAdded(): LastAdded | null {
   const value = lastAdded;
   lastAdded = null;
+  return value;
+}
+
+export function takeLastRemoved(): LastAdded | null {
+  const value = lastRemoved;
+  lastRemoved = null;
   return value;
 }
 
@@ -148,7 +157,18 @@ export function addToCart(item: CartItem): CartItem[] {
 }
 
 export function removeFromCart(variantId: string): CartItem[] {
-  const cart = getCart().filter((i) => i.variantId !== variantId);
+  const current = getCart();
+  const target = current.find((i) => i.variantId === variantId);
+  const cart = current.filter((i) => i.variantId !== variantId);
+
+  if (target) {
+    lastRemoved = {
+      name: target.name,
+      variantName: target.variantName,
+      image: target.image,
+    };
+  }
+
   saveCart(cart);
   return cart;
 }
