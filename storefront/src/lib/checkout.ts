@@ -125,16 +125,57 @@ export async function createPendingOrder({
     .select('id, order_number, total_amount')
     .single();
 
-  if (error || !order) {
-    console.error('[orders] insert', error?.code, error?.message);
+  // Red de seguridad: si `scripts/coupons.sql` aún no se corrió, las columnas
+  // de descuento no existen. Se reintenta sin ellas para no tumbar la venta
+  // (el total ya lleva el descuento aplicado).
+  let finalOrder = order;
+  let finalError = error;
+
+  if (finalError && (finalError.code === 'PGRST204' || finalError.code === '42703')) {
+    console.warn('[orders] columnas de cupón ausentes; se guarda sin ellas');
+
+    const retry = await db
+      .from('orders')
+      .insert({
+        tenant_id: TENANT_ID,
+        user_id: userId,
+        status: 'pending',
+        payment_status: 'pending',
+        payment_method: 'stripe',
+        subtotal,
+        shipping_cost: shipping,
+        total_amount: total,
+        shipping_method: shipping === 0 ? 'free' : 'standard',
+        contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
+        contact_email: customer.email,
+        contact_phone: customer.phone,
+        shipping_street: customer.street,
+        shipping_colonia: customer.colonia,
+        shipping_city: customer.city,
+        shipping_state: customer.state,
+        shipping_postal_code: customer.postalCode,
+        shipping_references: customer.references ?? null,
+        notes: composeNotes(customer),
+      })
+      .select('id, order_number, total_amount')
+      .single();
+
+    finalOrder = retry.data;
+    finalError = retry.error;
+  }
+
+  if (finalError || !finalOrder) {
+    console.error('[orders] insert', finalError?.code, finalError?.message);
     throw new Error('No se pudo crear el pedido.');
   }
+
+  const orderRow = finalOrder;
 
   // Las piezas se guardan desde ya (el pedido está en `pending` y no aparece
   // como compra confirmada). Si el pago falla, el webhook/expiración lo cierra.
   const { error: itemsError } = await db.from('order_items').insert(
     items.map((i) => ({
-      order_id: order.id,
+      order_id: orderRow.id,
       product_variant_id: i.variantId,
       product_id: i.productId,
       product_slug: i.productSlug ?? null,
@@ -150,11 +191,11 @@ export async function createPendingOrder({
 
   if (itemsError) {
     console.error('[orders] items insert', itemsError.code, itemsError.message);
-    await db.from('orders').delete().eq('id', order.id);
+    await db.from('orders').delete().eq('id', orderRow.id);
     throw new Error('No se pudo registrar el detalle del pedido.');
   }
 
-  return { order, subtotal, shipping, total };
+  return { order: orderRow, subtotal, shipping, total };
 }
 
 // --------------------------------------------------------- Payload del pago
