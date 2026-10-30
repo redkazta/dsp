@@ -117,7 +117,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="flex-1 min-w-0">
-              <a href="/admin/productos/${escapeHtml(p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors truncate block">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors truncate block">
                 ${escapeHtml(p.name)}
               </a>
               <p class="text-xs text-white/80">
@@ -129,10 +129,10 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 ${p.is_active ? 'Ocultar' : 'Activar'}
               </button>
-              <a href="/admin/productos/${escapeHtml(p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 Editar
               </a>
-              <a href="/admin/productos/${escapeHtml(p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-oro-brillo/60 text-oro-brillo hover:border-oro-brillo transition-colors">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-oro-brillo/60 text-oro-brillo hover:border-oro-brillo transition-colors">
                 Stock
               </a>
               <button data-delete="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">

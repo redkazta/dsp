@@ -177,12 +177,14 @@ export async function softDeleteProduct(id: string) {
   if (error) throw new Error(error.message);
 }
 
-/** Detalle completo de un producto para el editor. */
-export async function getProduct(id: string): Promise<AdminProduct | null> {
+/** Detalle completo de un producto para el editor (por id o por slug). */
+export async function getProduct(idOrSlug: string): Promise<AdminProduct | null> {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+
   const { data, error } = await supabase
     .from('products')
     .select('*, product_variants(*), product_images(*), categories(id, name)')
-    .eq('id', id)
+    .eq(isUuid ? 'id' : 'slug', idOrSlug)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

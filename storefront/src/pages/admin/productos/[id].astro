@@ -10,6 +10,7 @@ import { getProduct, getCategories } from '../../../lib/admin';
 import { TENANT_ID } from '../../../lib/constants';
 import { createSupabaseServerClient } from '../../../lib/supabase-server';
 import { missingEnglish } from '../../../lib/product-texts';
+import { STATUS_LABEL, type OrderStatus } from '../../../lib/orders';
 
 const { lang } = Astro.locals;
 
@@ -25,8 +26,9 @@ if (!product) {
 // Últimas ventas que incluyen este producto
 const { data: itemRows } = await supabase
   .from('order_items')
-  .select('quantity, unit_price, order_id, orders(order_number, status)')
+  .select('quantity, unit_price, order_id, created_at, orders(order_number, status)')
   .eq('product_id', product.id)
+  .order('created_at', { ascending: false })
   .limit(50);
 
 const sales = (itemRows ?? []) as any[];
@@ -56,9 +58,21 @@ import { localize } from '../../../lib/routes';
         </nav>
         <p class="section-label mb-2">{product.categories?.name ?? 'Sin categoría'} · {product.sku ?? 'Sin SKU'}</p>
         <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto truncate">{product.name}</h1>
+        <p
+          data-active-status
+          class:list={[
+            'mt-2 inline-flex items-center gap-2 border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em]',
+            product.is_active
+              ? 'border-oro-brillo/60 text-oro-brillo'
+              : 'border-white/30 text-white/60',
+          ]}
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+          {product.is_active ? 'Visible en la tienda' : 'Oculto de la tienda'}
+        </p>
       </div>
 
-      <div class="flex flex-wrap gap-3 shrink-0">
+      <div class="flex flex-wrap items-center gap-3 shrink-0">
         <a
           href={localize(lang, 'products', product.slug ?? product.id)}
           target="_blank"
@@ -67,9 +81,24 @@ import { localize } from '../../../lib/routes';
         >
           Ver en tienda
         </a>
-        <button type="button" data-toggle-active class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs">
-          {product.is_active ? 'Ocultar de la tienda' : 'Publicar'}
-        </button>
+
+        <!-- Interruptor: un clic publica u oculta, sin recargar ni adivinar -->
+        <div class="flex items-center gap-2.5">
+          <span class="text-[10px] uppercase tracking-[0.14em] text-white/55">Tienda</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={product.is_active ? 'true' : 'false'}
+            aria-label="Mostrar este producto en la tienda"
+            data-active-switch
+            class="active-switch"
+          >
+            <span class="active-switch-knob"></span>
+          </button>
+          <span data-active-label class="text-[10px] uppercase tracking-[0.14em] text-white/75 w-12">
+            {product.is_active ? 'On' : 'Off'}
+          </span>
+        </div>
       </div>
     </div>
 
@@ -325,10 +354,13 @@ import { localize } from '../../../lib/routes';
           ) : (
             <ul class="space-y-2">
               {sales.slice(0, 8).map((s) => (
-                <li class="flex justify-between gap-3 text-sm">
-                  <span class="text-white/80">
+                <li class="flex items-start justify-between gap-3 text-sm">
+                  <span class="min-w-0 text-white/80">
                     {s.orders?.order_number ?? '—'}
-                    <span class="block text-xs text-white/50">{s.orders?.status ?? ''}</span>
+                    <span class="block text-xs text-white/45">
+                      {s.orders ? STATUS_LABEL[s.orders.status as OrderStatus] ?? s.orders.status : 'Sin pedido'}
+                      {s.created_at ? ` · ${new Date(s.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}` : ''}
+                    </span>
                   </span>
                   <span class="text-blancoRoto whitespace-nowrap">
                     {s.quantity} × {money(Number(s.unit_price))}
@@ -343,6 +375,42 @@ import { localize } from '../../../lib/routes';
   </div>
 
   <style>
+    /* Interruptor de visibilidad en la tienda */
+    .active-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+      flex: 0 0 52px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.06);
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .active-switch-knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: #ffffff;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .active-switch[aria-checked='true'] {
+      border-color: #ffe28a;
+      background: rgba(255, 226, 138, 0.18);
+    }
+
+    .active-switch[aria-checked='true'] .active-switch-knob {
+      transform: translateX(24px);
+      background: #ffe28a;
+    }
+
+    .active-switch:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .field-label {
       display: block;
       margin-bottom: 0.4rem;
@@ -400,16 +468,43 @@ import { localize } from '../../../lib/routes';
       }
     });
 
-    // ---------- Publicar / ocultar ----------
-    root.querySelector<HTMLButtonElement>('[data-toggle-active]')?.addEventListener('click', async (e) => {
-      const btn = e.currentTarget as HTMLButtonElement;
-      const publish = btn.textContent?.includes('Publicar') ?? false;
-      btn.disabled = true;
+    // ---------- Publicar / ocultar (interruptor) ----------
+    const activeSwitch = root.querySelector<HTMLButtonElement>('[data-active-switch]');
+    const activeLabel = root.querySelector<HTMLElement>('[data-active-label]');
+    const activeStatus = root.querySelector<HTMLElement>('[data-active-status]');
+
+    const paintActive = (active: boolean) => {
+      activeSwitch?.setAttribute('aria-checked', String(active));
+
+      if (activeLabel) activeLabel.textContent = active ? 'On' : 'Off';
+
+      if (activeStatus) {
+        activeStatus.className = active
+          ? 'mt-2 inline-flex items-center gap-2 border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] border-oro-brillo/60 text-oro-brillo'
+          : 'mt-2 inline-flex items-center gap-2 border px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] border-white/30 text-white/60';
+        activeStatus.innerHTML =
+          '<span class="w-1.5 h-1.5 rounded-full bg-current"></span>' +
+          (active ? 'Visible en la tienda' : 'Oculto de la tienda');
+      }
+    };
+
+    activeSwitch?.addEventListener('click', async () => {
+      const next = activeSwitch.getAttribute('aria-checked') !== 'true';
+
+      activeSwitch.disabled = true;
+      paintActive(next);
+
       try {
-        await updateProduct(productId, { is_active: publish });
-        window.location.reload();
+        await updateProduct(productId, { is_active: next });
+
+        // Confirmación breve sobre el propio interruptor.
+        activeSwitch.classList.add('dsp-confirmed');
+        window.setTimeout(() => activeSwitch.classList.remove('dsp-confirmed'), 900);
+      } catch (err: any) {
+        paintActive(!next);
+        await notify(err?.message ?? 'No se pudo cambiar la visibilidad', { tone: 'danger' });
       } finally {
-        btn.disabled = false;
+        activeSwitch.disabled = false;
       }
     });
 

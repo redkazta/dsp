@@ -136,6 +136,7 @@ const { lang } = Astro.locals;
         .flatMap((p: any) =>
           (p.product_variants ?? []).map((v: any) => ({
             productId: p.id,
+            slug: p.slug ?? null,
             product: p.name,
             variant: v.name ?? v.size ?? 'Unitalla',
             stock: Number(v.stock ?? 0),
@@ -151,7 +152,7 @@ const { lang } = Astro.locals;
           : lowStock
               .map(
                 (v: any) => `
-          <a href="/admin/productos/${v.productId}" class="flex items-center justify-between gap-3 card p-3 hover:border-oro-brillo transition-colors">
+          <a href="/admin/productos/${v.slug || v.productId}" class="flex items-center justify-between gap-3 card p-3 hover:border-oro-brillo transition-colors">
             <span class="min-w-0">
               <span class="block text-sm text-white truncate">${escapeHtml(v.product)}</span>
               <span class="block text-xs text-white/70">${escapeHtml(v.variant)}</span>
