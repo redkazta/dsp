@@ -599,7 +599,7 @@ export const copy = {
           {
             title: 'Cómo solicitarla',
             items: [
-              'Escríbenos a hola@dinerosobreproblemas.com con el asunto «Devolución #pedido».',
+              'Escríbenos a support@dinerosobreproblemas.com con el asunto «Devolución #pedido».',
               'Te confirmaremos si aplica y te daremos instrucciones de envío.',
               'Una vez recibida la pieza, procesamos el cambio o reembolso en 5 días hábiles.',
             ],
@@ -699,7 +699,7 @@ export const copy = {
           {
             title: '7. Tus derechos (ARCO)',
             p: [
-              'Puedes solicitar el acceso, rectificación, cancelación u oposición al tratamiento de tus datos, así como su portabilidad, escribiendo a hola@dinerosobreproblemas.com. Responderemos en un plazo máximo de 20 días hábiles.',
+              'Puedes solicitar el acceso, rectificación, cancelación u oposición al tratamiento de tus datos, así como su portabilidad, escribiendo a support@dinerosobreproblemas.com. Responderemos en un plazo máximo de 20 días hábiles.',
             ],
           },
           {
@@ -765,7 +765,7 @@ export const copy = {
             items: [
               'La prenda no haya sido usada, lavada ni alterada.',
               'Conserve etiquetas y empaque original.',
-              'Nos contactes previamente a hola@dinerosobreproblemas.com.',
+              'Nos contactes previamente a support@dinerosobreproblemas.com.',
             ],
             after: [
               'Por tratarse de piezas personalizadas, los artículos marcados como «edición limitada bajo pedido» solo pueden devolverse por defecto de fabricación o error en la talla enviada.',
@@ -801,7 +801,7 @@ export const copy = {
           {
             title: '10. Contacto',
             p: [
-              'Para cualquier duda sobre estos términos, escríbenos a hola@dinerosobreproblemas.com.',
+              'Para cualquier duda sobre estos términos, escríbenos a support@dinerosobreproblemas.com.',
             ],
           },
         ],
@@ -1369,7 +1369,7 @@ export const copy = {
           {
             title: 'How to request it',
             items: [
-              'Email hola@dinerosobreproblemas.com with the subject "Return #order".',
+              'Email support@dinerosobreproblemas.com with the subject "Return #order".',
               'We will confirm whether it applies and send you shipping instructions.',
               'Once we receive the piece, we process the exchange or refund within 5 business days.',
             ],
@@ -1469,7 +1469,7 @@ export const copy = {
           {
             title: '7. Your rights (ARCO)',
             p: [
-              'You can request access, rectification, cancellation or objection to the processing of your data, as well as its portability, by writing to hola@dinerosobreproblemas.com. We will reply within a maximum of 20 business days.',
+              'You can request access, rectification, cancellation or objection to the processing of your data, as well as its portability, by writing to support@dinerosobreproblemas.com. We will reply within a maximum of 20 business days.',
             ],
           },
           {
@@ -1535,7 +1535,7 @@ export const copy = {
             items: [
               'The garment has not been worn, washed or altered.',
               'Tags and original packaging are kept.',
-              'You contact us first at hola@dinerosobreproblemas.com.',
+              'You contact us first at support@dinerosobreproblemas.com.',
             ],
             after: [
               'Because these are custom pieces, items marked as "limited edition made to order" can only be returned for a manufacturing defect or if the wrong size was shipped.',
@@ -1571,7 +1571,7 @@ export const copy = {
           {
             title: '10. Contact',
             p: [
-              'For any questions about these terms, email hola@dinerosobreproblemas.com.',
+              'For any questions about these terms, email support@dinerosobreproblemas.com.',
             ],
           },
         ],

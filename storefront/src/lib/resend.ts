@@ -63,7 +63,7 @@ export function resendConfig() {
     apiKey,
     domain,
     from: `Dinero Sobre Problemas <noreply@${domain}>`,
-    contactEmail: serverEnv('CONTACT_EMAIL')?.trim() || `hola@${BRAND_DOMAIN}`,
+    contactEmail: serverEnv('CONTACT_EMAIL')?.trim() || `support@${BRAND_DOMAIN}`,
   };
 }
 

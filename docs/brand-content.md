@@ -59,14 +59,14 @@ Cada prenda refleja dedicación y autenticidad.
 ## Footer oficial
 
 - **Shop**: Home · Catalog · Contact
-- **Connect**: Facebook · Instagram · TikTok
+- **Connect**: Instagram
 - **Únete a nuestra familia!** (newsletter, campo de correo)
 - © 2026 DINEROSOBREPROBLEMAS
 
 ### Redes sociales reales
 
-- Instagram: https://www.instagram.com/somos_dsp
-- TikTok: https://www.tiktok.com/@somosdsp
+- Instagram: https://www.instagram.com/dinerosobreproblemas/
+- Correo: support@dinerosobreproblemas.com
 
 ---
 
