@@ -27,10 +27,10 @@ BEGIN
     WHERE c.oid = 'public.wishlist_items'::regclass
       AND i.indisunique
       AND (
-        SELECT array_agg(a.attname ORDER BY a.attname)
+        SELECT array_agg(a.attname::text ORDER BY a.attname::text)
         FROM unnest(i.indkey) AS k
         JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k
-      ) = ARRAY['product_id', 'user_id']
+      ) = ARRAY['product_id', 'user_id']::text[]
   ) INTO has_unique;
 
   IF NOT has_unique THEN
