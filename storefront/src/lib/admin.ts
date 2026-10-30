@@ -178,10 +178,13 @@ export async function softDeleteProduct(id: string) {
 }
 
 /** Detalle completo de un producto para el editor (por id o por slug). */
-export async function getProduct(idOrSlug: string): Promise<AdminProduct | null> {
+export async function getProduct(
+  idOrSlug: string,
+  client: any = supabase
+): Promise<AdminProduct | null> {
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('products')
     .select('*, product_variants(*), product_images(*), categories(id, name)')
     .eq(isUuid ? 'id' : 'slug', idOrSlug)

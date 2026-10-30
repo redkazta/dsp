@@ -8,7 +8,7 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { getProduct, getCategories } from '../../../lib/admin';
 import { TENANT_ID } from '../../../lib/constants';
-import { createSupabaseServerClient } from '../../../lib/supabase-server';
+import { createSupabaseAdminClient, createSupabaseServerClient } from '../../../lib/supabase-server';
 import { missingEnglish } from '../../../lib/product-texts';
 import { STATUS_LABEL, type OrderStatus } from '../../../lib/orders';
 
@@ -17,7 +17,17 @@ const { lang } = Astro.locals;
 const id = Astro.params.id ?? '';
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
-const [product, categories] = await Promise.all([getProduct(id), getCategories(TENANT_ID)]);
+// Se lee con la sesión del staff; si la RLS no deja ver el producto (p. ej.
+// está oculto de la tienda y el JWT no trae `tenant_id`), se cae al cliente
+// con service role. El middleware ya comprobó que quien entra es staff.
+let product = await getProduct(id, supabase);
+
+if (!product) {
+  const adminDb = createSupabaseAdminClient();
+  if (adminDb) product = await getProduct(id, adminDb);
+}
+
+const categories = await getCategories(TENANT_ID);
 
 if (!product) {
   return Astro.redirect('/admin/productos');
