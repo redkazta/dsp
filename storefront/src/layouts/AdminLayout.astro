@@ -15,6 +15,17 @@ export interface Props {
 
 const { title = 'Panel' } = Astro.props;
 
+// Usuario logueado: lo resuelve el middleware una sola vez por request.
+const user = Astro.locals.user;
+const displayName =
+  Astro.locals.fullName ??
+  Astro.locals.firstName ??
+  user?.email?.split('@')[0] ??
+  'Staff';
+const userEmail = Astro.locals.email ?? '';
+const userRole = Astro.locals.role ?? '';
+const initial = (displayName.trim()[0] ?? 'D').toUpperCase();
+
 const nav = [
   { href: '/admin', label: 'Dashboard', icon: 'M3 12h7V3H3v9Zm11 9h7v-9h-7v9ZM3 21h7v-6H3v6Zm11-12h7V3h-7v6Z' },
   { href: '/admin/productos', label: 'Productos', icon: 'M4 7h16v13H4zM4 7l2-4h12l2 4M9 11h6' },
@@ -52,8 +63,8 @@ const nav = [
             class="w-10 h-10 shrink-0 object-contain border border-white/40 bg-black"
           />
           <span class="min-w-0">
-            <span class="font-titulos text-sm tracking-[0.15em] text-blancoRoto block leading-none">DINERO</span>
-            <span class="font-acentos text-[8px] uppercase tracking-[0.4em] text-oro-brillo">Admin</span>
+            <span class="font-titulos text-base tracking-[0.18em] text-blancoRoto block leading-none">DSP</span>
+            <span class="font-acentos text-[8px] uppercase tracking-[0.4em] text-oro-brillo">Dashboard</span>
           </span>
         </a>
 
@@ -73,38 +84,61 @@ const nav = [
           }
         </nav>
 
-        <!-- Acciones del panel -->
-        <div class="p-3 border-t-2 border-white/25 space-y-0.5">
-          <a
-            href="/tienda"
-            target="_blank"
-            rel="noopener"
-            class="flex items-center gap-3 px-3.5 py-2.5 min-h-[42px] text-sm text-white/70 hover:text-oro-brillo transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9h18M3 9l2-5h14l2 5M5 9v11h14V9" />
-            </svg>
-            Ver la tienda
-          </a>
-          <a
-            href="/cuenta"
-            class="flex items-center gap-3 px-3.5 py-2.5 min-h-[42px] text-sm text-white/70 hover:text-oro-brillo transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
-            </svg>
-            Mi cuenta
-          </a>
-          <button
-            type="button"
-            data-admin-logout
-            class="w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[42px] text-sm text-white/70 hover:text-red-400 transition-colors text-left"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-            </svg>
-            Cerrar sesión
-          </button>
+        <!-- Usuario actual + acciones del panel -->
+        <div class="mt-auto">
+          <div class="px-3 py-3 border-t-2 border-white/25">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-9 h-9 shrink-0 rounded-full border-2 border-oro-brillo/60 text-oro-brillo flex items-center justify-center font-acentos text-sm">
+                {initial}
+              </span>
+              <div class="min-w-0">
+                <p class="text-sm text-blancoRoto leading-tight truncate">{displayName}</p>
+                <p class="text-[10px] text-white/45 leading-tight truncate">{userEmail}</p>
+              </div>
+            </div>
+            {userRole && (
+              <p class="mt-2 inline-flex items-center border border-white/25 px-1.5 py-0.5 text-[8px] uppercase tracking-[0.18em] text-white/60">
+                {userRole}
+              </p>
+            )}
+          </div>
+
+          <div class="px-3 py-2 border-t border-white/15 space-y-0.5">
+            <a
+              href="/tienda"
+              target="_blank"
+              rel="noopener"
+              class="flex items-center gap-3 px-3 py-2 min-h-[40px] text-sm text-white/70 hover:text-oro-brillo transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9h18M3 9l2-5h14l2 5M5 9v11h14V9" />
+              </svg>
+              Ver la tienda
+            </a>
+            <a
+              href="/cuenta"
+              class="flex items-center gap-3 px-3 py-2 min-h-[40px] text-sm text-white/70 hover:text-oro-brillo transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" />
+              </svg>
+              Mi cuenta
+            </a>
+          </div>
+
+          <!-- Cerrar sesión: anclado al fondo del panel -->
+          <div class="px-3 py-3 border-t-2 border-white/25">
+            <button
+              type="button"
+              data-admin-logout
+              class="w-full flex items-center gap-3 px-3 py-2.5 min-h-[42px] text-sm text-white/70 hover:text-red-400 transition-colors text-left"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -120,7 +154,7 @@ const nav = [
               class="w-8 h-8 shrink-0 object-contain border border-white/40 bg-black"
             />
             <span class="font-acentos text-[9px] uppercase tracking-[0.3em] text-oro-brillo truncate">
-              Admin
+              DSP · Dashboard
             </span>
           </a>
           <div class="flex items-center gap-4 shrink-0">
