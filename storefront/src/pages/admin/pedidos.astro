@@ -22,6 +22,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </button>
     </div>
 
+    <!-- Volver: solo aparece cuando se entra a un pedido concreto -->
+    <a
+      id="orders-back"
+      href="/admin/pedidos"
+      class="hidden mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-white/70 hover:text-oro-brillo transition-colors"
+    >
+      ← Todos los pedidos
+    </a>
+
     <!-- Resumen por estatus -->
     <div id="status-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8"></div>
 
@@ -31,7 +40,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <div class="space-y-4" id="orders-list"></div>
   </div>
 
-  <style>
+  <style is:global>
+    /* `is:global` a propósito: estas clases las escribe el JS con innerHTML y
+       perderían el hash de scope de Astro al no estar en la plantilla. */
     .status-chip {
       display: inline-flex;
       align-items: center;
@@ -147,6 +158,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     let orders: any[] = [];
     let filter = '';
     let search = '';
+
+    /** `?order=<id|folio>`: abre directo ese pedido, sin la lista entera. */
+    const focusOrder = new URLSearchParams(window.location.search).get('order');
 
     const esc = (v: unknown) =>
       String(v ?? '')
@@ -359,30 +373,44 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     function renderList() {
       const container = document.getElementById('orders-list')!;
-      const term = search.toLowerCase();
 
-      const list = orders.filter((o) => {
-        const byStatus = !filter || o.status === filter;
-        if (!byStatus) return false;
-        if (!term) return true;
+      let list = orders;
 
-        const haystack = [
-          o.order_number,
-          o.contact_name,
-          o.contact_email,
-          o.contact_phone,
-          ...(o.order_items ?? []).map((i: any) => i.product_name),
-        ]
-          .join(' ')
-          .toLowerCase();
+      if (focusOrder) {
+        list = orders.filter((o) => o.id === focusOrder || o.order_number === focusOrder);
+      } else {
+        const term = search.toLowerCase();
 
-        return haystack.includes(term);
-      });
+        list = orders.filter((o) => {
+          const byStatus = !filter || o.status === filter;
+          if (!byStatus) return false;
+          if (!term) return true;
+
+          const haystack = [
+            o.order_number,
+            o.contact_name,
+            o.contact_email,
+            o.contact_phone,
+            ...(o.order_items ?? []).map((i: any) => i.product_name),
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          return haystack.includes(term);
+        });
+      }
 
       if (list.length === 0) {
         container.innerHTML = `
           <div class="card p-10 text-center">
-            <p class="text-base text-white/80">Sin pedidos para este filtro.</p>
+            <p class="text-base text-white/80">${
+              focusOrder ? 'Ese pedido no existe o fue eliminado.' : 'Sin pedidos para este filtro.'
+            }</p>
+            ${
+              focusOrder
+                ? '<a href="/admin/pedidos" class="inline-block mt-4 text-xs uppercase tracking-[0.16em] text-oro-brillo hover:text-white">Ver todos los pedidos</a>'
+                : ''
+            }
           </div>`;
         return;
       }
@@ -440,6 +468,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         await refresh();
         loading.classList.add('hidden');
         view.classList.remove('hidden');
+
+        if (focusOrder) {
+          // Vista de un solo pedido: sin resumen, filtros ni buscador.
+          document.getElementById('orders-back')!.style.display = 'inline-flex';
+          document.getElementById('status-summary')!.style.display = 'none';
+          document.getElementById('filters')!.style.display = 'none';
+          return;
+        }
+
         renderFilters();
 
         // Búsqueda rápida

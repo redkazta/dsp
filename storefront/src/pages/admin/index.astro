@@ -113,7 +113,7 @@ const { lang } = Astro.locals;
               .slice(0, 6)
               .map(
                 (o: any) => `
-          <a href="/admin/pedidos" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-brillo transition-colors">
+          <a href="/admin/pedidos?order=${encodeURIComponent(o.id)}" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-brillo transition-colors">
             <div class="min-w-0">
               <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? o.id.slice(0, 8)}</p>
               <p class="text-sm text-white/80 truncate">${o.contact_name ?? ''}</p>
