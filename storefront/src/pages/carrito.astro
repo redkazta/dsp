@@ -51,14 +51,34 @@ import { localize } from '../lib/routes';
   </section>
 
   <div class="page-container py-5 sm:py-6">
-    <!-- Espacio reservado mientras el navegador lee el carrito (localStorage):
-         evita que el bloque aparezca de golpe y empuje el carrusel. -->
-    <div id="cart-loading" class="min-h-[50vh] flex items-center justify-center" aria-hidden="true">
-      <p class="text-xs uppercase tracking-[0.18em] text-white/60">{t.common.loading}</p>
+    <!-- Placeholder con la MISMA estructura que el carrito real: así el
+         cambio de "cargando" a contenido no mueve nada. -->
+    <div
+      id="cart-loading"
+      class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8"
+      aria-hidden="true"
+    >
+      <div class="min-w-0">
+        <div class="divide-y divide-white/15 border-y border-white/15">
+          {
+            [0, 1, 2].map(() => (
+              <div class="flex items-center gap-4 py-3.5 sm:py-4">
+                <div class="w-16 h-16 sm:w-[72px] sm:h-[72px] shrink-0 bg-white/10"></div>
+                <div class="flex-1 min-w-0 space-y-2">
+                  <div class="h-3 w-2/3 bg-white/10"></div>
+                  <div class="h-3 w-1/3 bg-white/10"></div>
+                </div>
+                <div class="h-4 w-14 shrink-0 bg-white/10"></div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+      <div class="h-[260px] border-2 border-white/15"></div>
     </div>
 
     <div id="cart-empty" class="hidden">
-      <div class="text-center py-10 sm:py-16">
+      <div class="text-center py-10 sm:py-16 min-h-[46vh] flex flex-col justify-center">
         <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">{t.cart.emptyTitle}</p>
         <p class="text-white/80 mb-10">{t.cart.emptyText}</p>
         <a href={localize(lang, 'shop')} class="btn-gold inline-block">{t.checkout.goShop}</a>
@@ -290,7 +310,30 @@ import { localize } from '../lib/routes';
         .join('');
     }
 
-    // Precios y disponibilidad en el servidor: si algo cambió, se avisa.
+    // Precios y disponibilidad en el servidor. Se pinta UNA sola vez, cuando
+    // ya están: `refreshCartPrices` dispara `cart:updated` y un segundo
+    // render repintaba las filas y hacía parpadear las fotos.
+    let synced = false;
+    let painted = false;
+
+    const startSyncOnce = () => {
+      if (synced) return;
+      synced = true;
+      startCartSync();
+      window.addEventListener('cart:updated', () => render());
+    };
+
+    const paint = () => {
+      if (painted) return;
+      painted = true;
+      window.clearTimeout(safety);
+      render();
+      startSyncOnce();
+    };
+
+    // Si Supabase tarda, no se deja el esqueleto para siempre.
+    const safety = window.setTimeout(paint, 1500);
+
     refreshCartPrices()
       .then(({ removed }) => {
         if (removed.length > 0) {
@@ -298,15 +341,9 @@ import { localize } from '../lib/routes';
             uiText('unavailableRemoved') + ` (${removed.length})`,
           ]);
         }
-        render();
+        paint();
       })
-      .catch(() => render());
-
-    render();
-
-    // Cambios desde otra pestaña: se repinta la página sin recargar.
-    startCartSync();
-    window.addEventListener('cart:updated', () => render());
+      .catch(() => paint());
   </script>
 
   <style>
