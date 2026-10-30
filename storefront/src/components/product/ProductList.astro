@@ -33,6 +33,7 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
     </div>
   ) : (
     <div
+      data-shop-grid
       class:list={[
         'grid',
         compact
