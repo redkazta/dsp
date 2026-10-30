@@ -51,6 +51,12 @@ import { localize } from '../lib/routes';
   </section>
 
   <div class="page-container py-5 sm:py-6">
+    <!-- Espacio reservado mientras el navegador lee el carrito (localStorage):
+         evita que el bloque aparezca de golpe y empuje el carrusel. -->
+    <div id="cart-loading" class="min-h-[50vh] flex items-center justify-center" aria-hidden="true">
+      <p class="text-xs uppercase tracking-[0.18em] text-white/60">{t.common.loading}</p>
+    </div>
+
     <div id="cart-empty" class="hidden">
       <div class="text-center py-10 sm:py-16">
         <p class="font-titulos text-2xl sm:text-3xl text-blancoRoto mb-4">{t.cart.emptyTitle}</p>
@@ -151,6 +157,7 @@ import { localize } from '../lib/routes';
     const empty = document.getElementById('cart-empty')!;
     const content = document.getElementById('cart-content')!;
     const suggest = document.getElementById('cart-suggest');
+    const loading = document.getElementById('cart-loading');
     const list = document.getElementById('cart-items')!;
     const notices = document.getElementById('cart-notices')!;
     const summaryText = document.getElementById('cart-summary-text')!;
@@ -161,6 +168,7 @@ import { localize } from '../lib/routes';
       // El carrusel se revela junto con el estado real, para que no aparezca
       // primero y luego lo empuje el carrito (o el estado vacío).
       if (suggest) suggest.style.display = '';
+      if (loading) loading.style.display = 'none';
 
       if (items.length === 0) {
         empty.classList.remove('hidden');
