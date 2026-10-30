@@ -5,128 +5,394 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Pedidos">
-  <div id="admin-loading" class="py-20 text-center text-sm text-white/80">Cargando pedidos…</div>
+  <div id="admin-loading" class="py-16 text-center text-sm text-white/70">Cargando pedidos…</div>
 
   <div id="orders-view" class="hidden">
-    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-      <div>
-        <p class="section-label mb-2">Operación</p>
-        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto">Pedidos</h1>
-      </div>
-      <button
-        type="button"
-        id="refresh-orders"
-        class="btn-outline !min-h-[44px] !px-5 !py-2 !text-xs self-start"
-      >
-        Actualizar
-      </button>
-    </div>
-
-    <!-- Volver: solo aparece cuando se entra a un pedido concreto -->
+    <!-- Volver: solo cuando se entra a un pedido concreto (`?order=`) -->
     <a
       id="orders-back"
       href="/admin/pedidos"
-      class="hidden mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-white/70 hover:text-oro-brillo transition-colors"
+      class="hidden mb-5 items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-white/70 hover:text-oro-brillo transition-colors"
     >
       ← Todos los pedidos
     </a>
 
-    <!-- Resumen por estatus -->
-    <div id="status-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8"></div>
+    <!-- Cabecera + herramientas -->
+    <header class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+      <div class="min-w-0">
+        <p class="section-label mb-1.5">Operación</p>
+        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto leading-none">Pedidos</h1>
+        <p id="orders-meta" class="text-xs sm:text-sm text-white/60 mt-2"></p>
+      </div>
+
+      <div class="flex items-stretch gap-2 w-full lg:w-auto">
+        <label id="orders-search-wrap" class="relative flex-1 lg:w-72">
+          <span class="sr-only">Buscar pedidos</span>
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>
+          </svg>
+          <input
+            id="orders-search"
+            type="search"
+            placeholder="Folio, cliente o pieza…"
+            autocomplete="off"
+            class="input-dark !min-h-[44px] !py-2 !pl-9 text-sm w-full"
+          />
+        </label>
+
+        <button
+          type="button"
+          id="refresh-orders"
+          class="btn-outline !min-h-[44px] !px-4 !py-2 !text-xs shrink-0"
+        >
+          Actualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- Resumen por estatus (clicable: filtra) -->
+    <div id="status-summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 mb-6"></div>
 
     <!-- Filtros -->
-    <div class="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none" id="filters"></div>
+    <div
+      id="filters"
+      class="-mx-4 px-4 sm:mx-0 sm:px-0 mb-6 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap scrollbar-none"
+    ></div>
 
-    <div class="space-y-4" id="orders-list"></div>
+    <div id="orders-list" class="space-y-4"></div>
   </div>
 
   <style is:global>
-    /* `is:global` a propósito: estas clases las escribe el JS con innerHTML y
-       perderían el hash de scope de Astro al no estar en la plantilla. */
+    /*
+     * `is:global` a propósito: casi todo este panel lo escribe el JS con
+     * innerHTML, así que las etiquetas no llevan el `data-astro-cid-*` y un
+     * <style> con scope no les aplicaría.
+     */
+
+    /* ---------- Filtros ---------- */
     .status-chip {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      min-height: 38px;
-      padding: 0.4rem 0.85rem;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      min-height: 36px;
+      padding: 0.35rem 0.8rem;
+      border: 2px solid rgba(255, 255, 255, 0.25);
       background: transparent;
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.8);
       font-family: 'Space Grotesk', Inter, sans-serif;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       white-space: nowrap;
       cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+    }
+
+    .status-chip:hover {
+      border-color: rgba(255, 226, 138, 0.6);
+      color: #ffe28a;
     }
 
     .status-chip[aria-pressed='true'] {
       border-color: #ffe28a;
       color: #ffe28a;
-      background: rgba(242, 201, 76, 0.1);
+      background: rgba(255, 226, 138, 0.1);
     }
 
+    /* ---------- Resumen ---------- */
+    .summary-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.85rem 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      background: #070707;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .summary-card:hover {
+      border-color: rgba(255, 226, 138, 0.55);
+    }
+
+    .summary-card[aria-pressed='true'] {
+      border-color: #ffe28a;
+      background: rgba(255, 226, 138, 0.07);
+    }
+
+    .summary-label {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .summary-value {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: #ffe28a;
+    }
+
+    /* ---------- Tarjeta de pedido ---------- */
     .order-card {
-      border: 2px solid rgba(255, 255, 255, 0.15);
+      border: 2px solid rgba(255, 255, 255, 0.14);
       background: #050505;
     }
 
+    .order-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 9px;
+      line-height: 1.6;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.75);
+      white-space: nowrap;
+    }
+
+    .pill--gold {
+      border-color: rgba(255, 226, 138, 0.6);
+      color: #ffe28a;
+    }
+
+    .pill--danger {
+      border-color: rgba(248, 113, 113, 0.6);
+      color: #f87171;
+    }
+
+    .order-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .order-body:last-of-type {
+      border-bottom: 0;
+    }
+
+    .order-col {
+      padding: 1rem 1.15rem;
+      min-width: 0;
+    }
+
+    .order-col + .order-col {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @media (min-width: 1024px) {
+      .order-body {
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      }
+
+      .order-body--even {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .order-col + .order-col {
+        border-top: 0;
+        border-left: 1px solid rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    .col-title {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 0.6rem;
+    }
+
+    .order-foot {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.9rem 1.15rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    /* ---------- Seguimiento ---------- */
+    .stepper {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 1fr;
+      margin-top: 0.35rem;
+    }
+
+    .stepper-step {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      min-width: 0;
+    }
+
+    .stepper-step::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: -50%;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .stepper-step:first-child::before {
+      display: none;
+    }
+
+    .stepper-step.is-done::before {
+      background: #ffe28a;
+    }
+
+    .stepper-dot {
+      position: relative;
+      z-index: 1;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      background: #050505;
+    }
+
+    .stepper-step.is-done .stepper-dot {
+      background: #ffe28a;
+      border-color: #ffe28a;
+    }
+
+    .stepper-step.is-current .stepper-dot {
+      box-shadow: 0 0 0 4px rgba(255, 226, 138, 0.2);
+    }
+
+    .stepper-label {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 8.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .stepper-step.is-done .stepper-label {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .stepper-step.is-current .stepper-label {
+      color: #ffe28a;
+    }
+
+    @media (max-width: 720px) {
+      .stepper-label {
+        display: none;
+      }
+    }
+
+    /* ---------- Controles ---------- */
     .event-input {
       width: 100%;
-      min-height: 44px;
-      padding: 0.6rem 0.8rem;
+      min-height: 40px;
+      padding: 0.55rem 0.75rem;
       background: #0b0b0b;
-      border: 2px solid rgba(247, 223, 165, 0.28);
+      border: 2px solid rgba(247, 223, 165, 0.25);
       color: #ffffff;
-      font-size: 0.9375rem;
+      font-size: 0.875rem;
       outline: none;
+    }
+
+    .event-input::placeholder {
+      color: rgba(255, 255, 255, 0.35);
     }
 
     .event-input:focus {
       border-color: #ffe28a;
     }
 
-    .track-step {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex: 1;
-      min-width: 0;
+    .action-btn {
+      min-height: 42px;
+      padding: 0 1rem;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 2px solid #ffe28a;
+      color: #ffe28a;
+      background: transparent;
+      transition: background-color 0.2s, color 0.2s;
     }
 
-    .track-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      flex: 0 0 12px;
-    }
-
-    .track-dot.is-done {
+    .action-btn:hover {
       background: #ffe28a;
-      border-color: #ffe28a;
+      color: #0a0a0a;
     }
 
-    .track-dot.is-current {
-      box-shadow: 0 0 0 4px rgba(242, 201, 76, 0.25);
+    .action-btn--danger {
+      border-color: rgba(248, 113, 113, 0.6);
+      color: #f87171;
     }
 
-    .track-bar {
-      height: 2px;
-      flex: 1;
-      background: rgba(255, 255, 255, 0.18);
-      min-width: 4px;
+    .action-btn--danger:hover {
+      background: rgba(248, 113, 113, 0.12);
+      color: #f87171;
     }
 
-    .track-bar.is-done {
-      background: #ffe28a;
+    .link-btn {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #ffe28a;
+      background: none;
+      border: 0;
+      padding: 0.35rem 0;
+      cursor: pointer;
     }
 
-    @media (max-width: 640px) {
-      .track-label {
-        display: none;
-      }
+    .link-btn:hover {
+      color: #ffffff;
+    }
+
+    .thumb {
+      width: 46px;
+      height: 54px;
+      flex: 0 0 46px;
+      background: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
   </style>
 
@@ -155,6 +421,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       { value: 'returned', label: 'Devueltos' },
     ];
 
+    const SUMMARY = [
+      { status: 'pending', label: 'Pago pendiente' },
+      { status: 'confirmed', label: 'Por diseñar' },
+      { status: 'design', label: 'En diseño' },
+      { status: 'preparing', label: 'En producción' },
+      { status: 'ready', label: 'Listos' },
+    ];
+
+    const CLOSED = ['cancelled', 'returned'];
+
     let orders: any[] = [];
     let filter = '';
     let search = '';
@@ -169,145 +445,213 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
 
-    function trackBar(status: OrderStatus) {
-      const closed = ['cancelled', 'returned'].includes(status);
+    const folio = (o: any) => esc(o.order_number ?? String(o.id).slice(0, 8));
+
+    /* ---------------- Seguimiento ---------------- */
+
+    function stepper(status: OrderStatus) {
+      const closed = CLOSED.includes(status);
       const index = STATUS_FLOW.indexOf(status);
 
       return `
-        <div class="flex items-center gap-1 mt-4 mb-1">
+        <div class="stepper">
           ${STATUS_FLOW.map((step, i) => {
             const done = !closed && i <= index;
+            const current = !closed && i === index;
             return `
-              <div class="track-step">
-                <span class="track-dot ${done ? 'is-done' : ''} ${i === index && !closed ? 'is-current' : ''}"></span>
-                <span class="track-label text-xs uppercase tracking-wider ${done ? 'text-blancoRoto' : 'text-white/80'} hidden xl:inline">
-                  ${STATUS_LABEL[step]}
-                </span>
-                ${i < STATUS_FLOW.length - 1 ? `<span class="track-bar ${done && i < index ? 'is-done' : ''}"></span>` : ''}
+              <div class="stepper-step ${done ? 'is-done' : ''} ${current ? 'is-current' : ''}">
+                <span class="stepper-dot"></span>
+                <span class="stepper-label">${STATUS_LABEL[step]}</span>
               </div>`;
           }).join('')}
         </div>
-        ${closed ? `<p class="text-xs uppercase tracking-wider text-red-400">${STATUS_LABEL[status]}</p>` : ''}`;
+        ${
+          closed
+            ? `<p class="mt-3 text-[11px] uppercase tracking-[0.14em] text-red-400">${STATUS_LABEL[status]}</p>`
+            : ''
+        }`;
     }
 
-    function itemsHtml(o: any) {
-      return (o.order_items ?? [])
-        .map(
-          (i: any) => `
-        <div class="flex items-start justify-between gap-3 py-2 border-b border-white/15 last:border-0">
-          <div class="flex gap-3 min-w-0">
-            <div class="w-12 h-14 shrink-0 bg-white border border-white/30 overflow-hidden">
-              ${safeUrl(i.image_url) ? `<img src="${safeUrl(i.image_url)}" alt="" class="w-full h-full object-contain">` : ''}
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm text-blancoRoto">${esc(i.product_name ?? i.variant_name ?? 'Pieza')}</p>
-              <p class="text-xs text-white/80">
-                ${esc([i.size, i.color].filter(Boolean).join(' · '))} · x${i.quantity}
-              </p>
-            </div>
-          </div>
-          <p class="text-sm font-acentos text-oro-brillo whitespace-nowrap">
-            ${formatOrderMoney(Number(i.unit_price) * Number(i.quantity))}
-          </p>
-        </div>`
-        )
-        .join('');
+    function historyHtml(o: any) {
+      const history = (o.order_status_history ?? [])
+        .slice()
+        .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      if (history.length === 0) {
+        return '<p class="text-sm text-white/50">Sin movimientos registrados.</p>';
+      }
+
+      return `
+        <ol class="space-y-2.5">
+          ${history
+            .map(
+              (h: any) => `
+            <li class="flex gap-2.5 text-sm">
+              <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-oro-brillo shrink-0"></span>
+              <span class="min-w-0 text-white/60">
+                <span class="text-blancoRoto">${esc(STATUS_LABEL[h.status as OrderStatus] ?? h.status)}</span>
+                <span class="text-white/40"> · ${formatOrderDateTime(h.created_at)}</span>
+                ${h.notes ? `<br><span class="text-xs text-white/50">${esc(h.notes)}</span>` : ''}
+              </span>
+            </li>`
+            )
+            .join('')}
+        </ol>`;
     }
+
+    /* ---------------- Piezas ---------------- */
+
+    function itemsHtml(o: any) {
+      const items = o.order_items ?? [];
+
+      if (items.length === 0) {
+        return '<p class="text-sm text-white/50">Sin piezas registradas.</p>';
+      }
+
+      return `
+        <ul class="divide-y divide-white/10">
+          ${items
+            .map((i: any) => {
+              const image = safeUrl(i.image_url);
+              const variant = [i.size, i.color].filter(Boolean).join(' · ');
+
+              return `
+              <li class="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                <div class="thumb">${image ? `<img src="${image}" alt="" loading="lazy">` : ''}</div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm text-blancoRoto leading-snug">${esc(
+                    i.product_name ?? i.variant_name ?? 'Pieza'
+                  )}</p>
+                  <p class="text-xs text-white/55 mt-0.5">
+                    ${variant ? `${esc(variant)} · ` : ''}x${esc(i.quantity)}
+                  </p>
+                </div>
+                <p class="text-sm font-acentos text-oro-brillo whitespace-nowrap">
+                  ${formatOrderMoney(Number(i.unit_price) * Number(i.quantity))}
+                </p>
+              </li>`;
+            })
+            .join('')}
+        </ul>`;
+    }
+
+    /* ---------------- Tarjeta ---------------- */
 
     function orderCard(o: any) {
       const status = o.status as OrderStatus;
       const next = NEXT_STATUS[status] ?? [];
       const canShip = status === 'ready';
-      const history = (o.order_status_history ?? []).slice().sort(
-        (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      const closed = CLOSED.includes(status);
+
+      const paymentLine = [
+        PAYMENT_METHOD_LABEL[o.payment_method] ?? o.payment_method,
+        PAYMENT_STATUS_LABEL[o.payment_status] ?? o.payment_status,
+      ]
+        .filter(Boolean)
+        .join(' · ');
 
       return `
       <article class="order-card" data-order-card="${o.id}">
-        <header class="flex flex-wrap items-start justify-between gap-4 p-5 border-b-2 border-white/25">
-          <div class="min-w-0">
-            <p class="font-acentos text-lg text-blancoRoto">
-              ${esc(o.order_number ?? o.id.slice(0, 8))}
-              ${!o.user_id ? '<span class="ml-2 align-middle text-[9px] uppercase tracking-[0.14em] border border-white/50 px-1.5 py-0.5 text-white/80">Invitado</span>' : ''}
+        <header class="order-head">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+              <span class="font-acentos text-lg text-blancoRoto leading-none">${folio(o)}</span>
+              <span class="pill ${closed ? 'pill--danger' : 'pill--gold'}">${esc(
+                STATUS_LABEL[status] ?? status
+              )}</span>
+              ${paymentLine ? `<span class="pill">${esc(paymentLine)}</span>` : ''}
+              ${!o.user_id ? '<span class="pill">Invitado</span>' : ''}
+            </div>
+            <p class="text-sm text-white/75 truncate">
+              ${esc(o.contact_name ?? 'Sin nombre')}
+              <span class="text-white/40"> · ${formatOrderDateTime(o.created_at)}</span>
             </p>
-            <p class="text-sm text-white/80">
-              ${esc(o.contact_name ?? 'Sin nombre')} · ${formatOrderDateTime(o.created_at)}
-            </p>
-            <p class="text-sm text-white/80">
+            <p class="text-xs text-white/45 truncate mt-0.5">
               ${esc(o.contact_email ?? '')}${o.contact_phone ? ` · ${esc(o.contact_phone)}` : ''}
             </p>
           </div>
-          <div class="text-right">
-            <p class="font-acentos text-xl text-oro-brillo">${formatOrderMoney(Number(o.total_amount))}</p>
-            <p class="text-xs uppercase tracking-wider text-white/80 mt-1">
-              ${esc(PAYMENT_METHOD_LABEL[o.payment_method] ?? o.payment_method ?? '')} ·
-              ${esc(PAYMENT_STATUS_LABEL[o.payment_status] ?? o.payment_status ?? '')}
+
+          <div class="text-right shrink-0">
+            <p class="font-acentos text-xl text-oro-brillo leading-none">
+              ${formatOrderMoney(Number(o.total_amount))}
+            </p>
+            <p class="text-[10px] uppercase tracking-[0.14em] text-white/40 mt-1.5">
+              ${(o.order_items ?? []).length} ${(o.order_items ?? []).length === 1 ? 'pieza' : 'piezas'}
             </p>
           </div>
         </header>
 
-        <div class="grid lg:grid-cols-2 gap-0 lg:gap-6">
-          <div class="p-5 border-b-2 lg:border-b-0 border-white/25">
-            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mb-2">Piezas</p>
+        <div class="order-body">
+          <section class="order-col">
+            <p class="col-title">Piezas</p>
             ${itemsHtml(o)}
-
-            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mt-4 mb-1">Envío</p>
-            <p class="text-sm text-white/80 leading-relaxed">
-              ${esc(o.shipping_street ?? '—')}${o.shipping_colonia ? ', ' + esc(o.shipping_colonia) : ''}<br>
-              ${esc(o.shipping_city ?? '')} ${esc(o.shipping_state ?? '')} ${esc(o.shipping_postal_code ?? '')}
-              ${o.shipping_references ? `<br><span class="text-white/80">Ref: ${esc(o.shipping_references)}</span>` : ''}
-            </p>
-            ${o.notes ? `<p class="mt-3 text-sm text-blancoRoto"><span class="text-white/80">Nota del cliente:</span> ${esc(o.notes)}</p>` : ''}
-          </div>
-
-          <div class="p-5">
-            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mb-2">Seguimiento</p>
-            ${trackBar(status)}
-
-            <ol class="mt-3 space-y-2">
-              ${history
-                .map(
-                  (h: any) => `
-                <li class="flex items-start gap-2 text-sm">
-                  <span class="w-1.5 h-1.5 rounded-full bg-oro-brillo mt-2 shrink-0"></span>
-                  <span class="text-white/80">
-                    <span class="text-blancoRoto">${esc(STATUS_LABEL[h.status as OrderStatus] ?? h.status)}</span>
-                    · ${formatOrderDateTime(h.created_at)}
-                    ${h.notes ? `<br><span class="text-xs text-white/80">${esc(h.notes)}</span>` : ''}
-                  </span>
-                </li>`
-                )
-                .join('')}
-            </ol>
-
             ${
-              o.tracking_number
-                ? `<p class="mt-3 text-sm text-blancoRoto">Guía: ${esc(o.carrier ?? '')} ${esc(o.tracking_number)}</p>`
+              o.notes
+                ? `<div class="mt-4 pt-3 border-t border-white/10">
+                     <p class="col-title">Nota del cliente</p>
+                     <p class="text-sm text-white/70 leading-relaxed">${esc(o.notes)}</p>
+                   </div>`
                 : ''
             }
+          </section>
 
-            <p class="text-xs uppercase tracking-[0.18em] text-white/80 mt-4 mb-2">Notas internas</p>
+          <section class="order-col">
+            <p class="col-title">Seguimiento</p>
+            ${stepper(status)}
+            <div class="mt-4">${historyHtml(o)}</div>
+            ${
+              o.tracking_number
+                ? `<div class="mt-4 pt-3 border-t border-white/10">
+                     <p class="col-title">Guía</p>
+                     <p class="text-sm text-white/75">
+                       ${esc(o.carrier ?? 'Paquetería')} · ${esc(o.tracking_number)}
+                     </p>
+                   </div>`
+                : ''
+            }
+          </section>
+        </div>
+
+        <div class="order-body order-body--even">
+          <section class="order-col">
+            <p class="col-title">Envío</p>
+            <p class="text-sm text-white/70 leading-relaxed">
+              ${esc(o.shipping_street ?? '—')}${o.shipping_colonia ? ', ' + esc(o.shipping_colonia) : ''}<br>
+              ${esc(o.shipping_city ?? '')} ${esc(o.shipping_state ?? '')} ${esc(o.shipping_postal_code ?? '')}
+              ${
+                o.shipping_references
+                  ? `<br><span class="text-white/45">Ref: ${esc(o.shipping_references)}</span>`
+                  : ''
+              }
+            </p>
+          </section>
+
+          <section class="order-col">
+            <p class="col-title">Notas internas</p>
             <textarea
               data-admin-notes="${o.id}"
               rows="2"
               class="event-input"
-              placeholder="Diseño pendiente, cliente pidió cambio…"
+              placeholder="Diseño pendiente, el cliente pidió cambio…"
             >${esc(o.admin_notes ?? '')}</textarea>
-            <button type="button" data-save-notes="${o.id}"
-              class="mt-2 text-xs uppercase tracking-wider text-oro-brillo hover:text-white py-2">
+            <button type="button" data-save-notes="${o.id}" class="link-btn mt-1.5">
               Guardar nota
             </button>
-          </div>
+          </section>
         </div>
 
         ${
           next.length > 0 || canShip
-            ? `<footer class="p-5 border-t-2 border-white/25">
+            ? `<footer class="order-foot">
                  ${
                    canShip
-                     ? `<div class="grid sm:grid-cols-3 gap-2 mb-3">
-                          <input data-carrier="${o.id}" class="event-input" placeholder="Paquetería" value="${esc(o.carrier ?? '')}" />
-                          <input data-tracking="${o.id}" class="event-input sm:col-span-2" placeholder="Número de guía" value="${esc(o.tracking_number ?? '')}" />
+                     ? `<div class="grid sm:grid-cols-3 gap-2 w-full mb-2">
+                          <input data-carrier="${o.id}" class="event-input" placeholder="Paquetería" value="${esc(
+                            o.carrier ?? ''
+                          )}" />
+                          <input data-tracking="${o.id}" class="event-input sm:col-span-2" placeholder="Número de guía" value="${esc(
+                            o.tracking_number ?? ''
+                          )}" />
                         </div>`
                      : ''
                  }
@@ -316,11 +660,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                      .map((s) => {
                        const danger = s === 'cancelled' || s === 'returned';
                        return `<button type="button" data-order="${o.id}" data-status="${s}"
-                         class="min-h-[44px] px-4 font-acentos text-xs uppercase tracking-[0.12em] border-2 transition-colors ${
-                           danger
-                             ? 'border-red-400/60 text-red-400 hover:bg-red-400/10'
-                             : 'border-oro-brillo text-oro-brillo hover:bg-oro-brillo hover:text-negro-profundo'
-                         }">
+                         class="action-btn ${danger ? 'action-btn--danger' : ''}">
                          Mover a ${STATUS_LABEL[s]}
                        </button>`;
                      })
@@ -332,39 +672,54 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </article>`;
     }
 
+    /* ---------------- Resumen y filtros ---------------- */
+
+    function renderMeta() {
+      const visible = filter ? orders.filter((o) => o.status === filter) : orders;
+      const paid = visible.filter((o) => o.payment_status === 'approved');
+      const revenue = paid.reduce((sum, o) => sum + Number(o.total_amount ?? 0), 0);
+
+      document.getElementById('orders-meta')!.textContent =
+        `${visible.length} ${visible.length === 1 ? 'pedido' : 'pedidos'}` +
+        (paid.length > 0 ? ` · ${formatOrderMoney(revenue)} cobrados` : '');
+    }
+
     function renderSummary() {
       const counts = new Map<string, number>();
       for (const o of orders) counts.set(o.status, (counts.get(o.status) ?? 0) + 1);
 
-      const highlights = [
-        { status: 'pending', label: 'Pago pendiente' },
-        { status: 'confirmed', label: 'Por diseñar' },
-        { status: 'design', label: 'En diseño' },
-        { status: 'preparing', label: 'En producción' },
-        { status: 'ready', label: 'Listos' },
-      ];
+      document.getElementById('status-summary')!.innerHTML = SUMMARY.map(
+        (h) => `
+        <button type="button" class="summary-card" data-summary="${h.status}" aria-pressed="${
+          filter === h.status
+        }">
+          <span class="summary-label">${h.label}</span>
+          <span class="summary-value">${counts.get(h.status) ?? 0}</span>
+        </button>`
+      ).join('');
 
-      document.getElementById('status-summary')!.innerHTML = highlights
-        .map(
-          (h) => `
-        <div class="card p-4">
-          <p class="text-xs uppercase tracking-[0.16em] text-white/80 mb-1">${h.label}</p>
-          <p class="font-acentos text-2xl text-oro-brillo">${counts.get(h.status) ?? 0}</p>
-        </div>`
-        )
-        .join('');
+      document.querySelectorAll<HTMLElement>('[data-summary]').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          const status = btn.dataset.summary ?? '';
+          filter = filter === status ? '' : status;
+          renderSummary();
+          renderFilters();
+          renderList();
+        })
+      );
     }
 
     function renderFilters() {
       document.getElementById('filters')!.innerHTML = FILTERS.map(
-        (f) => `<button type="button" class="status-chip" data-filter="${f.value}" aria-pressed="${filter === f.value}">
-                  ${f.label}
-                </button>`
+        (f) => `<button type="button" class="status-chip" data-filter="${f.value}" aria-pressed="${
+          filter === f.value
+        }">${f.label}</button>`
       ).join('');
 
       document.querySelectorAll<HTMLElement>('[data-filter]').forEach((btn) =>
         btn.addEventListener('click', () => {
           filter = btn.dataset.filter ?? '';
+          renderSummary();
           renderFilters();
           renderList();
         })
@@ -382,8 +737,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         const term = search.toLowerCase();
 
         list = orders.filter((o) => {
-          const byStatus = !filter || o.status === filter;
-          if (!byStatus) return false;
+          if (filter && o.status !== filter) return false;
           if (!term) return true;
 
           const haystack = [
@@ -400,10 +754,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         });
       }
 
+      renderMeta();
+
       if (list.length === 0) {
         container.innerHTML = `
           <div class="card p-10 text-center">
-            <p class="text-base text-white/80">${
+            <p class="text-base text-white/70">${
               focusOrder ? 'Ese pedido no existe o fue eliminado.' : 'Sin pedidos para este filtro.'
             }</p>
             ${
@@ -444,7 +800,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       document.querySelectorAll<HTMLElement>('[data-save-notes]').forEach((btn) =>
         btn.addEventListener('click', async () => {
           const orderId = btn.dataset.saveNotes!;
-          const textarea = document.querySelector<HTMLTextAreaElement>(`[data-admin-notes="${orderId}"]`)!;
+          const textarea =
+            document.querySelector<HTMLTextAreaElement>(`[data-admin-notes="${orderId}"]`)!;
           await saveOrderNotes(orderId, textarea.value);
           btn.textContent = 'Guardado ✓';
           setTimeout(() => (btn.textContent = 'Guardar nota'), 1600);
@@ -454,7 +811,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     async function refresh() {
       orders = await listOrders(TENANT_ID);
-      renderSummary();
+      if (!focusOrder) renderSummary();
       renderList();
     }
 
@@ -470,25 +827,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         view.classList.remove('hidden');
 
         if (focusOrder) {
-          // Vista de un solo pedido: sin resumen, filtros ni buscador.
-          document.getElementById('orders-back')!.style.display = 'inline-flex';
+          // Ficha de un pedido: sin resumen, filtros ni buscador.
+          const back = document.getElementById('orders-back')!;
+          back.style.display = 'inline-flex';
+
           document.getElementById('status-summary')!.style.display = 'none';
           document.getElementById('filters')!.style.display = 'none';
+          document.getElementById('orders-search-wrap')!.style.display = 'none';
           return;
         }
 
         renderFilters();
 
-        // Búsqueda rápida
-        const searchInput = document.createElement('input');
-        searchInput.type = 'search';
-        searchInput.placeholder = 'Buscar folio, cliente o pieza…';
-        searchInput.className = 'input-dark !min-h-[46px] mb-6 max-w-md';
+        const searchInput = document.getElementById('orders-search') as HTMLInputElement;
         searchInput.addEventListener('input', () => {
           search = searchInput.value;
           renderList();
         });
-        document.getElementById('filters')!.before(searchInput);
       } catch (err: any) {
         loading.textContent = err?.message ?? 'No se pudieron cargar los pedidos.';
       }
