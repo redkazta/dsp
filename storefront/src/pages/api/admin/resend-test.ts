@@ -2,9 +2,9 @@
  * /api/admin/resend-test — diagnóstico de Resend desde producción.
  *
  * Solo staff. Comprueba, en este orden:
- *   1. qué variables ve el runtime (`RESEND_API_KEY`, `RESEND_DOMAIN`,
- *      `CONTACT_EMAIL`) — el fallo típico es que falten en el deployment
- *      actual o que el scope no sea Production;
+ *   1. qué variables ve el runtime (`RESEND_API_KEY` o `RESENDAPIKEY`,
+ *      `RESEND_DOMAIN`, `CONTACT_EMAIL`) — el fallo típico es que falten en
+ *      el deployment actual o que el scope no sea Production;
  *   2. si la clave es válida y qué dominios tiene Resend (`GET /domains`);
  *   3. opcionalmente envía un correo de prueba al staff que lo abre (`?send=1`).
  *
@@ -35,10 +35,16 @@ export const GET: APIRoute = async (context: any) => {
 
   const rawDomain = serverEnv('RESEND_DOMAIN');
   const cfg = resendConfig();
+  const keyName = serverEnv('RESEND_API_KEY')
+    ? 'RESEND_API_KEY'
+    : serverEnv('RESENDAPIKEY')
+      ? 'RESENDAPIKEY'
+      : null;
 
   const report: Record<string, any> = {
     env: {
       RESEND_API_KEY: mask(cfg.apiKey),
+      nombre_de_la_clave: keyName,
       // Nombres presentes (sin valores): delata typos tipo RESEND_APIKEY.
       variables_resend_presentes: Object.keys(
         (globalThis as any).process?.env ?? {}
@@ -53,7 +59,7 @@ export const GET: APIRoute = async (context: any) => {
 
   if (!cfg.apiKey) {
     report.veredicto =
-      'Falta RESEND_API_KEY en este deployment. Añádela en Vercel con scope Production y haz Redeploy (las variables nuevas no llegan a un deployment ya creado).';
+      'Falta la clave en este deployment: ni RESEND_API_KEY ni RESENDAPIKEY tienen valor. Añádela en Vercel con scope Production y haz Redeploy (las variables nuevas no llegan a un deployment ya creado).';
     return json(report, 500);
   }
 

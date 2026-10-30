@@ -8,12 +8,27 @@
  * `RESEND_DOMAIN` se normaliza: si alguien la guarda como
  * `https://dominio.com`, `@dominio.com` o con espacios, el remitente sale
  * inválido y Resend responde 403/422 sin pista clara.
+ *
+ * La clave se acepta también como `RESENDAPIKEY` (sin guiones bajos): así
+ * está creada hoy en Vercel y renombrarla ahí no es posible.
  */
 
 import { serverEnv } from './env';
 
 const RESEND_API = 'https://api.resend.com/emails';
 const DEFAULT_DOMAIN = 'dinerosobreproblemas.com';
+
+/** Nombres aceptados para la clave, en orden de preferencia. */
+const API_KEY_NAMES = ['RESEND_API_KEY', 'RESENDAPIKEY'] as const;
+
+/** Primera variable de la lista que exista y no esté vacía. */
+export function resendApiKey(): string {
+  for (const name of API_KEY_NAMES) {
+    const value = serverEnv(name);
+    if (value) return value;
+  }
+  return '';
+}
 
 /** Deja `RESEND_DOMAIN` en un hostname limpio. */
 function normalizeDomain(raw: string | undefined): string {
@@ -28,7 +43,7 @@ function normalizeDomain(raw: string | undefined): string {
 
 /** Configuración efectiva de Resend (sin exponer la clave completa). */
 export function resendConfig() {
-  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
+  const apiKey = resendApiKey();
   const domain = normalizeDomain(serverEnv('RESEND_DOMAIN')) || DEFAULT_DOMAIN;
 
   return {
