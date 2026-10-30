@@ -418,7 +418,8 @@ const jsonLd = {
     <!-- Buscador global (⌘K / Ctrl+K) -->
     <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label={t.header.search}
       data-empty={t.common.noResults}
-      data-product-base={lang === 'en' ? '/product' : '/producto'}>
+      data-product-base={lang === 'en' ? '/product' : '/producto'}
+      data-shop-base={localize(lang, 'shop')}>
       <button type="button" id="search-backdrop" class="search-backdrop" aria-label={t.header.close}></button>
       <div class="search-panel">
         <div class="search-field">
@@ -667,6 +668,10 @@ const jsonLd = {
       // marcado (donde sí hay idioma), no de variables de frontmatter.
       const searchEmptyLabel = searchDialog?.dataset.empty ?? '';
       const productBase = searchDialog?.dataset.productBase ?? '/producto';
+      const shopBase = searchDialog?.dataset.shopBase ?? '/tienda';
+
+      /** Cuántas coincidencias se muestran en el desplegable. */
+      const SEARCH_LIMIT = 3;
 
       function setSearchOpen(open: boolean) {
         if (!searchDialog) return;
@@ -678,7 +683,7 @@ const jsonLd = {
         else openSearch?.focus();
       }
 
-      function renderSearchResults(payload: { results?: any[] }) {
+      function renderSearchResults(payload: { results?: any[] }, query = '') {
         if (!searchResults || !searchHint) return;
         const items = payload.results ?? [];
 
@@ -689,20 +694,31 @@ const jsonLd = {
         }
 
         searchHint.textContent = '';
-        searchResults.innerHTML = items
-          .map((p) => {
-            const img = safeUrl(p.image);
-            return `
+
+        // Pocas y compactas: el desplegable es un atajo, no el catálogo.
+        const shown = items.slice(0, SEARCH_LIMIT);
+        const rest = items.length - shown.length;
+
+        searchResults.innerHTML =
+          shown
+            .map((p) => {
+              const img = safeUrl(p.image);
+              return `
           <a href="${productBase}/${encodeURIComponent(p.slug ?? p.id)}" role="option" class="search-item">
-            <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : ''}</span>
+            <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy" decoding="async">` : ''}</span>
             <span class="min-w-0 flex-1">
               <span class="search-item-name">${escapeHtml(p.name)}</span>
               <span class="search-item-cat">${escapeHtml(p.category ?? 'Pieza')}</span>
             </span>
             <span class="search-item-price">$${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </a>`;
-          })
-          .join('');
+            })
+            .join('') +
+          (rest > 0
+            ? `<a href="${shopBase}?q=${encodeURIComponent(query)}" class="search-more">
+                 Ver ${items.length} resultados
+               </a>`
+            : '');
       }
 
       async function runSearch(q: string) {
@@ -717,7 +733,7 @@ const jsonLd = {
 
         try {
           const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-          renderSearchResults(await res.json());
+          renderSearchResults(await res.json(), q.trim());
         } catch {
           searchHint.textContent = 'No pudimos buscar. Intenta de nuevo.';
         }
@@ -1129,8 +1145,8 @@ const jsonLd = {
   .search-item {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
-    padding: 0.85rem 1.25rem;
+    gap: 0.6rem;
+    padding: 0.45rem 0.9rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     transition: background-color 0.2s ease;
   }
@@ -1142,11 +1158,11 @@ const jsonLd = {
   }
 
   .search-thumb {
-    width: 48px;
-    height: 58px;
-    flex: 0 0 48px;
+    width: 32px;
+    height: 38px;
+    flex: 0 0 32px;
     background: #ffffff;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     overflow: hidden;
   }
 
@@ -1159,21 +1175,45 @@ const jsonLd = {
   .search-item-name {
     display: block;
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
+    line-height: 1.2;
     color: #ffffff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .search-item-cat {
     display: block;
-    margin-top: 0.15rem;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.7);
+    margin-top: 0.1rem;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .search-item-price {
     font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.8125rem;
     color: #ffe28a;
     white-space: nowrap;
+  }
+
+  /* "Ver todos los resultados": fila aparte, discreta. */
+  .search-more {
+    display: block;
+    padding: 0.55rem 0.9rem;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .search-more:hover {
+    color: #ffe28a;
+    background: rgba(255, 226, 138, 0.06);
   }
 
   .search-hint {
