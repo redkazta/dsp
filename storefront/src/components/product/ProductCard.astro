@@ -67,9 +67,34 @@ const sizes = [
 
 const trackId = `card-carousel-${product.id}`;
 void trackId;
+
+/** Variantes con stock: lo que se puede añadir desde la tarjeta. */
+type CardVariant = {
+  id: string;
+  name: string;
+  size?: string | null;
+  color?: string | null;
+  price: number;
+  stock: number;
+};
+
+const available = ((product.product_variants ?? []) as CardVariant[]).filter(
+  (v) => (v.stock ?? 0) > 0
+);
+
+const canQuickAdd = !isSoldOut && available.length > 0;
+const singleVariant = available.length === 1 ? available[0] : null;
+const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
 ---
 
-<div class="product-card-wrap">
+<div
+  class="product-card-wrap"
+  data-card
+  data-card-id={product.id}
+  data-card-slug={product.slug ?? ''}
+  data-card-name={title}
+  data-card-image={images[0]?.url ?? ''}
+>
   <a href={href} class="block">
     <!-- Imagen: marco 1:1, mismo encuadre para toda la colección -->
     <div
@@ -181,6 +206,31 @@ void trackId;
         </div>
       </div>
 
+      <!-- Selector rápido de talla: se abre desde el botón de la tarjeta -->
+      {canQuickAdd && (
+        <div class="quick-panel" data-quick-panel hidden>
+          <p class="quick-title">{t.product.selectSize}</p>
+          <div class="quick-sizes">
+            {available.map((v) => (
+              <button
+                type="button"
+                class="quick-size"
+                data-add-variant={v.id}
+                data-v-name={v.name ?? ''}
+                data-v-size={v.size ?? ''}
+                data-v-color={v.color ?? ''}
+                data-v-price={v.price}
+              >
+                {v.size || v.name}
+              </button>
+            ))}
+          </div>
+          <button type="button" class="quick-cancel" data-quick-close>
+            {cancelLabel}
+          </button>
+        </div>
+      )}
+
       <!-- Línea dorada -->
       <div class="absolute top-0 left-0 w-full h-0.5 bg-oro-brillo scale-x-0 transition-transform duration-500 origin-left z-10 product-line"></div>
 
@@ -189,16 +239,39 @@ void trackId;
     </div>
 
     <!-- Info -->
-    <div class="pt-4 flex items-start justify-between gap-4">
-      <div class="min-w-0">
+    <div class="pt-4 flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
         <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
           {title}
         </h3>
         {sizes.length > 0 && <p class="mt-1.5 text-xs text-muted">{sizes.join(' · ')}</p>}
       </div>
-      <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap">
-        ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </p>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap leading-none">
+          ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </p>
+
+        {canQuickAdd && (
+          <button
+            type="button"
+            class="quick-add"
+            data-quick-add
+            data-single-variant={singleVariant?.id ?? ''}
+            data-single-name={singleVariant?.name ?? ''}
+            data-single-size={singleVariant?.size ?? ''}
+            data-single-color={singleVariant?.color ?? ''}
+            data-single-price={singleVariant?.price ?? price}
+            aria-label={`${t.product.addToCart}: ${title}`}
+            title={t.product.addToCart}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+              <path d="M3 6h18M16 10a4 4 0 0 1-8 0" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   </a>
 </div>
@@ -208,6 +281,104 @@ void trackId;
      no en el layout, para no mezclar scope. */
   .product-card-wrap {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .product-card-wrap > a {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* ---------- Añadir al carrito desde la tarjeta ---------- */
+  .quick-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border: 2px solid #ffe28a;
+    background: rgba(255, 226, 138, 0.08);
+    color: #ffe28a;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .quick-add:hover {
+    background: #ffe28a;
+    color: #0a0a0a;
+  }
+
+  .quick-panel {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(6, 6, 6, 0.94);
+    backdrop-filter: blur(2px);
+    text-align: center;
+  }
+
+  .quick-panel[hidden] {
+    display: none;
+  }
+
+  .quick-title {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ffe28a;
+  }
+
+  .quick-sizes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    max-height: 60%;
+    overflow-y: auto;
+  }
+
+  .quick-size {
+    min-width: 32px;
+    min-height: 30px;
+    padding: 0 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: transparent;
+    color: #ffffff;
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .quick-size:hover {
+    border-color: #ffe28a;
+    color: #ffe28a;
+  }
+
+  .quick-cancel {
+    font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
+    background: none;
+    border: 0;
+    padding: 0.25rem;
+  }
+
+  .quick-cancel:hover {
+    color: #ffffff;
   }
 
   .product-card-wrap a .product-media {
@@ -387,7 +558,8 @@ void trackId;
   import '../../lib/carousel';
   import '../../lib/reflect-anim';
   import { currentWishlist, hasSession, toggleWishlist } from '../../lib/wishlist';
-  type WishWindow = Window & { __dspWishBound?: boolean };
+  import { addToCart } from '../../lib/cart';
+  type WishWindow = Window & { __dspWishBound?: boolean; __dspQuickBound?: boolean };
 
   function initWishCards() {
     const paint = (btn: HTMLButtonElement, active: boolean) => {
@@ -445,6 +617,102 @@ void trackId;
   if (!(window as WishWindow).__dspWishBound) {
     (window as WishWindow).__dspWishBound = true;
     initWishCards();
+  }
+
+  // ---------- Añadir al carrito desde la tarjeta ----------
+  // La tarjeta entera es un enlace: todo lo que sea botón corta la navegación.
+  function initQuickAdd() {
+    const addPiece = (
+      card: HTMLElement,
+      variantId: string,
+      variantName: string,
+      size: string,
+      color: string,
+      price: number
+    ) => {
+      addToCart({
+        variantId,
+        productId: card.dataset.cardId!,
+        slug: card.dataset.cardSlug || null,
+        name: card.dataset.cardName!,
+        variantName: [size, color].filter(Boolean).join(' · ') || variantName || 'Unitalla',
+        price: Number(price) || 0,
+        qty: 1,
+        image: card.dataset.cardImage || undefined,
+        size: size || null,
+        color: color || null,
+      });
+    };
+
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      const closeBtn = target.closest<HTMLElement>('[data-quick-close]');
+      if (closeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const panel = closeBtn
+          .closest<HTMLElement>('[data-card]')
+          ?.querySelector<HTMLElement>('[data-quick-panel]');
+
+        if (panel) panel.hidden = true;
+        return;
+      }
+
+      const sizeBtn = target.closest<HTMLElement>('[data-add-variant]');
+      if (sizeBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const card = sizeBtn.closest<HTMLElement>('[data-card]');
+        if (!card) return;
+
+        addPiece(
+          card,
+          sizeBtn.dataset.addVariant!,
+          sizeBtn.dataset.vName ?? '',
+          sizeBtn.dataset.vSize ?? '',
+          sizeBtn.dataset.vColor ?? '',
+          Number(sizeBtn.dataset.vPrice)
+        );
+
+        const panel = card.querySelector<HTMLElement>('[data-quick-panel]');
+        if (panel) panel.hidden = true;
+        return;
+      }
+
+      const addBtn = target.closest<HTMLElement>('[data-quick-add]');
+      if (!addBtn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const card = addBtn.closest<HTMLElement>('[data-card]');
+      if (!card) return;
+
+      // Una sola variante disponible: se añade sin preguntar talla.
+      const single = addBtn.dataset.singleVariant;
+      if (single) {
+        addPiece(
+          card,
+          single,
+          addBtn.dataset.singleName ?? '',
+          addBtn.dataset.singleSize ?? '',
+          addBtn.dataset.singleColor ?? '',
+          Number(addBtn.dataset.singlePrice)
+        );
+        return;
+      }
+
+      const panel = card.querySelector<HTMLElement>('[data-quick-panel]');
+      if (panel) panel.hidden = !panel.hidden;
+    });
+  }
+
+  if (!(window as WishWindow).__dspQuickBound) {
+    (window as WishWindow).__dspQuickBound = true;
+    initQuickAdd();
   }
 
   // ---------- Carrusel ----------

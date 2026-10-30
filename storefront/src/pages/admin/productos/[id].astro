@@ -388,7 +388,6 @@ import { localize } from '../../../lib/routes';
       try {
         await updateProduct(productId, {
           name: String(fd.get('name') ?? '').trim(),
-          name: String(fd.get('name') ?? '').trim(),
           name_en: String(fd.get('name_en') ?? '').trim() || null,
           description: String(fd.get('description') ?? '').trim() || null,
           description_en: String(fd.get('description_en') ?? '').trim() || null,
