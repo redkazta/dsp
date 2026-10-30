@@ -1,12 +1,13 @@
 ---
 /**
- * Aviso de cookies.
+ * Aviso de cookies — barra fija abajo.
  *
- * Hoy la tienda no usa cookies de terceros ni píxeles publicitarios: la sesión
- * (Supabase) y el idioma son cookies técnicas, y Vercel Analytics no usa
- * cookies. El aviso es informativo y deja la decisión guardada para cuando se
- * añada medición con consentimiento (GA4, Meta Pixel…), que deberá leer
- * `dsp_cookie_consent`.
+ * Delgada a propósito: una sola línea en desktop, mensaje corto y el botón de
+ * aceptar a la derecha. Se guarda en `dsp_cookie_consent` y no vuelve a salir.
+ *
+ * Hoy la tienda no usa rastreadores publicitarios: sesión (Supabase), carrito
+ * (localStorage) e idioma (cookie) son técnicos, y Vercel Analytics no usa
+ * cookies. Cuando se añada medición con consentimiento, debe leer esta clave.
  */
 import { localize } from '../lib/routes';
 
@@ -15,71 +16,71 @@ const lang = (Astro.locals.lang ?? 'es') as 'es' | 'en';
 const copy =
   lang === 'es'
     ? {
-        title: 'Cookies',
-        text: 'Usamos solo cookies necesarias para que la tienda funcione: tu sesión, el carrito y el idioma. Sin rastreadores publicitarios.',
+        text: 'Solo usamos cookies necesarias: sesión, carrito e idioma.',
         all: 'Aceptar',
         necessary: 'Solo necesarias',
-        more: 'Política de privacidad',
+        more: 'Privacidad',
       }
     : {
-        title: 'Cookies',
-        text: 'We only use cookies required to run the store: your session, cart and language. No advertising trackers.',
+        text: 'We only use necessary cookies: session, cart and language.',
         all: 'Accept',
         necessary: 'Necessary only',
-        more: 'Privacy policy',
+        more: 'Privacy',
       };
 ---
 
 <div
   id="cookie-consent"
-  class="hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-auto sm:max-w-md z-[95] border-2 border-oro-brillo/50 bg-negro-profundo/98 backdrop-blur-xl p-4 sm:p-5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]"
-  role="dialog"
+  class="hidden fixed bottom-0 inset-x-0 z-[95] border-t-2 border-oro-brillo/60 bg-negro-profundo/98 backdrop-blur-xl"
+  role="region"
   aria-live="polite"
-  aria-label={copy.title}
+  aria-label="Cookies"
 >
-  <p class="font-acentos text-[10px] uppercase tracking-[0.28em] text-oro-brillo mb-2">
-    {copy.title}
-  </p>
-  <p class="text-sm text-white/80 leading-relaxed">{copy.text}</p>
+  <div class="page-container py-2.5 flex items-center gap-3 sm:gap-5">
+    <p class="flex-1 min-w-0 text-[11px] sm:text-xs text-white/75 leading-snug">
+      {copy.text}
+      <a
+        href={localize(lang, 'privacy')}
+        class="text-white/60 hover:text-oro-brillo underline underline-offset-2 whitespace-nowrap"
+      >
+        {copy.more}
+      </a>
+    </p>
 
-  <div class="flex flex-wrap items-center gap-2 mt-4">
-    <button
-      type="button"
-      data-cookie="all"
-      class="btn-gold !min-h-[40px] !px-4 !py-2 !text-[11px]"
-    >
-      {copy.all}
-    </button>
     <button
       type="button"
       data-cookie="necessary"
-      class="btn-outline !min-h-[40px] !px-4 !py-2 !text-[11px]"
+      class="hidden sm:inline text-[11px] uppercase tracking-[0.12em] text-white/55 hover:text-white/85 transition-colors whitespace-nowrap"
     >
       {copy.necessary}
     </button>
-    <a
-      href={localize(lang, 'privacy')}
-      class="ml-auto text-[11px] text-white/60 hover:text-oro-brillo underline underline-offset-2"
+
+    <button
+      type="button"
+      data-cookie="all"
+      class="btn-gold !min-h-[36px] !px-4 !py-1.5 !text-[10px] !tracking-[0.16em] shrink-0"
     >
-      {copy.more}
-    </a>
+      {copy.all}
+    </button>
   </div>
 </div>
 
 <script>
   const KEY = 'dsp_cookie_consent';
-  const panel = document.getElementById('cookie-consent');
+  const bar = document.getElementById('cookie-consent');
 
-  if (panel && !localStorage.getItem(KEY)) {
-    panel.classList.remove('hidden');
+  if (bar && !localStorage.getItem(KEY)) {
+    bar.classList.remove('hidden');
+    document.body.classList.add('has-cookie-bar');
   }
 
-  if (panel) {
-    panel.querySelectorAll<HTMLButtonElement>('[data-cookie]').forEach((btn) =>
+  if (bar) {
+    bar.querySelectorAll<HTMLButtonElement>('[data-cookie]').forEach((btn) =>
       btn.addEventListener('click', () => {
         const choice = btn.dataset.cookie ?? 'necessary';
         localStorage.setItem(KEY, choice);
-        panel.classList.add('hidden');
+        bar.classList.add('hidden');
+        document.body.classList.remove('has-cookie-bar');
 
         // Punto único para colgar medición con consentimiento en el futuro.
         window.dispatchEvent(new CustomEvent('cookie:consent', { detail: { choice } }));
@@ -87,3 +88,10 @@ const copy =
     );
   }
 </script>
+
+<style is:global>
+  /* La barra no debe tapar el final del footer. */
+  body.has-cookie-bar {
+    padding-bottom: 64px;
+  }
+</style>
