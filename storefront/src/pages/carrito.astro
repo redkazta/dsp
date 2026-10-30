@@ -121,7 +121,7 @@ import { localize } from '../lib/routes';
       }
     </div>
 
-    <div id="cart-content" class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8">
+    <div id="cart-content" style="display:none" class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8">
       <!-- Items -->
       <div class="min-w-0">
         <ul id="cart-notices" class="hidden mb-3 space-y-2"></ul>
@@ -219,13 +219,14 @@ import { localize } from '../lib/routes';
 
       if (items.length === 0) {
         empty.classList.remove('hidden');
-        content.classList.add('hidden');
+        // Inline: `hidden` no puede ganarle al `grid` de la clase.
+        content.style.display = 'none';
         summaryText.textContent = `0 ${uiText('many')}`;
         return;
       }
 
       empty.classList.add('hidden');
-      content.classList.remove('hidden');
+      content.style.display = '';
       const count = items.reduce((n, i) => n + i.qty, 0);
       summaryText.textContent = `${count} ${count === 1 ? uiText('one') : uiText('many')}`;
 
