@@ -124,13 +124,13 @@ import { localize } from '../lib/routes';
               : t.account.orderSignIn}
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/cuenta#pedidos" class="btn-gold">{t.account.myOrders}</a>
+            <a href="/cuenta#pedidos" class="btn-gold">{t.account.goToOrders}</a>
             <a href={localize(lang, 'shop')} class="btn-outline">{t.cart.continueShopping}</a>
           </div>
         </div>
       </div>
     ) : (
-      <div id="conf-content">
+      <div id="conf-content" data-paid={isPaid ? '1' : '0'} data-return={returning ? '1' : '0'}>
         <section class="border-b-2 border-white/25 bg-noise">
           <div class="page-container py-5 sm:py-6">
             <div class="flex items-center gap-4 sm:gap-6">
@@ -319,8 +319,15 @@ import { localize } from '../lib/routes';
               </div>
 
               <div class="flex flex-col gap-3">
-                <a href="/cuenta#pedidos" class="btn-gold w-full">{t.account.myOrders}</a>
-                <a href={localize(lang, 'shop')} class="btn-outline w-full">{t.cart.continueShopping}</a>
+                <a href="/cuenta#pedidos" class="btn-gold w-full !text-negro-profundo">
+                  {t.account.goToOrders}
+                </a>
+                <a
+                  href={localize(lang, 'shop')}
+                  class="btn-outline w-full !border-white !text-white hover:!border-oro-brillo hover:!text-oro-brillo"
+                >
+                  {t.cart.continueShopping}
+                </a>
               </div>
             </aside>
           </div>
@@ -328,4 +335,15 @@ import { localize } from '../lib/routes';
       </div>
     )
   }
+
+  <script>
+    import { clearCart } from '../lib/cart';
+
+    // Al volver de Stripe con el pago aprobado, el carrito ya cumplió: se
+    // vacía (y el contador del header se actualiza con `cart:updated`).
+    const root = document.getElementById('conf-content');
+    if (root?.dataset.paid === '1' && root.dataset.return === '1') {
+      clearCart();
+    }
+  </script>
 </BaseLayout>
