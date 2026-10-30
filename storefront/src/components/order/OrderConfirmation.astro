@@ -31,6 +31,17 @@ const sessionId = (Astro.url.searchParams.get('session_id') ?? '').trim();
 const returning = Astro.url.searchParams.get('stripe') === 'return';
 const db = createSupabaseAdminClient();
 
+/**
+ * Permiso de invitado, ya sin `session_id` en la URL.
+ *
+ * Al resolver un pedido con el `session_id` de Stripe se deja esta cookie
+ * con el UUID del pedido (el folio de la URL es público). Así el enlace se
+ * puede compartir limpio (`?order=DSP-001018`) y recargar sigue funcionando
+ * solo en el navegador que pagó.
+ */
+const GUEST_COOKIE = 'dsp_guest_order';
+const rememberedGuestOrder = Astro.cookies.get(GUEST_COOKIE)?.value ?? '';
+
 let order: Awaited<ReturnType<typeof getCustomerOrder>> = null;
 
 if (orderParam && user) {
@@ -56,12 +67,27 @@ if (!order && orderParam && sessionId && db) {
           await confirmSessionOnReturn({ db, sessionId });
         }
 
+        Astro.cookies.set(GUEST_COOKIE, candidate.id, {
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: Astro.url.protocol === 'https:',
+          maxAge: 60 * 60 * 24 * 30,
+        });
+
         order = (await getOrderByIdOrNumber(db, orderParam)) ?? candidate;
       }
     }
   } catch (err: any) {
     console.error('[confirmacion] invitado', err?.message);
   }
+}
+
+// Invitado que ya había abierto su pedido en este navegador: la cookie sustituye
+// al `session_id` cuando la URL ya se limpió.
+if (!order && guest && orderParam && !sessionId && db && rememberedGuestOrder) {
+  const candidate = await getOrderByIdOrNumber(db, orderParam);
+  if (candidate && candidate.id === rememberedGuestOrder) order = candidate;
 }
 
 // Al volver del Checkout de Stripe, si el pago todavía no se refleja se le
@@ -124,12 +150,14 @@ import { localize } from '../../lib/routes';
           <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">{t.order.thanks}</h1>
           <div class="gold-line mx-auto mb-8"></div>
           <p class="text-base text-white/80 leading-relaxed mb-10">
-            {guest || (user && orderParam)
-              ? t.account.orderNotFound
-              : t.account.orderSignIn}
+            {guest
+              ? t.account.guestOrderMissing
+              : user && orderParam
+                ? t.account.orderNotFound
+                : t.account.orderSignIn}
           </p>
           <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="/cuenta#pedidos" class="btn-gold">{t.account.goToOrders}</a>
+            {!guest && <a href="/cuenta#pedidos" class="btn-gold">{t.header.goToOrders}</a>}
             <a href={localize(lang, 'shop')} class="btn-outline">{t.cart.continueShopping}</a>
           </div>
         </div>
@@ -326,12 +354,14 @@ import { localize } from '../../lib/routes';
               </div>
 
               <div class="flex flex-col items-start gap-3">
-                <a
-                  href="/cuenta#pedidos"
-                  class="btn-gold !min-h-[42px] !px-5 !py-2 !text-xs !text-negro-profundo"
-                >
-                  {t.account.goToOrders}
-                </a>
+                {!guest && (
+                  <a
+                    href="/cuenta#pedidos"
+                    class="btn-gold !min-h-[42px] !px-5 !py-2 !text-xs !text-negro-profundo"
+                  >
+                    {t.header.goToOrders}
+                  </a>
+                )}
                 <a
                   href={localize(lang, 'shop')}
                   class="text-[11px] uppercase tracking-[0.14em] text-white/70 hover:text-oro-brillo transition-colors"
@@ -348,6 +378,16 @@ import { localize } from '../../lib/routes';
 
   <script>
     import { clearCart } from '../../lib/cart';
+
+    // La vuelta de Stripe trae `?stripe=return&session_id=cs_test_…`. El
+    // servidor ya autorizó el pedido, así que el enlace se puede compartir
+    // limpio: se conserva solo el folio.
+    const clean = new URL(window.location.href);
+    if (clean.searchParams.has('session_id') || clean.searchParams.has('stripe')) {
+      clean.searchParams.delete('session_id');
+      clean.searchParams.delete('stripe');
+      history.replaceState(null, '', clean.pathname + clean.search);
+    }
 
     // Al volver de Stripe con el pago aprobado, el carrito ya cumplió: se
     // vacía (y el contador del header se actualiza con `cart:updated`).

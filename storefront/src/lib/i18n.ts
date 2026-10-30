@@ -339,6 +339,7 @@ export const copy = {
       orders: 'Pedidos',
       noOrders: 'Todavía no tienes pedidos.',
       orderNotFound: 'No encontramos este pedido en tu cuenta. Verifica el número o revisa tus pedidos.',
+      guestOrderMissing: 'Este enlace ya no es válido. Revisa el correo de confirmación que te enviamos con el detalle de tu pedido.',
       orderSignIn: 'Entra a tu cuenta para ver el detalle completo de tus pedidos.',
       paidApproved: 'Pago aprobado',
       paidPending: 'Pago en proceso',
@@ -1108,6 +1109,7 @@ export const copy = {
     // ---------------- Account / sign in ----------------
     account: {
       orderNotFound: 'We could not find this order in your account. Check the number or review your orders.',
+      guestOrderMissing: 'This link is no longer valid. Check the confirmation email we sent you with your order details.',
       orderSignIn: 'Sign in to your account to see the full details of your orders.',
       paidApproved: 'Payment approved',
       paidPending: 'Payment processing',
