@@ -3,9 +3,11 @@
  * Nosotros / About — manifiesto de llegada.
  *
  * Página mínima a propósito: tres líneas y los 7 logos de la marca rebotando
- * por la pantalla con la física del logo de DVD (rebote en los bordes y giro
- * de color en cada choque). Sin JS, o con `prefers-reduced-motion`, los
- * logos quedan quietos y el texto sigue mandando.
+ * por la pantalla. La velocidad no es constante a propósito: cada logo cambia
+ * de marcha por su cuenta (frenazos de 0.2× durante ~1 s y arranques enteros
+ * de 3×–50× que duran al menos 3 s) y gira como una marometa descontrolada.
+ * Sin JS, o con `prefers-reduced-motion`, los logos quedan quietos y el texto
+ * sigue mandando.
  */
 export const prerender = false;
 
@@ -90,45 +92,107 @@ const LOGO_SIZES = [72, 104, 60, 88, 116, 66, 94];
 
     if (layer) {
       const nodes = Array.from(layer.querySelectorAll<HTMLImageElement>('[data-dvd]'));
-      const HUES = [0, 38, 78, 128, 190, 240, 300];
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      /** Píxeles por frame (a 60 fps) con factor 1. */
+      const BASE = 2.4;
 
       interface Bouncer {
         el: HTMLImageElement;
         size: number;
         x: number;
         y: number;
-        vx: number;
-        vy: number;
+        /** Dirección unitaria; el sentido lo llevan estos signos. */
+        dx: number;
+        dy: number;
+        /** Multiplicador de velocidad de la fase actual. */
+        factor: number;
+        /** Fin de la fase actual (ms). */
+        until: number;
+        /** Rotación acumulada y velocidad angular (grados por segundo). */
+        angle: number;
+        spin: number;
         hue: number;
       }
+
+      const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
       const items: Bouncer[] = nodes.map((el, i) => {
         const size = Number(el.dataset.size) || 96;
         el.style.setProperty('--dvd-size', `${size}px`);
-
-        // Cada logo sale en una dirección distinta; velocidad ligeramente
-        // creciente para que no se muevan en bloque.
-        const angle = (Math.PI * 2 * i) / nodes.length + 0.35;
-        const speed = 1.5 + i * 0.22;
 
         return {
           el,
           size,
           x: 0,
           y: 0,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          hue: HUES[i % HUES.length],
+          dx: Math.cos((Math.PI * 2 * i) / nodes.length + 0.35),
+          dy: Math.sin((Math.PI * 2 * i) / nodes.length + 0.35),
+          factor: 1,
+          until: 0,
+          angle: rand(0, 360),
+          spin: rand(-540, 540),
+          hue: Math.floor(rand(0, 360)),
         };
       });
 
-      const paint = (it: Bouncer) => {
-        it.el.style.transform = `translate3d(${it.x}px, ${it.y}px, 0)`;
-        it.el.style.filter = `hue-rotate(${it.hue}deg) drop-shadow(0 0 18px rgba(255, 226, 138, 0.22))`;
+      /**
+       * Nueva fase de movimiento.
+       *  · 35 %: bajón a 0.2×, apenas 1 segundo.
+       *  · 45 %: acelerón entero de 3× a 50×, nunca menos de 3 segundos.
+       *  · 20 %: vuelta a 1× para que el ojo recupere la referencia.
+       */
+      const nextPhase = (it: Bouncer, now: number) => {
+        const roll = Math.random();
+
+        if (roll < 0.35) {
+          it.factor = 0.2;
+          it.until = now + rand(800, 1200);
+        } else if (roll < 0.8) {
+          it.factor = 3 + Math.floor(rand(0, 48));
+          it.until = now + rand(3000, 7000);
+        } else {
+          it.factor = 1;
+          it.until = now + rand(1200, 2600);
+        }
+
+        // Rumbo nuevo: nada de trayectorias memorizables.
+        const heading = rand(0, Math.PI * 2);
+        it.dx = Math.cos(heading);
+        it.dy = Math.sin(heading);
+
+        // Marometa: el giro también cambia de intensidad y de sentido.
+        const spinMag = [180, 360, 720, 1080, 1440][Math.floor(rand(0, 5))];
+        it.spin = spinMag * rand(0.35, 1.6) * (Math.random() < 0.5 ? -1 : 1);
+
+        // El color cambia por fase, no por choque: a 50× los destellos por
+        // rebote serían un estroboscopio.
+        it.hue = Math.floor(rand(0, 360));
       };
 
-      /** Reparte los logos según el tamaño actual del contenedor. */
+      const paint = (it: Bouncer) => {
+        it.el.style.transform =
+          `translate3d(${it.x}px, ${it.y}px, 0) rotate(${it.angle}deg)`;
+        it.el.style.filter =
+          `hue-rotate(${it.hue}deg) drop-shadow(0 0 18px rgba(255, 226, 138, 0.22))`;
+      };
+
+      /**
+       * Rebote sin túnel: pliega la posición en un vaivén triangular, así
+       * funciona igual a 0.2× que a 50× (un frame puede cruzar la pantalla
+       * entera varias veces sin escaparse del recuadro).
+       */
+      const fold = (pos: number, span: number) => {
+        if (span <= 0) return { pos: 0, bounced: false };
+
+        const period = span * 2;
+        let m = pos % period;
+        if (m < 0) m += period;
+
+        const bounced = m > span;
+        return { pos: bounced ? period - m : m, bounced };
+      };
+
       const layout = (initial: boolean) => {
         const width = layer.clientWidth;
         const height = layer.clientHeight;
@@ -138,8 +202,8 @@ const LOGO_SIZES = [72, 104, 60, 88, 116, 66, 94];
           const maxY = Math.max(0, height - it.size);
 
           if (initial) {
-            it.x = Math.random() * maxX;
-            it.y = Math.random() * maxY;
+            it.x = rand(0, maxX);
+            it.y = rand(0, maxY);
           } else {
             it.x = Math.min(it.x, maxX);
             it.y = Math.min(it.y, maxY);
@@ -165,33 +229,21 @@ const LOGO_SIZES = [72, 104, 60, 88, 116, 66, 94];
           const height = layer.clientHeight;
 
           for (const it of items) {
-            it.x += it.vx * dt;
-            it.y += it.vy * dt;
+            if (time >= it.until) nextPhase(it, time);
 
-            let hit = false;
+            const vx = it.dx * BASE * it.factor * dt;
+            const vy = it.dy * BASE * it.factor * dt;
 
-            if (it.x <= 0) {
-              it.x = 0;
-              it.vx = Math.abs(it.vx);
-              hit = true;
-            } else if (it.x + it.size >= width) {
-              it.x = Math.max(0, width - it.size);
-              it.vx = -Math.abs(it.vx);
-              hit = true;
-            }
+            const nx = fold(it.x + vx, width - it.size);
+            const ny = fold(it.y + vy, height - it.size);
 
-            if (it.y <= 0) {
-              it.y = 0;
-              it.vy = Math.abs(it.vy);
-              hit = true;
-            } else if (it.y + it.size >= height) {
-              it.y = Math.max(0, height - it.size);
-              it.vy = -Math.abs(it.vy);
-              hit = true;
-            }
+            it.x = nx.pos;
+            it.y = ny.pos;
 
-            // Como el logo del DVD: cada choque cambia el color.
-            if (hit) it.hue = (it.hue + 47) % 360;
+            if (nx.bounced) it.dx = -it.dx;
+            if (ny.bounced) it.dy = -it.dy;
+
+            it.angle = (it.angle + it.spin * ((dt * 16.667) / 1000)) % 360;
 
             paint(it);
           }
