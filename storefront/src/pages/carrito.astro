@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
 import { getCopy, categoryName, type Lang } from '../lib/i18n';
@@ -32,9 +33,12 @@ const featured = await supabase
   .eq('is_active', true)
   .eq('is_deleted', false)
   .order('created_at', { ascending: false })
-  .limit(2);
+  .limit(9);
 
-const suggestions = (featured.data ?? []).map((p: any) => {
+/** Catálogo para el carrusel de abajo (mismo componente que en favoritos). */
+const catalog = featured.data ?? [];
+
+const suggestions = catalog.slice(0, 2).map((p: any) => {
   const images = [...(p.product_images ?? [])].sort(
     (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
   );
@@ -173,6 +177,20 @@ import { localize } from '../lib/routes';
       </aside>
     </div>
   </div>
+
+  {
+    catalog.length > 0 && (
+      <ProductCarousel
+        title={t.cart.suggestions}
+        subtitle={t.shop.collection}
+        products={catalog}
+        href={localize(lang, 'shop')}
+        hrefLabel={t.shop.seeAll}
+        perView={3}
+        compact
+      />
+    )
+  }
 
   <script>
     import {
