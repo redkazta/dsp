@@ -10,11 +10,15 @@
  *   - cuánto cuesta cada pieza (`priceItems`, precios de la base de datos)
  *   - crea el pedido en `pending` y devuelve la URL de Stripe Checkout
  *
+ * Compra como invitado: sin sesión también se puede pagar. En ese caso la
+ * orden se guarda con `user_id = null` y se escribe con el cliente admin
+ * (service role), porque RLS no permite insertar pedidos anónimos.
+ *
  * La tarjeta se captura en Stripe: aquí no se recibe ningún número,
  * vigencia ni CVV (PCI SAQ A).
  *
  * Requiere `SUPABASE_SERVICE_ROLE_KEY` (escritura sin RLS) y las llaves de
- * Stripe. Sin service role se escribe con la sesión del visitante (RLS).
+ * Stripe. Sin service role solo se puede pagar con sesión (RLS).
  */
 import type { APIRoute } from 'astro';
 import type { AstroCookies } from 'astro';
@@ -67,7 +71,14 @@ export const POST: APIRoute = async ({
   const db: SupabaseClient = admin ?? sessionClient;
 
   if (!admin && !user) {
-    return error('NO_SESSION', 'Inicia sesión o crea tu cuenta para completar el pedido.', 401);
+    // Sin service role no hay forma de escribir un pedido anónimo (RLS).
+    // Se manda a iniciar sesión, que es el único camino disponible.
+    console.error('[checkout] invitado sin SUPABASE_SERVICE_ROLE_KEY');
+    return error(
+      'NO_SESSION',
+      'El pago como invitado no está disponible ahora. Inicia sesión para continuar.',
+      401
+    );
   }
 
   const result = await startStripeCheckout({
