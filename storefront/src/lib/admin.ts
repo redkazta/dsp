@@ -332,11 +332,9 @@ export async function updateOrderStatus(
   const { error } = await supabase.from('orders').update(patch).eq('id', orderId);
   if (error) throw new Error(error.message);
 
-  await supabase.from('order_status_history').insert({
-    order_id: orderId,
-    status,
-    notes: extra.notes ?? null,
-  });
+  // El historial lo escribe el trigger `on_order_status_change`, que inserta
+  // una fila por cambio de estado. Antes se insertaba también desde aquí y
+  // cada movimiento aparecía dos veces en el seguimiento.
 }
 
 /** Notas internas del pedido (solo staff) */
