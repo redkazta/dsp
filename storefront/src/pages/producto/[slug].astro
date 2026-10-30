@@ -552,7 +552,9 @@ import { localize } from '../../lib/routes';
     // abierto, en vez de a una página intermedia sin acción clara.
     document.getElementById('open-cart-drawer')?.addEventListener('click', (e) => {
       e.preventDefault();
-      window.location.href = '/checkout';
+      // Invitado → su propio checkout público.
+      window.location.href =
+        document.documentElement.dataset.auth === '1' ? '/checkout' : '/invitado/checkout';
     });
 
     /** Textos resueltos en servidor. */

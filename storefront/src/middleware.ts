@@ -21,11 +21,9 @@ const PUBLIC_FILE = /\.(?:css|js|mjs|map|svg|png|jpe?g|webp|avif|gif|ico|woff2?|
 /** Se pueden visitar con o sin sesión. */
 const PUBLIC_PAGES = new Set(['/entrar', '/registro', '/recuperar', '/nueva-password']);
 
-/** Exigen sesión. El checkout y la confirmación quedan fuera a propósito:
- *  un invitado puede comprar sin cuenta. La seguridad no está en la sesión
- *  sino en el servidor (`/api/checkout` valida precios y stock) y en el
- *  `session_id` de Stripe que autoriza ver el pedido en `/confirmacion`. */
-const PRIVATE_PREFIXES = ['/cuenta'];
+/** Exigen sesión. Los invitados tienen sus propias rutas:
+ *  `/invitado/checkout` y `/invitado/confirmacion`, fuera de esta lista. */
+const PRIVATE_PREFIXES = ['/cuenta', '/checkout', '/confirmacion'];
 
 const isStaffRole = (role: string | null) =>
   role !== null && (STAFF_ROLES as readonly string[]).includes(role);

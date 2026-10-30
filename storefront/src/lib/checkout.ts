@@ -335,6 +335,10 @@ export interface StartCheckoutInput {
   origin: string;
   /** Destino tras pagar; por defecto la confirmación del pedido. */
   returnPath?: string | null;
+  /** Página de checkout que abrió la sesión (para el `cancel_url`). */
+  checkoutPath?: string;
+  /** Confirmación a la que volver si el cliente no manda `returnPath`. */
+  defaultReturnPath?: string;
   /** Idioma de la tienda: la etiqueta de envío se manda a Stripe traducida. */
   lang?: 'es' | 'en';
 }
@@ -354,6 +358,8 @@ export async function startStripeCheckout({
   requestedItems,
   origin,
   returnPath,
+  checkoutPath = '/checkout',
+  defaultReturnPath = '/confirmacion',
   lang = 'es',
 }: StartCheckoutInput): Promise<StartCheckoutResult> {
   if (!isStripeConfigured()) {
@@ -383,7 +389,7 @@ export async function startStripeCheckout({
   const { shipping } = totalsFor(items);
   const safeReturn = returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
     ? returnPath
-    : '/confirmacion';
+    : defaultReturnPath;
 
   const paymentAmount = items.reduce((sum, i) => sum + i.price * i.qty, 0) + shipping;
   const finalAmount = Math.round(paymentAmount * 100) / 100;
@@ -415,7 +421,7 @@ export async function startStripeCheckout({
       clientReference: order.id,
       customerEmail: customer.email,
       successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return&session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${origin}/checkout?canceled=1`,
+      cancelUrl: `${origin}${checkoutPath}?canceled=1`,
     });
 
     if (!session.url) throw new StripeError('Stripe no devolvió la URL de pago.');

@@ -26,6 +26,9 @@ const ui = {
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
+/** Los invitados pagan en su propia ruta, sin tocar la de usuarios. */
+const checkoutHref = Astro.locals.user ? '/checkout' : '/invitado/checkout';
+
 const featured = await supabase
   .from('products')
   .select('id, name, name_en, slug, base_price, is_reflective, categories(name, slug), product_variants(price), product_images(url, position)')
@@ -151,7 +154,7 @@ import { localize } from '../lib/routes';
             <span id="sum-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
           </div>
 
-          <a href="/checkout" class="btn-gold w-full !min-h-[46px] mb-2">{t.cart.checkout}</a>
+          <a href={checkoutHref} class="btn-gold w-full !min-h-[46px] mb-2">{t.cart.checkout}</a>
           <a href={localize(lang, 'shop')} class="btn-outline w-full !min-h-[42px] mb-2 text-center !text-xs">{t.cart.continueShopping}</a>
           <a
             href={localize(lang, 'favorites')}

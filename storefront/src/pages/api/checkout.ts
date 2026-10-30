@@ -83,6 +83,7 @@ export const POST: APIRoute = async ({
 
   const result = await startStripeCheckout({
     db,
+    // Invitado → null; registrado → su id.
     userId: user?.id ?? null,
     customer,
     requestedItems: payload?.items,
@@ -90,6 +91,10 @@ export const POST: APIRoute = async ({
     // público sale de `site` (astro.config → SITE_URL).
     origin: site?.origin ?? url.origin,
     returnPath: typeof payload?.returnPath === 'string' ? payload.returnPath : null,
+    // Rutas separadas: el invitado nunca pasa por /checkout ni /confirmacion,
+    // que siguen exigiendo sesión.
+    checkoutPath: user ? '/checkout' : '/invitado/checkout',
+    defaultReturnPath: user ? '/confirmacion' : '/invitado/confirmacion',
     lang: locals.lang === 'en' ? 'en' : 'es',
   });
 

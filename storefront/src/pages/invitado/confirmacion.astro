@@ -1,0 +1,12 @@
+---
+/**
+ * Confirmación para invitados: autoriza con el `session_id` de Stripe, sin
+ * sesión de Supabase. `/confirmacion` sigue siendo la ruta de los usuarios
+ * registrados.
+ */
+export const prerender = false;
+
+import OrderConfirmation from '../../components/order/OrderConfirmation.astro';
+---
+
+<OrderConfirmation guest />

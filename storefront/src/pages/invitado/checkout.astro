@@ -1,0 +1,12 @@
+---
+/**
+ * Checkout para invitados: misma UI que `/checkout`, pero pública.
+ * La separación es deliberada: `/checkout` sigue exigiendo sesión y esta
+ * ruta no toca la lógica de usuarios registrados.
+ */
+export const prerender = false;
+
+import CheckoutPage from '../../components/checkout/CheckoutPage.astro';
+---
+
+<CheckoutPage guest />
