@@ -121,7 +121,7 @@ export const POST: APIRoute = async ({
   });
 
   if (error) {
-    console.error('[contact] no se pudo guardar:', error.message);
+    console.error('[contact] no se pudo guardar:', error.code, error.message);
     return json({ error: 'save_failed' }, 500);
   }
 
