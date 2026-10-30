@@ -3,6 +3,8 @@ export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { localize } from '../../lib/routes';
+
+const { lang } = Astro.locals;
 ---
 
 <AdminLayout title="Dashboard">

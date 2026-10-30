@@ -11,6 +11,8 @@ import { TENANT_ID } from '../../../lib/constants';
 import { createSupabaseServerClient } from '../../../lib/supabase-server';
 import { missingEnglish } from '../../../lib/product-texts';
 
+const { lang } = Astro.locals;
+
 const id = Astro.params.id ?? '';
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
 
