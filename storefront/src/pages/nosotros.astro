@@ -1,84 +1,215 @@
 ---
+/**
+ * Nosotros / About — manifiesto de llegada.
+ *
+ * Página mínima a propósito: tres líneas y los 7 logos de la marca rebotando
+ * por la pantalla con la física del logo de DVD (rebote en los bordes y giro
+ * de color en cada choque). Sin JS, o con `prefers-reduced-motion`, los
+ * logos quedan quietos y el texto sigue mandando.
+ */
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getCopy, type Lang } from '../lib/i18n';
 
-const lang = (Astro.locals.lang ?? 'es') as Lang;
-const t = getCopy(lang);
-const a = t.about;
-import { localize } from '../lib/routes';
+/** Tamaños distintos para que el rebote no parezca una cuadrícula. */
+const LOGO_SIZES = [72, 104, 60, 88, 116, 66, 94];
 ---
 
-<BaseLayout title={a.metaTitle} description={a.metaDescription}>
-  <section class="relative py-24 lg:py-32 bg-noise overflow-hidden">
-    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-oro-brillo/5 blur-[120px]"></div>
-    <div class="relative max-w-3xl mx-auto px-6 text-center">
-      <p class="section-label mb-6">{a.label}</p>
-      <h1 class="font-titulos text-5xl lg:text-7xl text-blancoRoto mb-8 leading-[0.95]">
-        {a.headline1}<br />
-        <span class="text-gold-gradient">{a.headline2}</span>
-      </h1>
-      <div class="gold-line mx-auto mb-10"></div>
-      <p class="text-lg text-white/80 leading-relaxed">
-        {a.intro}
+<BaseLayout
+  title="¡DSP! — Dinero Sobre Problemas"
+  description="¡DSP! Dinero Sobre Problemas. We've arrived."
+>
+  <section
+    id="arrived"
+    class="relative overflow-hidden flex items-center justify-center min-h-[calc(100svh-5rem)] bg-negro-profundo"
+  >
+    <div id="dvd-layer" class="absolute inset-0 pointer-events-none" aria-hidden="true">
+      {
+        LOGO_SIZES.map((size) => (
+          <img
+            src="/img/logo/DSP.jpg"
+            alt=""
+            width={size}
+            height={size}
+            data-dvd
+            data-size={size}
+            class="dvd-logo"
+            decoding="async"
+          />
+        ))
+      }
+    </div>
+
+    <div class="relative z-10 px-6 py-16 text-center select-none arrived-copy">
+      <p class="font-titulos text-6xl sm:text-8xl lg:text-[8rem] leading-[0.9] text-blancoRoto tracking-tight">
+        ¡DSP!
+      </p>
+      <p class="font-acentos mt-6 sm:mt-8 text-[11px] sm:text-sm uppercase tracking-[0.42em] sm:tracking-[0.6em] text-oro-brillo">
+        Dinero Sobre Problemas
+      </p>
+      <p class="font-titulos mt-10 sm:mt-14 text-2xl sm:text-4xl text-blancoRoto/90 tracking-[0.08em]">
+        WE'VE ARRIVED
       </p>
     </div>
   </section>
 
-  <section class="page-container pb-24 lg:pb-32">
-    <div class="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-      <div class="product-frame">
-        <img src="/img/camisas/camisa-dsp-2-01-frente.jpg" alt="¡D$P! V3" loading="lazy" />
-      </div>
-      <div class="space-y-10">
-        <div>
-          <p class="section-label mb-4">{a.rootsLabel}</p>
-          <p class="text-white/80 leading-relaxed">
-            {a.roots}
-          </p>
-        </div>
+  <style>
+    .dvd-logo {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--dvd-size, 96px);
+      height: var(--dvd-size, 96px);
+      object-fit: contain;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      opacity: 0.5;
+      will-change: transform, filter;
+      transform: translate3d(0, 0, 0);
+    }
 
-        {
-          a.pillars.map((item, i) => (
-            <div class="flex gap-6">
-              <span class="font-titulos text-3xl text-oro-brillo/30 leading-none shrink-0">
-                0{i + 1}
-              </span>
-              <div>
-                <h3 class="font-acentos text-sm uppercase tracking-[0.2em] text-white mb-2">
-                  {item.title}
-                </h3>
-                <p class="text-sm text-white/80 leading-relaxed">{item.text}</p>
-              </div>
-            </div>
-          ))
+    /* Un halo oscuro detrás del texto para que el rebote no lo ensucie. */
+    .arrived-copy {
+      background: radial-gradient(
+        ellipse at center,
+        rgba(10, 10, 10, 0.92) 0%,
+        rgba(10, 10, 10, 0.75) 45%,
+        rgba(10, 10, 10, 0) 72%
+      );
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dvd-logo {
+        opacity: 0.28;
+      }
+    }
+  </style>
+
+  <script>
+    const layer = document.getElementById('dvd-layer');
+
+    if (layer) {
+      const nodes = Array.from(layer.querySelectorAll<HTMLImageElement>('[data-dvd]'));
+      const HUES = [0, 38, 78, 128, 190, 240, 300];
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      interface Bouncer {
+        el: HTMLImageElement;
+        size: number;
+        x: number;
+        y: number;
+        vx: number;
+        vy: number;
+        hue: number;
+      }
+
+      const items: Bouncer[] = nodes.map((el, i) => {
+        const size = Number(el.dataset.size) || 96;
+        el.style.setProperty('--dvd-size', `${size}px`);
+
+        // Cada logo sale en una dirección distinta; velocidad ligeramente
+        // creciente para que no se muevan en bloque.
+        const angle = (Math.PI * 2 * i) / nodes.length + 0.35;
+        const speed = 1.5 + i * 0.22;
+
+        return {
+          el,
+          size,
+          x: 0,
+          y: 0,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          hue: HUES[i % HUES.length],
+        };
+      });
+
+      const paint = (it: Bouncer) => {
+        it.el.style.transform = `translate3d(${it.x}px, ${it.y}px, 0)`;
+        it.el.style.filter = `hue-rotate(${it.hue}deg) drop-shadow(0 0 18px rgba(255, 226, 138, 0.22))`;
+      };
+
+      /** Reparte los logos según el tamaño actual del contenedor. */
+      const layout = (initial: boolean) => {
+        const width = layer.clientWidth;
+        const height = layer.clientHeight;
+
+        for (const it of items) {
+          const maxX = Math.max(0, width - it.size);
+          const maxY = Math.max(0, height - it.size);
+
+          if (initial) {
+            it.x = Math.random() * maxX;
+            it.y = Math.random() * maxY;
+          } else {
+            it.x = Math.min(it.x, maxX);
+            it.y = Math.min(it.y, maxY);
+          }
+
+          paint(it);
         }
-      </div>
-    </div>
-  </section>
+      };
 
-  <section class="border-y border-white/30 bg-negro-carbono">
-    <div class="max-w-3xl mx-auto px-6 py-24 text-center">
-      <p class="section-label mb-6">{a.philosophyLabel}</p>
-      <blockquote class="font-titulos text-3xl md:text-5xl leading-tight text-blancoRoto mb-8">
-        “{a.quote1}<br />
-        {a.quote2} <span class="text-gold-gradient">{a.quoteAccent}</span>.”
-      </blockquote>
-      <div class="gold-line mx-auto mb-8"></div>
-      <p class="text-white/80 leading-relaxed">
-        {a.philosophy}
-      </p>
-    </div>
-  </section>
+      layout(true);
 
-  <section class="page-container py-20 text-center">
-    <h2 class="font-titulos text-3xl lg:text-4xl text-blancoRoto mb-6">
-      {a.closingTitle}
-    </h2>
-    <p class="text-white/80 mb-10 max-w-md mx-auto">
-      {a.closingText}
-    </p>
-    <a href={localize(lang, 'shop')} class="btn-gold inline-block">{a.closingCta}</a>
-  </section>
+      if (!reduced) {
+        let frame = 0;
+        let last = 0;
+
+        const tick = (time: number) => {
+          // Delta normalizado a 60 fps, acotado para no saltar tras un tab en
+          // segundo plano.
+          const dt = last ? Math.min(3, (time - last) / 16.667) : 1;
+          last = time;
+
+          const width = layer.clientWidth;
+          const height = layer.clientHeight;
+
+          for (const it of items) {
+            it.x += it.vx * dt;
+            it.y += it.vy * dt;
+
+            let hit = false;
+
+            if (it.x <= 0) {
+              it.x = 0;
+              it.vx = Math.abs(it.vx);
+              hit = true;
+            } else if (it.x + it.size >= width) {
+              it.x = Math.max(0, width - it.size);
+              it.vx = -Math.abs(it.vx);
+              hit = true;
+            }
+
+            if (it.y <= 0) {
+              it.y = 0;
+              it.vy = Math.abs(it.vy);
+              hit = true;
+            } else if (it.y + it.size >= height) {
+              it.y = Math.max(0, height - it.size);
+              it.vy = -Math.abs(it.vy);
+              hit = true;
+            }
+
+            // Como el logo del DVD: cada choque cambia el color.
+            if (hit) it.hue = (it.hue + 47) % 360;
+
+            paint(it);
+          }
+
+          frame = requestAnimationFrame(tick);
+        };
+
+        frame = requestAnimationFrame(tick);
+
+        window.addEventListener('resize', () => layout(false), { passive: true });
+
+        // Sin frames con la pestaña oculta (móvil: ahorro de batería).
+        document.addEventListener('visibilitychange', () => {
+          cancelAnimationFrame(frame);
+          last = 0;
+          if (!document.hidden) frame = requestAnimationFrame(tick);
+        });
+      }
+    }
+  </script>
 </BaseLayout>
