@@ -405,14 +405,14 @@ import { localize } from '../../lib/routes';
                 {!guest && (
                   <a
                     href="/cuenta#pedidos"
-                    class="btn-gold !min-h-[42px] !px-5 !py-2 !text-xs !text-negro-profundo"
+                    class="btn-gold !min-h-[42px] !px-5 !py-2 !text-xs !text-negro-profundo w-full text-center"
                   >
                     {t.header.goToOrders}
                   </a>
                 )}
                 <a
                   href={localize(lang, 'shop')}
-                  class="text-[11px] uppercase tracking-[0.14em] text-white/70 hover:text-oro-brillo transition-colors"
+                  class="btn-outline !min-h-[42px] !px-5 !py-2 !text-xs w-full text-center"
                 >
                   {t.cart.continueShopping}
                 </a>
@@ -437,10 +437,10 @@ import { localize } from '../../lib/routes';
       history.replaceState(null, '', clean.pathname + clean.search);
     }
 
-    // Al volver de Stripe con el pago aprobado, el carrito ya cumplió: se
-    // vacía (y el contador del header se actualiza con `cart:updated`).
+    // Pedido pagado: el carrito ya cumplió su función. Se vacía al ver la
+    // confirmación, venga de Stripe o de un enlace reabierto después.
     const root = document.getElementById('conf-content');
-    if (root?.dataset.paid === '1' && root.dataset.return === '1') {
+    if (root?.dataset.paid === '1') {
       clearCart();
     }
 

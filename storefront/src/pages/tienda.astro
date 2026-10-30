@@ -98,7 +98,7 @@ import { localize } from '../lib/routes';
 >
   <!-- Todo lo que cambia al filtrar u ordenar. El JS lo reemplaza por fetch
        sin recargar la página. -->
-  <div id="shop-live">
+  <div id="shop-live" data-shop-query={Astro.url.search}>
   <!-- Encabezado compacto: solo título, número de piezas y carrito -->
   <section class="relative border-b border-white/20 overflow-hidden">
     <div class="absolute inset-0 bg-noise"></div>
@@ -306,9 +306,15 @@ import { localize } from '../lib/routes';
     paintSkeleton();
 
     try {
-      const res = await fetch(url.href, {
+      // `_` evita que un proxy o el navegador devuelvan HTML de otro filtro:
+      // cada navegación en vivo pide una respuesta limpia.
+      const fetchUrl = new URL(url.href);
+      fetchUrl.searchParams.set('_', String(Date.now()));
+
+      const res = await fetch(fetchUrl.href, {
         signal: controller.signal,
         credentials: 'same-origin',
+        cache: 'no-store',
         headers: { Accept: 'text/html' },
       });
 
@@ -318,6 +324,14 @@ import { localize } from '../lib/routes';
       const fresh = doc.getElementById('shop-live');
 
       if (!fresh) throw new Error('sin contenido');
+
+      // Si el HTML recibido no corresponde a la URL pedida (caché de un proxy
+      // o una respuesta vieja), se recarga de verdad en vez de pintar otra
+      // categoría con la URL equivocada.
+      if (fresh.getAttribute('data-shop-query') !== url.search) {
+        location.href = url.href;
+        return;
+      }
 
       root.innerHTML = fresh.innerHTML;
 

@@ -451,26 +451,27 @@ const jsonLd = {
             <p class="text-base text-muted leading-relaxed max-w-md mb-6">
               {t.brandTagline}<br />{t.brandTagline2}
             </p>
-            <!-- Redes -->
-            <div class="flex gap-3">
-              {
-                [
-                  { name: 'Instagram', href: 'https://www.instagram.com/dinerosobreproblemas/', d: 'M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.3 2.2.4.6.2 1 .5 1.4.9.4.4.7.8.9 1.4.2.4.4 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.3 1.8-.4 2.2-.2.6-.5 1-.9 1.4-.4.4-.8.7-1.4.9-.4.2-1 .4-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.3-2.2-.4-.6-.2-1-.5-1.4-.9-.4-.4-.7-.8-.9-1.4-.2-.4-.4-1-.4-2.2C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.3-1.8.4-2.2.2-.6.5-1 .9-1.4.4-.4.8-.7 1.4-.9.4-.2 1-.4 2.2-.4C8.4 2.2 8.8 2.2 12 2.2Zm0 3.4a6.4 6.4 0 1 0 0 12.8 6.4 6.4 0 0 0 0-12.8Zm0 10.6a4.2 4.2 0 1 1 0-8.4 4.2 4.2 0 0 1 0 8.4Zm6.6-10.9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z' },
-                ].map((s) => (
-                  <a
-                    href={s.href}
-                    aria-label={s.name}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="w-11 h-11 border-2 border-white/30 flex items-center justify-center text-blancoRoto hover:border-oro-brillo hover:text-oro-brillo transition-colors duration-300"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                      <path d={s.d} />
-                    </svg>
-                  </a>
-                ))
-              }
-            </div>
+            <!-- Redes: Instagram con el logo girando -->
+            <a
+              href="https://www.instagram.com/dinerosobreproblemas/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram: @dinerosobreproblemas"
+              class="group inline-flex items-center gap-3"
+            >
+              <span class="font-acentos text-xs uppercase tracking-[0.22em] text-white/70 group-hover:text-oro-brillo transition-colors">
+                Instagram
+              </span>
+              <img
+                src="/img/logo/DSP.jpg"
+                alt=""
+                width="56"
+                height="56"
+                loading="lazy"
+                decoding="async"
+                class="logo-animated w-14 h-14 object-contain border border-white/30 group-hover:border-oro-brillo transition-colors duration-300"
+              />
+            </a>
           </div>
 
           <!-- Tienda -->
@@ -528,16 +529,6 @@ const jsonLd = {
             <a href={localize(lang, 'terms')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.terms}</a>
             <a href={localize(lang, 'shipping')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.shipping}</a>
             <a href={localize(lang, 'contact')} class="py-1 hover:text-oro-brillo transition-colors">{t.footer.contact}</a>
-          </div>
-          <!-- Métodos de pago -->
-          <div class="flex items-center gap-2">
-            {
-              ['VISA', 'MC', 'AMEX', 'OXXO'].map((m) => (
-                <span class="px-2.5 py-1 border-2 border-white/30 text-[10px] font-acentos tracking-wider text-white/80">
-                  {m}
-                </span>
-              ))
-            }
           </div>
         </div>
       </div>

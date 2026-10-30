@@ -179,7 +179,14 @@ import { localize } from '../../lib/routes';
                           <img
                             src={img.url}
                             alt={img.alt_text ?? title}
+                            width="900"
+                            height="900"
                             loading={i === 0 ? 'eager' : 'lazy'}
+                            fetchpriority={i === 0 ? 'high' : 'auto'}
+                            decoding="async"
+                            data-zoom-src={img.url}
+                            data-zoom-alt={img.alt_text ?? title}
+                            class="pdp-zoomable"
                           />
                         </div>
                       </div>
@@ -229,7 +236,18 @@ import { localize } from '../../lib/routes';
                 <div class="product-frame border-2 border-white/25">
                   <ReflectBadge reflective={false} />
                   {images.length > 0 ? (
-                    <img src={images[0].url} alt={images[0].alt_text ?? title} loading="eager" />
+                    <img
+                      src={images[0].url}
+                      alt={images[0].alt_text ?? title}
+                      width="900"
+                      height="900"
+                      loading="eager"
+                      fetchpriority="high"
+                      decoding="async"
+                      data-zoom-src={images[0].url}
+                      data-zoom-alt={images[0].alt_text ?? title}
+                      class="pdp-zoomable"
+                    />
                   ) : (
                     <div class="absolute inset-0 flex items-center justify-center">
                       <span class="font-acentos text-xs uppercase tracking-[0.3em] text-blancoRoto">
@@ -746,4 +764,111 @@ import { localize } from '../../lib/routes';
       </section>
     )
   }
+
+  <!-- Zoom de la foto: se abre al tocar la imagen grande -->
+  <div
+    id="pdp-lightbox"
+    class="pdp-lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label={t.product.photos}
+    hidden
+  >
+    <button type="button" id="pdp-lightbox-close" class="pdp-lightbox-close" aria-label="Cerrar">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    </button>
+    <img id="pdp-lightbox-img" alt="" />
+  </div>
+
+  <style is:global>
+    .pdp-zoomable {
+      cursor: zoom-in;
+    }
+
+    .pdp-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 140;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.94);
+      backdrop-filter: blur(2px);
+    }
+
+    .pdp-lightbox[hidden] {
+      display: none;
+    }
+
+    .pdp-lightbox img {
+      max-width: min(96vw, 1200px);
+      max-height: 90vh;
+      object-fit: contain;
+      background: #fff;
+    }
+
+    .pdp-lightbox-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      color: #fff;
+      background: rgba(0, 0, 0, 0.6);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .pdp-lightbox-close:hover {
+      border-color: #ffe28a;
+      color: #ffe28a;
+    }
+  </style>
+
+  <script>
+    const lightbox = document.getElementById('pdp-lightbox');
+    const lightboxImg = document.getElementById('pdp-lightbox-img') as HTMLImageElement | null;
+
+    if (lightbox && lightboxImg) {
+      const openZoom = (src: string, alt: string) => {
+        if (!src) return;
+        lightboxImg.src = src;
+        lightboxImg.alt = alt;
+        lightbox.hidden = false;
+        document.body.style.overflow = 'hidden';
+      };
+
+      const closeZoom = () => {
+        lightbox.hidden = true;
+        lightboxImg.src = '';
+        document.body.style.overflow = '';
+      };
+
+      document.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+
+        const zoomable = target.closest<HTMLElement>('.pdp-zoomable');
+        if (zoomable) {
+          event.preventDefault();
+          openZoom(zoomable.dataset.zoomSrc ?? '', zoomable.dataset.zoomAlt ?? '');
+          return;
+        }
+
+        if (target === lightbox || target.closest('#pdp-lightbox-close')) {
+          event.preventDefault();
+          closeZoom();
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !lightbox.hidden) closeZoom();
+      });
+    }
+  </script>
 </BaseLayout>

@@ -129,7 +129,10 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
                     <img
                       src={img.url}
                       alt={i === 0 ? title : `${title} · ${i + 1}`}
+                      width="600"
+                      height="600"
                       loading={i === 0 ? 'eager' : 'lazy'}
+                      fetchpriority={i === 0 ? 'high' : 'auto'}
                       decoding="async"
                     />
                   </div>
@@ -170,8 +173,11 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
             <img
               src={images[0].url}
               alt={title}
+              width="600"
+              height="600"
               class="transition-transform duration-700 ease-out"
               loading="lazy"
+              fetchpriority="auto"
               decoding="async"
             />
           )}
