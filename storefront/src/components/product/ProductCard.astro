@@ -61,10 +61,6 @@ const totalStock =
   product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
 const isSoldOut = product.product_variants != null && product.product_variants.length > 0 && totalStock === 0;
 
-const sizes = [
-  ...new Set((product.product_variants ?? []).map((v: any) => v.size).filter(Boolean)),
-] as string[];
-
 const trackId = `card-carousel-${product.id}`;
 void trackId;
 
@@ -244,7 +240,6 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
         <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
           {title}
         </h3>
-        {sizes.length > 0 && <p class="mt-1.5 text-xs text-muted">{sizes.join(' · ')}</p>}
       </div>
 
       <div class="flex items-center gap-2 shrink-0">

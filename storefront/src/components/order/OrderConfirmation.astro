@@ -83,9 +83,9 @@ if (!order && orderParam && sessionId && db) {
   }
 }
 
-// Invitado que ya había abierto su pedido en este navegador: la cookie sustituye
-// al `session_id` cuando la URL ya se limpió.
-if (!order && guest && orderParam && !sessionId && db && rememberedGuestOrder) {
+// Invitado que ya abrió su pedido en este navegador: la cookie sustituye al
+// `session_id` cuando la URL ya se limpió (o cuando la sesión de Stripe caducó).
+if (!order && guest && orderParam && db && rememberedGuestOrder) {
   const candidate = await getOrderByIdOrNumber(db, orderParam);
   if (candidate && candidate.id === rememberedGuestOrder) order = candidate;
 }
@@ -139,29 +139,77 @@ import { localize } from '../../lib/routes';
 <BaseLayout title="Pedido confirmado | Dinero Sobre Problemas" description="Tu pedido fue recibido.">
   {
     !order ? (
-      <div id="conf-empty" class="min-h-[70vh] flex items-center justify-center px-5 bg-noise">
-        <div class="max-w-xl text-center">
-          <div class="w-16 h-16 mx-auto mb-8 border-2 border-oro-brillo flex items-center justify-center">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
-              <path d="m5 13 4 4L19 7" />
-            </svg>
-          </div>
-          <p class="section-label mb-4">{t.order.received}</p>
-          <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">{t.order.thanks}</h1>
-          <div class="gold-line mx-auto mb-8"></div>
-          <p class="text-base text-white/80 leading-relaxed mb-10">
-            {guest
-              ? t.account.guestOrderMissing
-              : user && orderParam
-                ? t.account.orderNotFound
-                : t.account.orderSignIn}
-          </p>
-          <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            {!guest && <a href="/cuenta#pedidos" class="btn-gold">{t.header.goToOrders}</a>}
-            <a href={localize(lang, 'shop')} class="btn-outline">{t.cart.continueShopping}</a>
+      guest && orderParam ? (
+        /* Invitado sin permiso todavía: el correo de la compra abre el pedido. */
+        <div id="conf-empty" class="min-h-[70vh] flex items-center justify-center px-5 py-16 bg-noise">
+          <div class="w-full max-w-md">
+            <div class="card p-6 sm:p-8">
+              <p class="section-label mb-3">{t.account.guestUnlockTitle}</p>
+              <p class="text-sm text-white/75 leading-relaxed mb-5">{t.account.guestUnlockText}</p>
+
+              <p class="text-xs text-white/50 mb-4">
+                {t.order.orderLabel}{' '}
+                <span class="font-acentos text-oro-brillo">{orderParam}</span>
+              </p>
+
+              <form id="guest-order-form" data-order={orderParam} class="space-y-3">
+                <label class="block">
+                  <span class="sr-only">{t.account.guestUnlockLabel}</span>
+                  <input
+                    id="guest-order-email"
+                    name="email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    class="input-dark"
+                    placeholder={t.account.guestUnlockLabel}
+                  />
+                </label>
+
+                <button type="submit" id="guest-order-btn" class="btn-gold w-full !min-h-[46px]">
+                  {t.account.guestUnlockCta}
+                </button>
+
+                <p
+                  id="guest-order-msg"
+                  class="hidden text-sm text-center leading-relaxed"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+              </form>
+            </div>
+
+            <p class="mt-4 text-center">
+              <a
+                href={localize(lang, 'shop')}
+                class="text-[11px] uppercase tracking-[0.14em] text-white/50 hover:text-oro-brillo transition-colors"
+              >
+                {t.cart.continueShopping}
+              </a>
+            </p>
           </div>
         </div>
-      </div>
+      ) : (
+        <div id="conf-empty" class="min-h-[70vh] flex items-center justify-center px-5 bg-noise">
+          <div class="max-w-xl text-center">
+            <div class="w-16 h-16 mx-auto mb-8 border-2 border-oro-brillo flex items-center justify-center">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
+                <path d="m5 13 4 4L19 7" />
+              </svg>
+            </div>
+            <p class="section-label mb-4">{t.order.received}</p>
+            <h1 class="font-titulos text-4xl lg:text-5xl text-blancoRoto mb-6">{t.order.thanks}</h1>
+            <div class="gold-line mx-auto mb-8"></div>
+            <p class="text-base text-white/80 leading-relaxed mb-10">
+              {user && orderParam ? t.account.orderNotFound : t.account.orderSignIn}
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+              {!guest && <a href="/cuenta#pedidos" class="btn-gold">{t.header.goToOrders}</a>}
+              <a href={localize(lang, 'shop')} class="btn-outline">{t.cart.continueShopping}</a>
+            </div>
+          </div>
+        </div>
+      )
     ) : (
       <div id="conf-content" data-paid={isPaid ? '1' : '0'} data-return={returning ? '1' : '0'}>
         <section class="border-b-2 border-white/25 bg-noise">
@@ -394,6 +442,67 @@ import { localize } from '../../lib/routes';
     const root = document.getElementById('conf-content');
     if (root?.dataset.paid === '1' && root.dataset.return === '1') {
       clearCart();
+    }
+
+    // ---------- Invitado: abrir el pedido con el correo de la compra ----------
+    const guestForm = document.getElementById('guest-order-form') as HTMLFormElement | null;
+
+    if (guestForm) {
+      const es = document.documentElement.lang !== 'en';
+      const msg = document.getElementById('guest-order-msg')!;
+      const submit = document.getElementById('guest-order-btn') as HTMLButtonElement;
+      const email = document.getElementById('guest-order-email') as HTMLInputElement;
+      const orderRef = guestForm.dataset.order ?? '';
+      const label = submit.textContent ?? '';
+
+      const paint = (text: string, tone: 'error' | 'ok') => {
+        msg.textContent = text;
+        msg.className =
+          tone === 'error'
+            ? 'text-sm text-center leading-relaxed text-red-400'
+            : 'text-sm text-center leading-relaxed text-oro-brillo';
+        msg.hidden = false;
+      };
+
+      guestForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        msg.hidden = true;
+        submit.disabled = true;
+        submit.textContent = es ? 'Comprobando…' : 'Checking…';
+
+        try {
+          const res = await fetch('/api/guest-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: orderRef, email: email.value }),
+          });
+
+          if (res.ok) {
+            paint(es ? 'Abriendo tu pedido…' : 'Opening your order…', 'ok');
+            window.location.reload();
+            return;
+          }
+
+          paint(
+            res.status === 429
+              ? es
+                ? 'Demasiados intentos. Espera unos minutos.'
+                : 'Too many attempts. Wait a few minutes.'
+              : es
+                ? 'Ese correo no coincide con el pedido. Revísalo e intenta otra vez.'
+                : 'That email does not match this order. Check it and try again.',
+            'error'
+          );
+        } catch {
+          paint(
+            es ? 'No se pudo comprobar. Intenta otra vez.' : 'Could not check. Please try again.',
+            'error'
+          );
+        } finally {
+          submit.disabled = false;
+          submit.textContent = label;
+        }
+      });
     }
   </script>
 </BaseLayout>
