@@ -5,8 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
-import { getCopy, categoryName, type Lang } from '../lib/i18n';
-import { productName } from '../lib/product-texts';
+import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -37,21 +36,6 @@ const featured = await supabase
 
 /** Catálogo para el carrusel de abajo (mismo componente que en favoritos). */
 const catalog = featured.data ?? [];
-
-const suggestions = catalog.slice(0, 2).map((p: any) => {
-  const images = [...(p.product_images ?? [])].sort(
-    (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
-  );
-  return {
-    id: p.id,
-    name: productName(p as any, lang),
-    slug: p.slug ?? p.id,
-    category: categoryName(lang, p.categories),
-    price: Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0),
-    image: images[0]?.url ?? null,
-    isReflective: Boolean(p.is_reflective),
-  };
-});
 import { localize } from '../lib/routes';
 ---
 
@@ -73,52 +57,6 @@ import { localize } from '../lib/routes';
         <p class="text-white/80 mb-10">{t.cart.emptyText}</p>
         <a href={localize(lang, 'shop')} class="btn-gold inline-block">{t.checkout.goShop}</a>
       </div>
-
-      {
-        suggestions.length > 0 && (
-          <div class="max-w-3xl mx-auto mt-6">
-            <h2 class="section-label mb-5 text-center">{t.cart.suggestions}</h2>
-            <div class="grid grid-cols-2 gap-4 sm:gap-6">
-              {suggestions.map((p) => (
-                <a
-                  href={localize(lang, 'products', p.slug)}
-                  class="group block border-2 border-white/25 hover:border-oro-brillo transition-colors"
-                >
-                  <div class="product-frame">
-                    <span
-                      class:list={['reflect-badge', { 'is-plain': !p.isReflective }]}
-                      data-reflect-badge
-                      data-label={p.isReflective ? t.product.reflective : t.product.notReflective}
-                    >
-                      <span class="reflect-badge-label">
-                        {p.isReflective ? t.product.reflective : t.product.notReflective}
-                      </span>
-                      <span class="reflect-badge-dot"></span>
-                    </span>
-                    {p.image && (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
-                  <div class="p-4 flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                      <p class="font-acentos text-sm text-blancoRoto truncate">{p.name}</p>
-                      <p class="text-xs text-white/70 mt-0.5">{p.category ?? t.common.piece}</p>
-                    </div>
-                    <p class="font-acentos text-sm text-oro-brillo whitespace-nowrap">
-                      ${p.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        )
-      }
     </div>
 
     <div id="cart-content" style="display:none" class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] gap-6 lg:gap-8">
@@ -178,19 +116,21 @@ import { localize } from '../lib/routes';
     </div>
   </div>
 
-  {
-    catalog.length > 0 && (
-      <ProductCarousel
-        title={t.cart.suggestions}
-        subtitle={t.shop.collection}
-        products={catalog}
-        href={localize(lang, 'shop')}
-        hrefLabel={t.shop.seeAll}
-        perView={3}
-        compact
-      />
-    )
-  }
+  <div id="cart-suggest" style="display:none">
+    {
+      catalog.length > 0 && (
+        <ProductCarousel
+          title={t.cart.suggestions}
+          subtitle={t.shop.collection}
+          products={catalog}
+          href={localize(lang, 'shop')}
+          hrefLabel={t.shop.seeAll}
+          perView={3}
+          compact
+        />
+      )
+    }
+  </div>
 
   <script>
     import {
@@ -210,12 +150,17 @@ import { localize } from '../lib/routes';
 
     const empty = document.getElementById('cart-empty')!;
     const content = document.getElementById('cart-content')!;
+    const suggest = document.getElementById('cart-suggest');
     const list = document.getElementById('cart-items')!;
     const notices = document.getElementById('cart-notices')!;
     const summaryText = document.getElementById('cart-summary-text')!;
 
     function render() {
       const items = getCart();
+
+      // El carrusel se revela junto con el estado real, para que no aparezca
+      // primero y luego lo empuje el carrito (o el estado vacío).
+      if (suggest) suggest.style.display = '';
 
       if (items.length === 0) {
         empty.classList.remove('hidden');
