@@ -96,6 +96,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     } from '../../../lib/admin';
     import { TENANT_ID } from '../../../lib/constants';
     import { escapeHtml, safeUrl } from '../../../lib/html';
+    import { askConfirm } from '../../../lib/dialog';
 
     let products: any[] = [];
 
@@ -154,7 +155,15 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       container.querySelectorAll('[data-delete]').forEach((el) =>
         el.addEventListener('click', async () => {
           const id = (el as HTMLElement).dataset.delete!;
-          if (!confirm('¿Desactivar este producto? (soft delete)')) return;
+          const ok = await askConfirm({
+            title: 'Desactivar producto',
+            message: 'Dejará de aparecer en la tienda, pero se conserva el historial de pedidos.',
+            confirmLabel: 'Desactivar',
+            tone: 'danger',
+          });
+
+          if (!ok) return;
+
           await softDeleteProduct(id);
           await refresh();
         })

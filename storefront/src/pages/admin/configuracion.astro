@@ -1,0 +1,201 @@
+---
+/**
+ * Configuración del panel — estado real de la tienda, sin adornos.
+ *
+ * Todo se lee en el servidor: variables con `serverEnv()` (runtime) y las
+ * constantes de `lib/constants.ts`. No se muestran secretos completos, solo
+ * si están presentes y una pista enmascarada.
+ */
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { serverEnv } from '../../lib/env';
+import { resendConfig } from '../../lib/resend';
+import { isStripeConfigured, stripeMode } from '../../lib/stripe';
+import { createSupabaseAdminClient } from '../../lib/supabase-server';
+import {
+  TENANT_ID,
+  TENANT_SLUG,
+  CURRENCY,
+  FREE_SHIPPING_THRESHOLD,
+  STANDARD_SHIPPING,
+} from '../../lib/constants';
+
+const mask = (value: string | undefined, visible = 4) => {
+  if (!value) return null;
+  if (value.length <= visible * 2) return `${value.slice(0, 2)}… (${value.length} caracteres)`;
+  return `${value.slice(0, visible)}…${value.slice(-visible)} (${value.length} caracteres)`;
+};
+
+const stripe = stripeMode();
+const resend = resendConfig();
+
+const counts = { products: 0, orders: 0, messages: 0 };
+const db = createSupabaseAdminClient();
+
+if (db) {
+  const [products, orders, messages] = await Promise.all([
+    db.from('products').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('is_deleted', false),
+    db.from('orders').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('is_deleted', false),
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID),
+  ]);
+
+  counts.products = products.count ?? 0;
+  counts.orders = orders.count ?? 0;
+  counts.messages = messages.count ?? 0;
+}
+
+const stripeLabel =
+  stripe === 'live' ? 'Producción (live)' : stripe === 'test' ? 'Pruebas (test)' : 'Sin configurar';
+
+const rows = {
+  store: [
+    { label: 'Tenant', value: TENANT_SLUG, hint: TENANT_ID },
+    { label: 'Moneda', value: CURRENCY },
+    { label: 'Envío estándar', value: `$${STANDARD_SHIPPING.toFixed(2)}` },
+    { label: 'Envío gratis desde', value: `$${FREE_SHIPPING_THRESHOLD.toFixed(2)}` },
+    { label: 'Dominio', value: Astro.site ? new URL(Astro.site).host : 'sin SITE_URL' },
+  ],
+  integrations: [
+    {
+      label: 'Stripe',
+      value: stripeLabel,
+      ok: isStripeConfigured(),
+      hint: `Clave secreta: ${mask(serverEnv('STRIPE_SECRET_KEY')) ?? 'falta'}`,
+    },
+    {
+      label: 'Webhook de Stripe',
+      value: serverEnv('STRIPE_WEBHOOK_SECRET') ? 'Firmado y verificado' : 'Sin secreto',
+      ok: Boolean(serverEnv('STRIPE_WEBHOOK_SECRET')),
+      hint: 'Sin él no llegan reembolsos ni pagos abandonados.',
+    },
+    {
+      label: 'Resend (correo)',
+      value: resend.apiKey ? 'Clave presente' : 'Sin clave',
+      ok: Boolean(resend.apiKey),
+      hint: `Remitente: ${resend.from}`,
+    },
+    {
+      label: 'Dominio de envío',
+      value: resend.domain,
+      ok: resend.domain !== 'dinerosobreproblemas.com',
+      hint:
+        resend.domain === 'dinerosobreproblemas.com'
+          ? 'Pendiente de verificar en Resend: los correos solo llegan al dueño de la cuenta.'
+          : 'Dominio verificado en Resend.',
+    },
+    {
+      label: 'Avisos de contacto',
+      value: resend.contactEmail,
+      ok: true,
+      hint: 'Destino de los mensajes del formulario.',
+    },
+    {
+      label: 'Supabase service role',
+      value: serverEnv('SUPABASE_SERVICE_ROLE_KEY') ? 'Presente' : 'Falta',
+      ok: Boolean(serverEnv('SUPABASE_SERVICE_ROLE_KEY')),
+      hint: 'Necesaria para checkout y formulario de contacto.',
+    },
+  ],
+};
+
+const links = [
+  { label: 'Diagnóstico de correo', href: '/api/admin/resend-test', hint: 'Revisa la clave y los dominios.' },
+  { label: 'Enviar correo de prueba', href: '/api/admin/resend-test?send=1', hint: 'Llega a tu propio correo.' },
+  { label: 'Panel de Stripe', href: 'https://dashboard.stripe.com/test/payments', hint: 'Pagos en modo test.' },
+  { label: 'Resend', href: 'https://resend.com/domains', hint: 'Dominios y registros DNS.' },
+  { label: 'Supabase', href: 'https://supabase.com/dashboard/project/dzrxwmyxxhjonhbfgfvo', hint: 'Base de datos y logs.' },
+];
+---
+
+<AdminLayout title="Configuración">
+  <header class="mb-8">
+    <p class="section-label mb-1.5">Panel</p>
+    <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto leading-none">Configuración</h1>
+    <p class="text-sm text-white/60 mt-2">
+      Estado de la tienda y de las integraciones. Los secretos se muestran enmascarados.
+    </p>
+  </header>
+
+  <!-- Conteos -->
+  <div class="grid grid-cols-3 gap-2.5 sm:gap-3 mb-8">
+    {
+      [
+        { label: 'Productos', value: counts.products },
+        { label: 'Pedidos', value: counts.orders },
+        { label: 'Mensajes', value: counts.messages },
+      ].map((item) => (
+        <div class="card p-4">
+          <p class="text-[9px] uppercase tracking-[0.16em] text-white/60 mb-1.5">{item.label}</p>
+          <p class="font-acentos text-2xl text-oro-brillo leading-none">{item.value}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5">
+    <!-- Tienda -->
+    <section class="card p-5 sm:p-6">
+      <h2 class="font-acentos text-xs uppercase tracking-[0.2em] text-oro-brillo mb-4">Tienda</h2>
+      <dl class="space-y-3">
+        {
+          rows.store.map((row) => (
+            <div class="flex items-start justify-between gap-4">
+              <dt class="text-sm text-white/60">{row.label}</dt>
+              <dd class="text-sm text-blancoRoto text-right break-all">
+                {row.value}
+                {row.hint && <span class="block text-[10px] text-white/35 mt-0.5">{row.hint}</span>}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <!-- Integraciones -->
+    <section class="card p-5 sm:p-6">
+      <h2 class="font-acentos text-xs uppercase tracking-[0.2em] text-oro-brillo mb-4">Integraciones</h2>
+      <ul class="space-y-3.5">
+        {
+          rows.integrations.map((row) => (
+            <li class="flex items-start gap-3">
+              <span
+                class:list={[
+                  'mt-1.5 w-2 h-2 rounded-full shrink-0',
+                  row.ok ? 'bg-oro-brillo' : 'bg-red-400',
+                ]}
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <p class="text-sm text-blancoRoto">{row.label}</p>
+                  <p class="text-sm text-white/70">{row.value}</p>
+                </div>
+                <p class="text-[11px] text-white/40 mt-0.5 break-all">{row.hint}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <!-- Accesos -->
+    <section class="card p-5 sm:p-6 lg:col-span-2">
+      <h2 class="font-acentos text-xs uppercase tracking-[0.2em] text-oro-brillo mb-4">Accesos rápidos</h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        {
+          links.map((link) => (
+            <a
+              href={link.href}
+              target={link.href.startsWith('http') ? '_blank' : undefined}
+              rel={link.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+              class="border-2 border-white/15 hover:border-oro-brillo/60 transition-colors px-4 py-3 min-h-[64px] block"
+            >
+              <span class="block text-sm text-blancoRoto">{link.label}</span>
+              <span class="block text-[11px] text-white/40 mt-0.5">{link.hint}</span>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+  </div>
+</AdminLayout>

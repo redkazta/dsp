@@ -718,3 +718,90 @@ img.is-flash-photo {
     animation: none;
   }
 }
+
+/* ---------- Diálogos del sitio ----------
+   Sustituyen a `alert()` / `confirm()` del navegador: mismo lenguaje visual
+   que el resto del storefront, sin cajas grises del sistema. */
+@keyframes dsp-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dsp-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+.dsp-dialog {
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.4rem;
+  background: #0a0a0a;
+  border: 2px solid rgba(255, 226, 138, 0.55);
+  box-shadow: 0 28px 70px -24px rgba(0, 0, 0, 0.95);
+  animation: dsp-dialog-in 0.18s ease-out;
+}
+
+.dsp-dialog-title {
+  font-family: 'Space Grotesk', Inter, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffe28a;
+  margin-bottom: 0.6rem;
+}
+
+.dsp-dialog-message {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-line;
+}
+
+.dsp-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+}
+
+.dsp-dialog-actions .btn-gold,
+.dsp-dialog-actions .btn-outline {
+  min-height: 44px;
+  padding: 0 1.25rem;
+  font-size: 0.7rem;
+}
+
+.dsp-dialog-danger {
+  background: transparent;
+  border-color: rgba(248, 113, 113, 0.75);
+  color: #f87171;
+}
+
+.dsp-dialog-danger:hover {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: #f87171;
+  color: #f87171;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsp-dialog {
+    animation: none;
+  }
+}

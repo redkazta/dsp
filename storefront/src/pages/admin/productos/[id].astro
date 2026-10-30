@@ -366,6 +366,7 @@ import { localize } from '../../../lib/routes';
       reorderProductImages,
       uploadProductImage,
     } from '../../../lib/admin';
+    import { askConfirm, notify } from '../../../lib/dialog';
 
     const root = document.querySelector<HTMLElement>('[data-product-editor]')!;
     const productId = root.dataset.productId!;
@@ -440,7 +441,7 @@ import { localize } from '../../../lib/routes';
         });
         window.location.reload();
       } catch (err: any) {
-        alert(err?.message ?? 'No se pudo crear la variante');
+        await notify(err?.message ?? 'No se pudo crear la variante', { tone: 'danger' });
       }
     });
 
@@ -466,14 +467,22 @@ import { localize } from '../../../lib/routes';
           btn.textContent = 'Listo ✓';
           window.setTimeout(() => (btn.textContent = 'Guardar'), 1500);
         } catch (err: any) {
-          alert(err?.message ?? 'No se pudo guardar');
+          await notify(err?.message ?? 'No se pudo guardar', { tone: 'danger' });
         } finally {
           btn.disabled = false;
         }
       });
 
       row.querySelector('[data-delete-variant]')?.addEventListener('click', async () => {
-        if (!confirm('¿Eliminar esta variante?')) return;
+        const ok = await askConfirm({
+          title: 'Eliminar variante',
+          message: 'Se quitará esta talla/color del producto. No se puede deshacer.',
+          confirmLabel: 'Eliminar',
+          tone: 'danger',
+        });
+
+        if (!ok) return;
+
         await deleteVariant(variantId);
         window.location.reload();
       });
@@ -514,7 +523,16 @@ import { localize } from '../../../lib/routes';
       btn.addEventListener('click', async () => {
         const row = btn.closest<HTMLElement>('[data-image]');
         if (!row) return;
-        if (!confirm('¿Quitar esta foto de la galería?')) return;
+
+        const ok = await askConfirm({
+          title: 'Quitar foto',
+          message: 'La imagen se quita de la galería del producto.',
+          confirmLabel: 'Quitar',
+          tone: 'danger',
+        });
+
+        if (!ok) return;
+
         await deleteProductImage(row.dataset.image!);
         window.location.reload();
       })

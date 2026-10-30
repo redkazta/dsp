@@ -50,6 +50,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
     import { escapeHtml } from '../../lib/html';
+    import { askConfirm } from '../../lib/dialog';
 
     const loading = document.getElementById('admin-loading')!;
     const view = document.getElementById('messages-view')!;
@@ -200,7 +201,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           const act = btn.dataset.act!;
 
           if (act === 'delete') {
-            if (!confirm('¿Eliminar este mensaje? No se puede deshacer.')) return;
+            const ok = await askConfirm({
+              title: 'Eliminar mensaje',
+              message: 'El mensaje se borra para siempre. Esta acción no se puede deshacer.',
+              confirmLabel: 'Eliminar',
+              tone: 'danger',
+            });
+
+            if (!ok) return;
             btn.setAttribute('disabled', 'true');
             await deleteContactMessage(m.id).catch(() => {});
             selectedId = null;

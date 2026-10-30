@@ -400,6 +400,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     import { listOrders, updateOrderStatus, saveOrderNotes } from '../../lib/admin';
     import { TENANT_ID } from '../../lib/constants';
     import { safeUrl } from '../../lib/html';
+    import { askConfirm, notify } from '../../lib/dialog';
     import {
       STATUS_FLOW,
       STATUS_LABEL,
@@ -780,7 +781,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         btn.addEventListener('click', async () => {
           const orderId = btn.dataset.order!;
           const status = btn.dataset.status! as OrderStatus;
-          if (!confirm(`¿Mover el pedido a "${STATUS_LABEL[status]}"?`)) return;
+          const danger = status === 'cancelled' || status === 'returned';
+
+          const ok = await askConfirm({
+            title: 'Mover pedido',
+            message: `¿Mover este pedido a “${STATUS_LABEL[status]}”?`,
+            confirmLabel: 'Mover',
+            tone: danger ? 'danger' : 'default',
+          });
+
+          if (!ok) return;
 
           btn.textContent = 'Guardando…';
           (btn as HTMLButtonElement).disabled = true;
@@ -791,7 +801,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             });
             await refresh();
           } catch (err: any) {
-            alert(err?.message ?? 'No se pudo actualizar el pedido.');
+            await notify(err?.message ?? 'No se pudo actualizar el pedido.', {
+              title: 'No se pudo actualizar',
+              tone: 'danger',
+            });
             (btn as HTMLButtonElement).disabled = false;
           }
         })
