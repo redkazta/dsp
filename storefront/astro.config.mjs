@@ -12,7 +12,12 @@ const SITE_URL = process.env.SITE_URL || 'https://www.dinerosobreproblemas.com';
 
 export default defineConfig({
   output: 'server',
-  adapter: vercel(),
+  adapter: vercel({
+    // Vercel Web Analytics nativo: el adapter inyecta el script en <head>
+    // (producción → /_vercel/insights/script.js). No se usa el componente
+    // <Analytics /> para no duplicarlo.
+    webAnalytics: { enabled: true },
+  }),
   integrations: [tailwind()],
   site: SITE_URL,
   image: {
