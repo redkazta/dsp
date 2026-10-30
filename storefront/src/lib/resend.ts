@@ -3,12 +3,41 @@
  *
  * Variables de entorno (Vercel):
  *   RESEND_API_KEY  → clave de Resend
- *   RESEND_DOMAIN  → dominio verificado (ej. dinerossobreproblemas.com)
+ *   RESEND_DOMAIN  → dominio verificado (ej. dinerosobreproblemas.com)
+ *
+ * `RESEND_DOMAIN` se normaliza: si alguien la guarda como
+ * `https://dominio.com`, `@dominio.com` o con espacios, el remitente sale
+ * inválido y Resend responde 403/422 sin pista clara.
  */
 
 import { serverEnv } from './env';
 
 const RESEND_API = 'https://api.resend.com/emails';
+const DEFAULT_DOMAIN = 'dinerosobreproblemas.com';
+
+/** Deja `RESEND_DOMAIN` en un hostname limpio. */
+function normalizeDomain(raw: string | undefined): string {
+  return (raw ?? '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^@/, '')
+    .replace(/[/?#].*$/, '')
+    .trim()
+    .toLowerCase();
+}
+
+/** Configuración efectiva de Resend (sin exponer la clave completa). */
+export function resendConfig() {
+  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
+  const domain = normalizeDomain(serverEnv('RESEND_DOMAIN')) || DEFAULT_DOMAIN;
+
+  return {
+    apiKey,
+    domain,
+    from: `Dinero Sobre Problemas <noreply@${domain}>`,
+    contactEmail: serverEnv('CONTACT_EMAIL')?.trim() || `hola@${domain}`,
+  };
+}
 
 export async function sendOrderConfirmation({
   to,
@@ -21,8 +50,7 @@ export async function sendOrderConfirmation({
   customerName: string;
   total: string;
 }) {
-  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
-  const domain = serverEnv('RESEND_DOMAIN') ?? 'dinerosobreproblemas.com';
+  const { apiKey, from } = resendConfig();
 
   if (!apiKey) {
     console.warn('[resend] RESEND_API_KEY no configurado; no se envía confirmación.');
@@ -37,7 +65,7 @@ export async function sendOrderConfirmation({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `Dinero Sobre Problemas <noreply@${domain}>`,
+        from,
         to,
         subject: `Confirmación de pedido #${orderNumber}`,
         html: `<h2>¡Gracias por tu pedido, ${customerName}!</h2>
@@ -49,7 +77,7 @@ export async function sendOrderConfirmation({
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error('[resend] error:', res.status, err);
+      console.error('[resend] error:', res.status, 'from:', from, 'to:', to, err);
       return { ok: false, reason: 'resend_error', status: res.status };
     }
 
@@ -82,9 +110,7 @@ export async function sendContactNotification({
   message: string;
   lang: string;
 }) {
-  const apiKey = serverEnv('RESEND_API_KEY') ?? '';
-  const domain = serverEnv('RESEND_DOMAIN') ?? 'dinerosobreproblemas.com';
-  const to = serverEnv('CONTACT_EMAIL') ?? `hola@${domain}`;
+  const { apiKey, from, contactEmail: to } = resendConfig();
 
   if (!apiKey) {
     console.warn('[resend] RESEND_API_KEY no configurado; no se envía el aviso de contacto.');
@@ -102,7 +128,7 @@ export async function sendContactNotification({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `Dinero Sobre Problemas <noreply@${domain}>`,
+        from,
         to,
         reply_to: email,
         subject: `Contacto (${lang.toUpperCase()}): ${subject}`,
@@ -118,7 +144,7 @@ export async function sendContactNotification({
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error('[resend] contacto:', res.status, err);
+      console.error('[resend] contacto:', res.status, 'from:', from, 'to:', to, err);
       return { ok: false, reason: 'resend_error', status: res.status };
     }
 
