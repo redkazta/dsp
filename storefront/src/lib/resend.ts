@@ -86,7 +86,10 @@ export async function sendContactNotification({
   const domain = serverEnv('RESEND_DOMAIN') ?? 'dinerosobreproblemas.com';
   const to = serverEnv('CONTACT_EMAIL') ?? `hola@${domain}`;
 
-  if (!apiKey) return { ok: false, reason: 'no_key' };
+  if (!apiKey) {
+    console.warn('[resend] RESEND_API_KEY no configurado; no se envía el aviso de contacto.');
+    return { ok: false, reason: 'no_key' };
+  }
 
   const esc = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -119,6 +122,7 @@ export async function sendContactNotification({
       return { ok: false, reason: 'resend_error', status: res.status };
     }
 
+    console.info('[resend] aviso de contacto enviado a', to);
     return { ok: true };
   } catch (e: any) {
     console.error('[resend] contacto exception:', e?.message);

@@ -128,9 +128,14 @@ export const POST: APIRoute = async ({
   // Aviso por correo (mejor esfuerzo: no bloquea la respuesta).
   try {
     const { sendContactNotification } = await import('../../lib/resend');
-    await sendContactNotification({ name, email, subject, message, lang });
-  } catch {
+    const sent = await sendContactNotification({ name, email, subject, message, lang });
+
+    if (!sent.ok) {
+      console.warn('[contact] el mensaje se guardó pero el aviso no salió:', sent.reason, sent.status ?? '');
+    }
+  } catch (err: any) {
     // El mensaje ya está guardado; perder el aviso no rompe nada.
+    console.error('[contact] aviso por correo:', err?.message);
   }
 
   return json({ ok: true });
