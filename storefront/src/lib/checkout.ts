@@ -57,6 +57,11 @@ export function readCustomer(payload: any): CustomerPayload | null {
   if (!customer.street || !customer.colonia || !customer.city || !customer.state) return null;
   if (!/^\d{4,6}$/.test(customer.postalCode)) return null;
 
+  // Referencias y notas son obligatorias: sin ellas el taller no sabe a dónde
+  // mandar la pieza ni qué personalizar.
+  if (!customer.references || customer.references.length < 3) return null;
+  if (!customer.notes || customer.notes.length < 3) return null;
+
   return customer;
 }
 

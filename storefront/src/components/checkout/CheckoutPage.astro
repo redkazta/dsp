@@ -26,6 +26,7 @@ const ui = {
   opening: t.checkout.opening,
   pay: t.checkout.pay,
   openFailed: t.checkout.openFailed,
+  redirecting: t.checkout.redirecting,
   connection: t.checkout.connection,
   unavailable: t.checkout.cardUnavailable,
   noSession: t.errors.noSession,
@@ -198,20 +199,22 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="references">{t.checkout.references}</label>
+                <label class="field-label" for="references">{t.checkout.references} *</label>
                 <input
                   id="references"
                   name="references"
+                  required
                   class="input-dark"
                   placeholder={t.checkout.referencesPlaceholder}
                 />
               </div>
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="notes">{t.checkout.notes}</label>
+                <label class="field-label" for="notes">{t.checkout.notes} *</label>
                 <textarea
                   id="notes"
                   name="notes"
                   rows="3"
+                  required
                   class="input-dark !min-h-[96px] py-3"
                   placeholder={t.checkout.notesPlaceholder}
                 ></textarea>
@@ -301,7 +304,40 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     </div>
   </div>
 
+  <!-- Transición al pago: se muestra al enviar y no se quita si todo sale bien. -->
+  <div
+    id="checkout-redirect"
+    class="hidden fixed inset-0 z-[130] bg-negro-profundo/92 backdrop-blur-md flex flex-col items-center justify-center gap-5 px-6 text-center"
+    role="status"
+    aria-live="assertive"
+  >
+    <span class="redirect-spinner" aria-hidden="true"></span>
+    <p class="font-acentos text-[10px] uppercase tracking-[0.28em] text-oro-brillo">Pago seguro</p>
+    <p class="text-sm text-white/75 max-w-xs leading-relaxed">{t.checkout.redirecting}</p>
+  </div>
+
   <style>
+    .redirect-spinner {
+      width: 44px;
+      height: 44px;
+      border-radius: 9999px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-top-color: #ffe28a;
+      animation: redirect-spin 0.9s linear infinite;
+    }
+
+    @keyframes redirect-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .redirect-spinner {
+        animation-duration: 2.4s;
+      }
+    }
+
     .field-label {
       display: block;
       margin-bottom: 0.5rem;
@@ -533,6 +569,18 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     /** Restaura el botón de pago si el intento se queda a medias. */
     let restorePay: (() => void) | null = null;
 
+    const redirectOverlay = document.getElementById('checkout-redirect');
+
+    function showRedirect() {
+      redirectOverlay?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function hideRedirect() {
+      redirectOverlay?.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
     function restoreButton() {
       if (restorePay) {
         restorePay();
@@ -570,6 +618,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       // `busy` pone spinner y bloquea el botón mientras se abre Stripe.
       restorePay = busy(payBtn, uiText('opening'));
+      showRedirect();
 
       try {
         const res = await fetch('/api/checkout', {
@@ -604,6 +653,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             return;
           }
 
+          hideRedirect();
           showError(friendlyError(data?.code, data?.error ?? uiText('openFailed')));
           restoreButton();
           return;
@@ -616,9 +666,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         }
 
         showError(uiText('openFailed'));
+        hideRedirect();
         restoreButton();
       } catch {
         showError(uiText('connection'));
+        hideRedirect();
         restoreButton();
       }
     });
