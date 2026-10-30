@@ -15,13 +15,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CHECKOUT_NOTES_MARKER, TENANT_ID } from './constants';
 import { priceItems, totalsFor, PricingError, type PricedItem } from './pricing';
-import {
-  createCheckoutSession,
-  retrieveCheckoutSession,
-  isStripeConfigured,
-  stripeMode,
-  StripeError,
-} from './stripe';
+import { createCheckoutSession, retrieveCheckoutSession, isStripeConfigured, stripeMode, StripeError } from './stripe';
+import { sendOrderConfirmation } from './resend';
 
 export interface CustomerPayload {
   firstName: string;
@@ -454,6 +449,15 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
 
   if (!orderId || session.payment_status !== 'paid') return null;
 
+  // Si ya estaba pagado, el correo ya salió (webhook o esta misma vuelta).
+  const { data: before } = await db
+    .from('orders')
+    .select('payment_status')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  const wasPaid = before?.payment_status === 'approved';
+
   // Para una orden de prueba el reembolso interno no importa; el monto real
   // lo vuelve a leer el webhook si llega con `amount_total`.
   await applyPaidStatus({
@@ -462,6 +466,25 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
     paymentIntentId: session.payment_intent ?? session.id,
     amount: 0,
   });
+
+  // Confirmación por correo también en la vuelta de Stripe: sin webhook
+  // configurado, esta es la única vía por la que sale el correo.
+  if (!wasPaid) {
+    const { data: order } = await db
+      .from('orders')
+      .select('contact_email, contact_name, order_number, total_amount')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (order?.contact_email) {
+      sendOrderConfirmation({
+        to: order.contact_email,
+        orderNumber: order.order_number ?? orderId,
+        customerName: order.contact_name ?? 'Cliente',
+        total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
+      }).catch(() => {});
+    }
+  }
 
   return orderId;
 }
