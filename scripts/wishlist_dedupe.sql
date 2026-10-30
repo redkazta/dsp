@@ -15,27 +15,23 @@ WHERE a.user_id = b.user_id
   AND a.product_id = b.product_id
   AND a.ctid < b.ctid;
 
--- 2) Asegura el UNIQUE (no falla si ya existe con otro nombre).
+-- 2) Asegura el UNIQUE (no falla si ya existe, ni con otro nombre ni con
+--    el mismo nombre ya ocupado):
 DO $$
-DECLARE
-  has_unique BOOLEAN;
 BEGIN
-  SELECT EXISTS (
+  IF NOT EXISTS (
     SELECT 1
-    FROM pg_index i
-    JOIN pg_class c ON c.oid = i.indrelid
-    WHERE c.oid = 'public.wishlist_items'::regclass
-      AND i.indisunique
-      AND (
-        SELECT array_agg(a.attname::text ORDER BY a.attname::text)
-        FROM unnest(i.indkey) AS k
-        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k
-      ) = ARRAY['product_id', 'user_id']::text[]
-  ) INTO has_unique;
-
-  IF NOT has_unique THEN
-    ALTER TABLE public.wishlist_items
-      ADD CONSTRAINT wishlist_items_user_product_key UNIQUE (user_id, product_id);
+    FROM pg_constraint
+    WHERE conrelid = 'public.wishlist_items'::regclass
+      AND conname = 'wishlist_items_user_product_key'
+  ) THEN
+    BEGIN
+      ALTER TABLE public.wishlist_items
+        ADD CONSTRAINT wishlist_items_user_product_key UNIQUE (user_id, product_id);
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+      WHEN duplicate_table THEN NULL;
+    END;
   END IF;
 END $$;
 
