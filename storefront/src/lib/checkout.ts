@@ -14,9 +14,10 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CHECKOUT_NOTES_MARKER, TENANT_ID } from './constants';
-import { priceItems, totalsFor, PricingError, type PricedItem } from './pricing';
-import { createCheckoutSession, retrieveCheckoutSession, isStripeConfigured, stripeMode, StripeError } from './stripe';
+import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './pricing';
+import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
+import { resolveCoupon, couponMessage } from './coupons';
 
 export interface CustomerPayload {
   firstName: string;
@@ -72,6 +73,9 @@ export interface CreatePendingOrderInput {
   customer: CustomerPayload;
   items: PricedItem[];
   shippingCost: number;
+  /** Descuento ya validado en servidor (0 = sin cupón). */
+  discount?: number;
+  couponCode?: string | null;
   /** Lo que reporta Stripe (incluye el envío). */
   paymentAmount?: number;
 }
@@ -82,9 +86,12 @@ export async function createPendingOrder({
   customer,
   items,
   shippingCost,
+  discount = 0,
+  couponCode = null,
   paymentAmount,
 }: CreatePendingOrderInput) {
-  const { subtotal, shipping, total } = totalsFor(items);
+  const { subtotal, shipping } = totalsFor(items);
+  const total = round2(subtotal - discount + shipping);
 
   if (shippingCost !== shipping) {
     throw new Error(`Envío inconsistente: ${shippingCost} != ${shipping}`);
@@ -101,6 +108,8 @@ export async function createPendingOrder({
       subtotal,
       shipping_cost: shipping,
       total_amount: total,
+      discount_amount: discount,
+      coupon_code: couponCode,
       shipping_method: shipping === 0 ? 'free' : 'standard',
       contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
       contact_email: customer.email,
@@ -191,7 +200,7 @@ export interface ApplyPaymentInput {
 export async function applyPaidStatus({ db, orderId, paymentIntentId, amount, meta }: ApplyPaymentInput) {
   const { data: order } = await db
     .from('orders')
-    .select('id, status, payment_status, total_amount, user_id, notes')
+    .select('id, status, payment_status, total_amount, user_id, notes, coupon_code')
     .eq('id', orderId)
     .maybeSingle();
 
@@ -216,6 +225,27 @@ export async function applyPaidStatus({ db, orderId, paymentIntentId, amount, me
       const { error: retryError } = await db.from('orders').update(patch).eq('id', orderId);
       if (retryError) return false;
     }
+
+    // El cupón se consume al pagar, no al abrir Stripe (un carrito abandonado
+    // no debe gastar usos). Si la función SQL no existe, no rompe la venta.
+    if (order.coupon_code) {
+      const { error: couponError } = await db.rpc('increment_coupon_use', {
+        p_tenant: TENANT_ID,
+        p_code: order.coupon_code,
+      });
+
+      if (couponError) {
+        console.warn('[coupons] no se pudo consumir el uso:', couponError.code, couponError.message);
+      }
+    }
+
+    // Ya pagó: el recordatorio de carrito no tiene sentido.
+    await db
+      .from('cart_reminders')
+      .update({ canceled_at: new Date().toISOString() })
+      .eq('order_id', orderId)
+      .is('sent_at', null)
+      .is('canceled_at', null);
 
     // El detalle puede faltar si el pedido nació antes de este flujo.
     const { count } = await db
@@ -336,6 +366,8 @@ export interface StartCheckoutInput {
   defaultReturnPath?: string;
   /** Idioma de la tienda: la etiqueta de envío se manda a Stripe traducida. */
   lang?: 'es' | 'en';
+  /** Código de cupón tal cual lo escribió el cliente (se valida aquí). */
+  couponCode?: unknown;
 }
 
 export type StartCheckoutResult =
@@ -356,6 +388,7 @@ export async function startStripeCheckout({
   checkoutPath = '/checkout',
   defaultReturnPath = '/confirmacion',
   lang = 'es',
+  couponCode,
 }: StartCheckoutInput): Promise<StartCheckoutResult> {
   if (!isStripeConfigured()) {
     return {
@@ -381,13 +414,34 @@ export async function startStripeCheckout({
     return { ok: false, code: 'SERVER', message: 'No pudimos validar tu carrito.', status: 500 };
   }
 
-  const { shipping } = totalsFor(items);
+  const { subtotal, shipping } = totalsFor(items);
   const safeReturn = returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
     ? returnPath
     : defaultReturnPath;
 
-  const paymentAmount = items.reduce((sum, i) => sum + i.price * i.qty, 0) + shipping;
-  const finalAmount = Math.round(paymentAmount * 100) / 100;
+  // Cupón: si viene un código y no es válido, se corta la compra en vez de
+  // cobrar de más. Si no viene, no se toca nada.
+  let discount = 0;
+  let appliedCoupon: string | null = null;
+
+  if (couponCode) {
+    const coupon = await resolveCoupon(db, couponCode, subtotal);
+
+    if (!coupon.ok) {
+      return {
+        ok: false,
+        code: 'INVALID_COUPON',
+        message: couponMessage(coupon, lang),
+        status: 409,
+      };
+    }
+
+    discount = coupon.discount;
+    appliedCoupon = coupon.code;
+  }
+
+  const paymentAmount = subtotal - discount + shipping;
+  const finalAmount = round2(paymentAmount);
 
   // El pedido se crea DESPUÉS de validar (arriba) y ANTES de Stripe, para tener
   // un id estable al que amarrar la sesión.
@@ -397,10 +451,24 @@ export async function startStripeCheckout({
     customer,
     items,
     shippingCost: shipping,
+    discount,
+    couponCode: appliedCoupon,
     paymentAmount: finalAmount,
   });
 
   try {
+    // Stripe no admite importes negativos: el descuento viaja como cupón de
+    // un solo uso con el monto exacto calculado arriba.
+    const stripeCoupon =
+      discount > 0
+        ? await createStripeCoupon({ amountOff: discount, name: appliedCoupon ?? 'Descuento' }).catch(
+            (err: any) => {
+              console.error('[checkout] cupón stripe', err?.message);
+              return null;
+            }
+          )
+        : null;
+
     const session = await createCheckoutSession({
       orderId: order.id,
       orderNumber: order.order_number,
@@ -412,6 +480,7 @@ export async function startStripeCheckout({
         image: i.image,
       })),
       shipping,
+      stripeCouponId: stripeCoupon?.id ?? null,
       shippingLabel: lang === 'en' ? 'Standard shipping' : 'Envío estándar',
       clientReference: order.id,
       customerEmail: customer.email,

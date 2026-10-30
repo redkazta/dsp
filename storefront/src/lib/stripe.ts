@@ -115,6 +115,8 @@ export interface CheckoutSessionInput {
   lines: CheckoutLine[];
   /** Envío a cobrar aparte (0 = gratis: no se agrega línea). */
   shipping: number;
+  /** Id de cupón de Stripe (descuento ya validado en servidor). */
+  stripeCouponId?: string | null;
   clientReference: string;
   customerEmail?: string | null;
   successUrl: string;
@@ -175,6 +177,12 @@ export async function createCheckoutSession(input: CheckoutSessionInput) {
 
   if (input.customerEmail) body.customer_email = input.customerEmail;
 
+  // Descuento: Stripe no acepta líneas negativas, así que se aplica un cupón
+  // de un solo uso creado al vuelo con el importe ya calculado en servidor.
+  if (input.stripeCouponId) {
+    body.discounts = [{ coupon: input.stripeCouponId }];
+  }
+
   // El envío va como línea aparte: nuestro envío es plano
   // ($15, gratis desde $150), no hace falta Shipping Rates en Stripe.
   if (input.shipping > 0) {
@@ -189,6 +197,29 @@ export async function createCheckoutSession(input: CheckoutSessionInput) {
   }
 
   return stripeRequest<CheckoutSession>('POST', '/checkout/sessions', body);
+}
+
+// ---------------------------------------------------------------- Cupones
+
+/**
+ * Cupón de Stripe de un solo uso por el importe exacto del descuento.
+ * Se crea al abrir la sesión: el monto ya salió de `resolveCoupon`.
+ */
+export async function createStripeCoupon({
+  amountOff,
+  name,
+  currency = 'usd',
+}: {
+  amountOff: number;
+  name: string;
+  currency?: string;
+}) {
+  return stripeRequest<{ id: string }>('POST', '/coupons', {
+    amount_off: Math.max(1, Math.round(amountOff * 100)),
+    currency: currency.toLowerCase(),
+    duration: 'once',
+    name: name.slice(0, 40),
+  });
 }
 
 /** Estado de la sesión al volver del Checkout (pago asíncrono, 3DS, etc.). */

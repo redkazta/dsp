@@ -1,0 +1,89 @@
+---
+/**
+ * Aviso de cookies.
+ *
+ * Hoy la tienda no usa cookies de terceros ni píxeles publicitarios: la sesión
+ * (Supabase) y el idioma son cookies técnicas, y Vercel Analytics no usa
+ * cookies. El aviso es informativo y deja la decisión guardada para cuando se
+ * añada medición con consentimiento (GA4, Meta Pixel…), que deberá leer
+ * `dsp_cookie_consent`.
+ */
+import { localize } from '../lib/routes';
+
+const lang = (Astro.locals.lang ?? 'es') as 'es' | 'en';
+
+const copy =
+  lang === 'es'
+    ? {
+        title: 'Cookies',
+        text: 'Usamos solo cookies necesarias para que la tienda funcione: tu sesión, el carrito y el idioma. Sin rastreadores publicitarios.',
+        all: 'Aceptar',
+        necessary: 'Solo necesarias',
+        more: 'Política de privacidad',
+      }
+    : {
+        title: 'Cookies',
+        text: 'We only use cookies required to run the store: your session, cart and language. No advertising trackers.',
+        all: 'Accept',
+        necessary: 'Necessary only',
+        more: 'Privacy policy',
+      };
+---
+
+<div
+  id="cookie-consent"
+  class="hidden fixed bottom-3 left-3 right-3 sm:left-6 sm:right-auto sm:max-w-md z-[95] border-2 border-oro-brillo/50 bg-negro-profundo/98 backdrop-blur-xl p-4 sm:p-5 shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]"
+  role="dialog"
+  aria-live="polite"
+  aria-label={copy.title}
+>
+  <p class="font-acentos text-[10px] uppercase tracking-[0.28em] text-oro-brillo mb-2">
+    {copy.title}
+  </p>
+  <p class="text-sm text-white/80 leading-relaxed">{copy.text}</p>
+
+  <div class="flex flex-wrap items-center gap-2 mt-4">
+    <button
+      type="button"
+      data-cookie="all"
+      class="btn-gold !min-h-[40px] !px-4 !py-2 !text-[11px]"
+    >
+      {copy.all}
+    </button>
+    <button
+      type="button"
+      data-cookie="necessary"
+      class="btn-outline !min-h-[40px] !px-4 !py-2 !text-[11px]"
+    >
+      {copy.necessary}
+    </button>
+    <a
+      href={localize(lang, 'privacy')}
+      class="ml-auto text-[11px] text-white/60 hover:text-oro-brillo underline underline-offset-2"
+    >
+      {copy.more}
+    </a>
+  </div>
+</div>
+
+<script>
+  const KEY = 'dsp_cookie_consent';
+  const panel = document.getElementById('cookie-consent');
+
+  if (panel && !localStorage.getItem(KEY)) {
+    panel.classList.remove('hidden');
+  }
+
+  if (panel) {
+    panel.querySelectorAll<HTMLButtonElement>('[data-cookie]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const choice = btn.dataset.cookie ?? 'necessary';
+        localStorage.setItem(KEY, choice);
+        panel.classList.add('hidden');
+
+        // Punto único para colgar medición con consentimiento en el futuro.
+        window.dispatchEvent(new CustomEvent('cookie:consent', { detail: { choice } }));
+      })
+    );
+  }
+</script>

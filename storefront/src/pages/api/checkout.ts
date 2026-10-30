@@ -28,8 +28,26 @@ import {
   createSupabaseAdminClient,
 } from '../../lib/supabase-server';
 import { readCustomer, startStripeCheckout } from '../../lib/checkout';
+import {
+  scheduleCartReminder,
+  sendCartReminderById,
+  INLINE_DELAY_LIMIT,
+} from '../../lib/reminders';
 
 export const prerender = false;
+
+/**
+ * `waitUntil` de Vercel: mantiene viva la función para el recordatorio de
+ * carrito con retraso corto (pruebas). Si no existe, no se hace nada.
+ */
+async function getWaitUntil(): Promise<((p: Promise<unknown>) => void) | null> {
+  try {
+    const mod = await import('@vercel/functions');
+    return typeof mod.waitUntil === 'function' ? mod.waitUntil : null;
+  } catch {
+    return null;
+  }
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -96,9 +114,35 @@ export const POST: APIRoute = async ({
     checkoutPath: user ? '/checkout' : '/invitado/checkout',
     defaultReturnPath: user ? '/confirmacion' : '/invitado/confirmacion',
     lang: locals.lang === 'en' ? 'en' : 'es',
+    couponCode: payload?.coupon,
   });
 
   if (!result.ok) return error(result.code, result.message, result.status);
+
+  // Recordatorio de carrito: se programa al abrir Stripe y se cancela solo
+  // cuando el pago se aprueba. `CART_REMINDER_DELAY_SECONDS` manda el ritmo.
+  try {
+    const reminder = await scheduleCartReminder({
+      db,
+      orderId: result.orderId,
+      email: customer.email,
+      lang: locals.lang === 'en' ? 'en' : 'es',
+    });
+
+    if (reminder && reminder.delay <= INLINE_DELAY_LIMIT) {
+      const { id, delay } = reminder;
+
+      const work = (async () => {
+        await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+        await sendCartReminderById(db, id);
+      })().catch(() => {});
+
+      const waitUntil = await getWaitUntil();
+      if (waitUntil) waitUntil(work);
+    }
+  } catch (err: any) {
+    console.warn('[checkout] recordatorio de carrito:', err?.message);
+  }
 
   return json({
     id: result.orderId,

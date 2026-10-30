@@ -590,6 +590,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
               references: value('references'),
               notes: value('notes'),
             },
+            coupon: sessionStorage.getItem('dsp_coupon') || undefined,
           }),
         });
 

@@ -6,6 +6,7 @@
 import '../styles/global.css';
 import '../styles/animated-logo.css';
 import StoreDrawer from '../components/store/StoreDrawer.astro';
+import CookieConsent from '../components/CookieConsent.astro';
 import { getCopy, LANG_TOGGLE_LABEL, LOCALE, type Lang } from '../lib/i18n';
 import { localize, translateUrl } from '../lib/routes';
 
@@ -24,7 +25,7 @@ const t = getCopy(lang);
 const {
   title = t.meta.home.title,
   description = t.meta.home.description,
-  image = '/og-image.jpg',
+  image = '/img/camisas/camisa-dsp-2-01-frente.jpg',
   homeScreen = false,
 } = Astro.props;
 
@@ -32,6 +33,13 @@ const {
 // apuntar a `/contacto` aunque el render interno venga de un rewrite.
 const publicPathname = (Astro as any).originPathname ?? Astro.url.pathname;
 const canonical = new URL(publicPathname, Astro.site ?? Astro.url.origin).toString();
+
+// hreflang: la misma página en los dos idiomas. La URL del idioma actual manda
+// (no se duplica el canonical), y `x-default` apunta al español.
+const esPath = lang === 'es' ? publicPathname : translateUrl('es', publicPathname);
+const enPath = lang === 'en' ? publicPathname : translateUrl('en', publicPathname);
+const esUrl = new URL(esPath, Astro.site ?? Astro.url.origin).toString();
+const enUrl = new URL(enPath, Astro.site ?? Astro.url.origin).toString();
 
 // Para el enlace del idioma: volver a la MISMA página en el otro idioma
 // (/tienda → /shop, /producto/x → /product/x), no al inicio.
@@ -98,8 +106,11 @@ const jsonLd = {
   name: t.brand,
   url: Astro.site,
   logo: new URL('/img/logo/DSP.jpg', Astro.site ?? Astro.url.origin).toString(),
+  image: new URL('/img/camisas/camisa-dsp-2-01-frente.jpg', Astro.site ?? Astro.url.origin).toString(),
   currenciesAccepted: 'USD',
   paymentAccepted: t.trust.secureText,
+  email: 'support@dinerosobreproblemas.com',
+  sameAs: ['https://www.instagram.com/dinerosobreproblemas/'],
 };
 ---
 
@@ -116,6 +127,9 @@ const jsonLd = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="es-MX" href={esUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={esUrl} />
     <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
@@ -128,11 +142,14 @@ const jsonLd = {
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={new URL(image, Astro.site ?? Astro.url.origin).toString()} />
+    <meta property="og:image:alt" content={t.brand} />
+    <meta property="og:locale:alternate" content={lang === 'es' ? 'en_US' : 'es_MX'} />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL(image, Astro.site ?? Astro.url.origin).toString()} />
 
     <!-- Fuentes -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -746,6 +763,8 @@ const jsonLd = {
         }
       });
     </script>
+
+    <CookieConsent />
   </body>
 </html>
 

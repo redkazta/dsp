@@ -154,6 +154,32 @@ import { localize } from '../lib/routes';
             <span id="sum-total" class="font-acentos text-2xl text-oro-brillo">$0.00</span>
           </div>
 
+          <!-- Cupón: la lógica existe, pero hoy no hay códigos activos y
+               todo se rechaza. El descuento real se recalcula en /api/checkout. -->
+          <div class="mb-3">
+            <div class="flex gap-2">
+              <label class="flex-1 min-w-0">
+                <span class="sr-only">Código de descuento</span>
+                <input
+                  id="coupon-code"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  placeholder="Código de descuento"
+                  class="input-dark !min-h-[42px] !py-2 text-sm w-full uppercase tracking-wider"
+                />
+              </label>
+              <button
+                type="button"
+                id="coupon-apply"
+                class="btn-outline !min-h-[42px] !px-4 !py-2 !text-[11px] shrink-0"
+              >
+                Aplicar
+              </button>
+            </div>
+            <p id="coupon-msg" class="hidden text-xs mt-2" role="status" aria-live="polite"></p>
+          </div>
+
           <a href={checkoutHref} class="btn-gold w-full !min-h-[46px] mb-2">{t.cart.checkout}</a>
           <a href={localize(lang, 'shop')} class="btn-outline w-full !min-h-[42px] mb-2 text-center !text-xs">{t.cart.continueShopping}</a>
           <a
@@ -368,6 +394,63 @@ import { localize } from '../lib/routes';
 
     // Si Supabase tarda, no se deja el esqueleto para siempre.
     const safety = window.setTimeout(paint, 1500);
+
+    // ---------- Cupón ----------
+    // La validación real vive en /api/coupon y en /api/checkout. Hoy no hay
+    // cupones activos, así que todo código se rechaza con un aviso claro.
+    const couponInput = document.getElementById('coupon-code') as HTMLInputElement | null;
+    const couponBtn = document.getElementById('coupon-apply') as HTMLButtonElement | null;
+    const couponMsg = document.getElementById('coupon-msg');
+
+    const paintCoupon = (text: string, tone: 'error' | 'success') => {
+      if (!couponMsg) return;
+      couponMsg.textContent = text;
+      couponMsg.className =
+        tone === 'error' ? 'text-xs mt-2 text-red-400' : 'text-xs mt-2 text-oro-brillo';
+      couponMsg.hidden = false;
+    };
+
+    couponBtn?.addEventListener('click', async () => {
+      const code = (couponInput?.value ?? '').trim();
+      if (!code) return;
+
+      couponBtn.disabled = true;
+      couponBtn.textContent = '…';
+
+      try {
+        const res = await fetch('/api/coupon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            subtotal: cartSubtotal(),
+            lang: document.documentElement.lang || 'es',
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (data?.ok) {
+          sessionStorage.setItem('dsp_coupon', String(data.code));
+          paintCoupon(`−$${formatMXN(Number(data.discount) || 0)}`, 'success');
+        } else {
+          sessionStorage.removeItem('dsp_coupon');
+          paintCoupon(String(data?.message ?? 'Ese cupón no existe.'), 'error');
+        }
+      } catch {
+        paintCoupon('No se pudo validar el cupón. Intenta otra vez.', 'error');
+      } finally {
+        couponBtn.disabled = false;
+        couponBtn.textContent = 'Aplicar';
+      }
+    });
+
+    couponInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        couponBtn?.click();
+      }
+    });
 
     refreshCartPrices()
       .then(({ removed }) => {
