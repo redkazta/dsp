@@ -704,9 +704,15 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       .then(({ removed }) => {
         cartReady = true;
         if (removed.length > 0 && summaryError) {
-          summaryError.textContent = `${uiText('removedPieces')} ${removed.length} ${
-            removed.length === 1 ? uiText('pieceOne') : uiText('pieceMany')
-          } ${uiText('unavailableNow')}`;
+          const names = removed
+            .map((item: any) => (item?.name ? String(item.name) : ''))
+            .filter(Boolean)
+            .join(', ');
+
+          summaryError.textContent =
+            `${uiText('removedPieces')} ${removed.length} ${
+              removed.length === 1 ? uiText('pieceOne') : uiText('pieceMany')
+            } ${uiText('unavailableNow')}` + (names ? ` (${names})` : '');
           summaryError.classList.remove('hidden');
         }
         renderSummary();

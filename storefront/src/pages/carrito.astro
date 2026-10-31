@@ -455,8 +455,13 @@ import { localize } from '../lib/routes';
     refreshCartPrices()
       .then(({ removed }) => {
         if (removed.length > 0) {
+          const names = removed
+            .map((item: any) => (item?.name ? String(item.name) : ''))
+            .filter(Boolean)
+            .join(', ');
+
           showNotices([
-            uiText('unavailableRemoved') + ` (${removed.length})`,
+            uiText('unavailableRemoved') + ` (${removed.length})` + (names ? `: ${names}` : ''),
           ]);
         }
         paint();

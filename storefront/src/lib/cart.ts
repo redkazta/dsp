@@ -203,7 +203,8 @@ export function cartSubtotal(): number {
  */
 export async function refreshCartPrices(): Promise<{
   cart: CartItem[];
-  removed: string[];
+  /** Piezas que se quitaron del carrito (con su nombre, para avisar). */
+  removed: CartItem[];
 }> {
   const cart = getCart();
   if (cart.length === 0) return { cart, removed: [] };
@@ -217,7 +218,7 @@ export async function refreshCartPrices(): Promise<{
   if (error) return { cart, removed: [] };
 
   const byId = new Map((data ?? []).map((row: any) => [row.id, row]));
-  const removed: string[] = [];
+  const removed: CartItem[] = [];
 
   const next = cart
     .map((item) => {
@@ -225,7 +226,7 @@ export async function refreshCartPrices(): Promise<{
       const product = row ? (Array.isArray(row.products) ? row.products[0] : row.products) : null;
 
       if (!row || row.is_deleted || !product || product.is_deleted || !product.is_active) {
-        removed.push(item.variantId);
+        removed.push(item);
         return null;
       }
 
