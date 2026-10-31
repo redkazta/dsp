@@ -136,7 +136,7 @@ export const copy = {
     },
     trust: {
       shippingTitle: 'Envío express',
-      shippingText: '24-48h en zona metropolitana',
+      shippingText: '3 a 7 días hábiles en EE. UU.',
       secureTitle: 'Pago seguro',
       secureText: 'Tarjetas de crédito y débito',
       returnsTitle: 'Devoluciones',
@@ -559,8 +559,9 @@ export const copy = {
           {
             title: 'Tiempos de entrega',
             items: [
-              'México: 3 a 7 días hábiles.',
-              'Estados Unidos: 7 a 12 días hábiles.',
+              'Estados Unidos: 3 a 7 días hábiles.',
+              'El tiempo exacto de envío lo confirma soporte por correo al despachar tu pedido.',
+              'Por ahora solo enviamos dentro de Estados Unidos. Si necesitas otro país, escríbenos a support@dinerosobreproblemas.com y lo gestionamos por soporte.',
               'Los tiempos son estimados y pueden variar en temporada alta.',
             ],
           },
@@ -569,7 +570,7 @@ export const copy = {
             items: [
               'Gratis en pedidos superiores a $150 USD.',
               'Pedidos menores: el costo se calcula en el checkout.',
-              'Envíos internacionales: costo calculado según destino y peso.',
+              'Envíos fuera de Estados Unidos: se gestionan por soporte (support@dinerosobreproblemas.com).',
             ],
           },
           {
@@ -759,7 +760,8 @@ export const copy = {
             title: '4. Producción y envíos',
             items: [
               'Tiempo de producción: 2 a 3 días hábiles después de confirmado el pago.',
-              'Tiempo de envío: 3 a 7 días hábiles dentro de México. Envíos a Estados Unidos disponibles en el checkout.',
+              'Tiempo de envío: 3 a 7 días hábiles dentro de Estados Unidos. El tiempo exacto lo confirma soporte al despachar.',
+              'Por ahora solo enviamos dentro de Estados Unidos. Para otros destinos, escríbenos a support@dinerosobreproblemas.com.',
               'Envío gratis en pedidos superiores a $150 USD.',
               'Te enviaremos un número de guía por correo cuando tu pedido sea despachado.',
             ],
@@ -917,7 +919,7 @@ export const copy = {
     },
     trust: {
       shippingTitle: 'Express shipping',
-      shippingText: '24-48h in the metro area',
+      shippingText: '3 to 7 business days in the US.',
       secureTitle: 'Secure payment',
       secureText: 'Credit and debit cards',
       returnsTitle: 'Returns',
@@ -1336,8 +1338,9 @@ export const copy = {
           {
             title: 'Delivery times',
             items: [
-              'Mexico: 3 to 7 business days.',
-              'United States: 7 to 12 business days.',
+              'United States: 3 to 7 business days.',
+              'The exact shipping time is confirmed by support by email when your order ships.',
+              'For now we only ship within the United States. If you need another country, email support@dinerosobreproblemas.com and we will handle it through support.',
               'Times are estimates and may vary during peak season.',
             ],
           },
@@ -1346,7 +1349,7 @@ export const copy = {
             items: [
               'Free on orders over $150 USD.',
               'Smaller orders: the cost is calculated at checkout.',
-              'International shipping: cost calculated by destination and weight.',
+              'Shipping outside the United States: handled through support (support@dinerosobreproblemas.com).',
             ],
           },
           {
@@ -1536,7 +1539,8 @@ export const copy = {
             title: '4. Production and shipping',
             items: [
               'Production time: 2 to 3 business days after payment is confirmed.',
-              'Shipping time: 3 to 7 business days within Mexico. Shipping to the United States is available at checkout.',
+              'Shipping time: 3 to 7 business days within the United States. The exact time is confirmed by support when your order ships.',
+              'For now we only ship within the United States. For other destinations, email support@dinerosobreproblemas.com.',
               'Free shipping on orders over $150 USD.',
               'We will email you a tracking number once your order ships.',
             ],
