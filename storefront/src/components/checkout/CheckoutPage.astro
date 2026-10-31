@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
 import { localize } from '../../lib/routes';
 import { isStripeConfigured } from '../../lib/stripe';
+import { US_STATES } from '../../lib/us';
 
 interface Props {
   /** true = compra sin cuenta (se sirve en /invitado/checkout). */
@@ -163,8 +164,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
               <div class="space-y-2">
-                <label class="field-label" for="colonia">{t.checkout.colonia} *</label>
-                <input id="colonia" name="colonia" required class="input-dark" />
+                <label class="field-label" for="colonia">{t.checkout.colonia}</label>
+                <input
+                  id="colonia"
+                  name="colonia"
+                  class="input-dark"
+                  placeholder={t.checkout.coloniaHint}
+                />
               </div>
               <div class="space-y-2">
                 <label class="field-label" for="postalCode">{t.checkout.postalCode} *</label>
@@ -175,7 +181,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                   class="input-dark"
                   autocomplete="postal-code"
                   inputmode="numeric"
-                  maxlength="5"
+                  maxlength="10"
+                  placeholder="12345"
                 />
               </div>
               <div class="space-y-2">
@@ -190,13 +197,27 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
               </div>
               <div class="space-y-2">
                 <label class="field-label" for="state">{t.checkout.state} *</label>
+                <select id="state" name="state" required class="input-dark" autocomplete="address-level1">
+                  <option value="">{t.checkout.statePlaceholder}</option>
+                  {US_STATES.map((s) => (
+                    <option value={s.code}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label" for="country">{t.checkout.country}</label>
                 <input
-                  id="state"
-                  name="state"
-                  required
-                  class="input-dark"
-                  autocomplete="address-level1"
+                  id="country"
+                  name="country"
+                  class="input-dark opacity-70 cursor-not-allowed"
+                  value={t.checkout.countryUS}
+                  readonly
+                  tabindex="-1"
+                  aria-describedby="country-note"
                 />
+                <p id="country-note" class="text-[11px] text-white/50 leading-snug">
+                  {t.checkout.countryNote}
+                </p>
               </div>
               <div class="space-y-2 sm:col-span-2">
                 <label class="field-label" for="references">{t.checkout.references} *</label>
@@ -466,7 +487,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         }
       }
 
-      if (name === 'postalCode' && val && !/^\d{4,6}$/.test(val)) {
+      if (name === 'postalCode' && val && !/^\d{5}(-\d{4})?$/.test(val)) {
         isValid = false;
         errorMessage = uiText('invalidPostal');
       }

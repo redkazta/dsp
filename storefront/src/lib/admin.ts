@@ -329,17 +329,23 @@ export async function updateOrderStatus(
   status: string,
   extra: { trackingNumber?: string; carrier?: string; notes?: string } = {}
 ) {
-  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+  // Va por el servidor: actualiza el pedido (service role), dispara el trigger
+  // del historial y manda el correo al cliente.
+  const res = await fetch('/api/admin/order-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      orderId,
+      status,
+      trackingNumber: extra.trackingNumber,
+      carrier: extra.carrier,
+    }),
+  });
 
-  if (extra.trackingNumber !== undefined) patch.tracking_number = extra.trackingNumber || null;
-  if (extra.carrier !== undefined) patch.carrier = extra.carrier || null;
-
-  const { error } = await supabase.from('orders').update(patch).eq('id', orderId);
-  if (error) throw new Error(error.message);
-
-  // El historial lo escribe el trigger `on_order_status_change`, que inserta
-  // una fila por cambio de estado. Antes se insertaba también desde aquí y
-  // cada movimiento aparecía dos veces en el seguimiento.
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error ?? 'No se pudo actualizar el pedido.');
+  }
 }
 
 /** Notas internas del pedido (solo staff) */

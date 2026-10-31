@@ -246,6 +246,111 @@ export async function sendContactNotification({
 }
 
 /**
+ * Aviso al cliente cuando cambia el estado de su pedido.
+ *
+ * Va después de la confirmación de compra: envío, entrega, cancelación…
+ * Es "mejor esfuerzo": si falla, el estado ya quedó guardado.
+ */
+export async function sendOrderStatusEmail({
+  to,
+  orderNumber,
+  status,
+  carrier,
+  trackingNumber,
+  lang = 'es',
+}: {
+  to: string;
+  orderNumber: string | null;
+  status: string;
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  lang?: 'es' | 'en';
+}) {
+  const { apiKey, from, contactEmail } = resendConfig();
+
+  if (!apiKey) {
+    console.warn('[resend] RESEND_API_KEY no configurado; no se envía el cambio de estado.');
+    return { ok: false, reason: 'no_key' };
+  }
+
+  const es = lang !== 'en';
+
+  const COPY: Record<string, { title: string; body: string }> = es
+    ? {
+        confirmed: { title: 'Pago confirmado', body: 'Recibimos tu pago. Tu pedido ya está en cola de producción.' },
+        design: { title: 'En diseño', body: 'Estamos ajustando el diseño de tu pieza.' },
+        preparing: { title: 'En producción', body: 'Tu pieza entró al taller. Te avisamos cuando salga.' },
+        ready: { title: 'Listo para enviar', body: 'Tu pedido está empacado y listo para salir.' },
+        shipped: { title: 'Enviado', body: 'Tu pedido va en camino.' },
+        delivered: { title: 'Entregado', body: 'Tu pedido llegó. Gracias por la compra.' },
+        cancelled: { title: 'Pedido cancelado', body: 'Tu pedido fue cancelado. Si no lo esperabas, responde este correo.' },
+        returned: { title: 'Devolución registrada', body: 'Registramos la devolución de tu pedido.' },
+      }
+    : {
+        confirmed: { title: 'Payment confirmed', body: 'We received your payment. Your order is queued for production.' },
+        design: { title: 'In design', body: 'We are adjusting the design of your piece.' },
+        preparing: { title: 'In production', body: 'Your piece entered the workshop. We will let you know when it ships.' },
+        ready: { title: 'Ready to ship', body: 'Your order is packed and ready to go.' },
+        shipped: { title: 'Shipped', body: 'Your order is on its way.' },
+        delivered: { title: 'Delivered', body: 'Your order arrived. Thanks for the purchase.' },
+        cancelled: { title: 'Order cancelled', body: 'Your order was cancelled. If this was unexpected, reply to this email.' },
+        returned: { title: 'Return registered', body: 'We registered the return of your order.' },
+      };
+
+  const copy = COPY[status] ?? {
+    title: es ? 'Actualización de tu pedido' : 'Order update',
+    body: es ? 'Tu pedido cambió de estado.' : 'Your order status changed.',
+  };
+
+  const tracking =
+    trackingNumber
+      ? `<p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+           ${es ? 'Guía' : 'Tracking'}: <strong style="color:#FFE28A;">${carrier ? `${carrier} · ` : ''}${trackingNumber}</strong>
+         </p>`
+      : '';
+
+  const body = `
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${copy.body}
+    </p>
+    ${orderNumber ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">${es ? 'Pedido' : 'Order'} <strong style="color:#ffffff;">#${orderNumber}</strong></p>` : ''}
+    ${tracking}
+    <p style="margin:0;">
+      <a href="${SITE}/cuenta#pedidos" style="display:inline-block;padding:12px 22px;background:#FFE28A;color:#0a0a0a;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;font-weight:700;">
+        ${es ? 'Ver mi pedido' : 'View my order'}
+      </a>
+    </p>`;
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        reply_to: contactEmail,
+        subject: `${copy.title}${orderNumber ? ` · #${orderNumber}` : ''} · ¡D$P!`,
+        html: emailShell(copy.title, body, lang),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[resend] estado:', res.status, err);
+      return { ok: false, reason: 'resend_error', status: res.status };
+    }
+
+    return { ok: true };
+  } catch (e: any) {
+    console.error('[resend] estado exception:', e?.message);
+    return { ok: false, reason: 'exception' };
+  }
+}
+
+/**
  * Recordatorio de carrito / checkout abandonado.
  *
  * Se programa al abrir Stripe y se cancela si el pago se aprueba. El retraso

@@ -18,6 +18,7 @@ import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './
 import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
+import { isUsState, usStateCode, isUsPostalCode } from './us';
 
 export interface CustomerPayload {
   firstName: string;
@@ -54,8 +55,14 @@ export function readCustomer(payload: any): CustomerPayload | null {
 
   if (!customer.firstName || !customer.lastName || !customer.phone) return null;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customer.email)) return null;
-  if (!customer.street || !customer.colonia || !customer.city || !customer.state) return null;
-  if (!/^\d{4,6}$/.test(customer.postalCode)) return null;
+  if (!customer.street || !customer.city) return null;
+
+  // Envíos solo a EE. UU.: estado válido (se guarda como código de 2 letras)
+  // y ZIP de 5 dígitos o ZIP+4.
+  if (!isUsState(customer.state)) return null;
+  customer.state = usStateCode(customer.state);
+
+  if (!isUsPostalCode(customer.postalCode)) return null;
 
   // Referencias y notas son obligatorias: sin ellas el taller no sabe a dónde
   // mandar la pieza ni qué personalizar.
