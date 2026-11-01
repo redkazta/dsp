@@ -68,7 +68,7 @@ const { lang } = Astro.locals;
   </div>
 
   <script>
-    import { getDashboardStats, listOrders, listAllProducts, countNewContactMessages } from '../../lib/admin';
+    import { getDashboardStats, listOrders, listAllProducts } from '../../lib/admin';
     import { escapeHtml } from '../../lib/html';
     import { TENANT_ID } from '../../lib/constants';
     import { STATUS_LABEL, formatOrderMoney, type OrderStatus } from '../../lib/orders';
@@ -83,8 +83,11 @@ const { lang } = Astro.locals;
         listAllProducts(TENANT_ID),
       ]);
 
-      // Mensajes sin leer: no debe romper el dashboard si la tabla no existe aún.
-      const newMessages = await countNewContactMessages(TENANT_ID).catch(() => 0);
+      // Mensajes sin leer: vía API con service role (no depende de RLS).
+      const newMessages = await fetch('/api/admin/contact-messages?count=1', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : { count: 0 }))
+        .then((data) => Number(data?.count) || 0)
+        .catch(() => 0);
 
       loading.classList.add('hidden');
       dash.classList.remove('hidden');

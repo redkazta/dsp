@@ -42,15 +42,38 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <script>
     import {
       CONTACT_STATUS_LABEL,
-      deleteContactMessage,
-      listContactMessages,
-      updateContactStatus,
       type ContactMessage,
       type ContactStatus,
     } from '../../lib/admin';
-    import { TENANT_ID } from '../../lib/constants';
     import { escapeHtml } from '../../lib/html';
     import { askConfirm } from '../../lib/dialog';
+
+    const API = '/api/admin/contact-messages';
+
+    async function fetchMessages(): Promise<ContactMessage[]> {
+      const params = new URLSearchParams({ status: 'all', search: searchEl.value });
+      const res = await fetch(`${API}?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('No se pudieron cargar los mensajes.');
+
+      const data = await res.json().catch(() => ({}));
+      return (data.messages ?? []) as ContactMessage[];
+    }
+
+    async function changeStatus(id: string, status: ContactStatus) {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'status', status }),
+      }).catch(() => {});
+    }
+
+    async function removeMessage(id: string) {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'delete' }),
+      }).catch(() => {});
+    }
 
     const loading = document.getElementById('admin-loading')!;
     const view = document.getElementById('messages-view')!;
@@ -210,13 +233,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
             if (!ok) return;
             btn.setAttribute('disabled', 'true');
-            await deleteContactMessage(m.id).catch(() => {});
+            await removeMessage(m.id);
             selectedId = null;
             await load();
             return;
           }
 
-          await updateContactStatus(m.id, act as ContactStatus).catch(() => {});
+          await changeStatus(m.id, act as ContactStatus);
           await load();
         })
       );
@@ -230,7 +253,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (current && current.status === 'new') {
         current.status = 'read';
         // Best effort: si falla, el mensaje se sigue leyendo igual.
-        void updateContactStatus(id, 'read').catch(() => {});
+        void changeStatus(id, 'read');
       }
 
       paintList();
@@ -239,12 +262,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     async function load() {
       try {
-        messages = await listContactMessages(TENANT_ID, {
-          status: 'all',
-          search: searchEl.value,
-        });
+        messages = await fetchMessages();
+        countEl.textContent = `${messages.length} ${messages.length === 1 ? 'mensaje' : 'mensajes'}`;
       } catch {
         messages = [];
+        countEl.textContent = 'No se pudieron cargar los mensajes.';
       }
 
       paintTabs();
