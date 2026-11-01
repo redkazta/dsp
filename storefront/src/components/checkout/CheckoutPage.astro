@@ -4,6 +4,7 @@ import { getCopy, type Lang } from '../../lib/i18n';
 import { localize } from '../../lib/routes';
 import { isStripeConfigured } from '../../lib/stripe';
 import { US_STATES } from '../../lib/us';
+import { getStoreSettings, shippingRulesFrom } from '../../lib/settings';
 
 interface Props {
   /** true = compra sin cuenta (se sirve en /invitado/checkout). */
@@ -14,6 +15,10 @@ const { guest = false } = Astro.props;
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+
+// Reglas de envío configuradas en el panel.
+const settings = await getStoreSettings();
+const shippingRules = shippingRulesFrom(settings);
 
 // Textos y mensajes del script del navegador.
 const ui = {
@@ -36,6 +41,8 @@ const ui = {
   removedPieces: t.checkout.removedPieces,
   unavailableNow: t.checkout.unavailableNow,
   free: t.cart.free,
+  freeFrom: String(shippingRules.freeFrom),
+  shipCost: String(shippingRules.cost),
 };
 
 const { firstName, email, phone } = Astro.locals;
@@ -435,7 +442,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   <script>
     import { getCart, refreshCartPrices, formatMXN, startCartSync } from '../../lib/cart';
     import { nudge, busy } from '../../lib/ux';
-    import { shippingCostFor, STANDARD_SHIPPING } from '../../lib/pricing';
+    import { shippingCostFor } from '../../lib/pricing';
     import { escapeHtml, friendlyError } from '../../lib/html';
 
     const ui = JSON.parse(document.getElementById('checkout-ui')?.textContent || '{}') as Record<string, string>;
@@ -569,11 +576,14 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         .join('');
 
       const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-      const shipping = shippingCostFor(subtotal);
+      const shipping = shippingCostFor(subtotal, {
+        freeFrom: Number(ui.freeFrom) || 0,
+        cost: Number(ui.shipCost) || 0,
+      });
 
       document.getElementById('co-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
       document.getElementById('co-shipping')!.textContent =
-        shipping === 0 ? uiText('free') : `$${formatMXN(STANDARD_SHIPPING)}`;
+        shipping === 0 ? uiText('free') : `$${formatMXN(Number(ui.shipCost) || 0)}`;
       document.getElementById('co-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
     }
 

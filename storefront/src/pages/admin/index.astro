@@ -3,14 +3,16 @@ export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { localize } from '../../lib/routes';
+import { getStoreSettings } from '../../lib/settings';
 
 const { lang } = Astro.locals;
+const settings = await getStoreSettings();
 ---
 
 <AdminLayout title="Dashboard">
   <div id="admin-loading" class="py-20 text-center text-white/80 text-sm">Cargando...</div>
 
-  <div id="admin-dashboard" class="hidden">
+  <div id="admin-dashboard" class="hidden" data-low-stock={String(settings.lowStockThreshold)}>
     <div class="mb-10">
       <p class="section-label mb-2">Panel</p>
       <h1 class="font-titulos text-4xl text-blancoRoto">Dashboard</h1>
@@ -134,7 +136,11 @@ const { lang } = Astro.locals;
               )
               .join('');
 
-      // Stock bajo: variantes con 5 piezas o menos (se ordena por urgencia)
+      // Stock bajo: variantes con el umbral configurado o menos (se ordena por urgencia)
+      const lowStockLimit = Number(
+        document.getElementById('admin-dashboard')?.dataset.lowStock ?? '5'
+      );
+
       const lowStock = products
         .flatMap((p: any) =>
           (p.product_variants ?? []).map((v: any) => ({
@@ -145,13 +151,13 @@ const { lang } = Astro.locals;
             stock: Number(v.stock ?? 0),
           }))
         )
-        .filter((v: any) => v.stock <= 5 && v.stock < 900) // 999 = sin límite real
+        .filter((v: any) => v.stock <= lowStockLimit && v.stock < 900) // 999 = sin límite real
         .sort((a: any, b: any) => a.stock - b.stock)
         .slice(0, 6);
 
       document.getElementById('low-stock')!.innerHTML =
         lowStock.length === 0
-          ? `<p class="text-sm text-white/70">Todo el inventario está por encima de 5 piezas.</p>`
+          ? `<p class="text-sm text-white/70">Todo el inventario está por encima de ${lowStockLimit} piezas.</p>`
           : lowStock
               .map(
                 (v: any) => `

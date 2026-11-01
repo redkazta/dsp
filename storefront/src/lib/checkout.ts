@@ -19,6 +19,8 @@ import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isS
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, usStateCode, isUsPostalCode } from './us';
+import { getStoreSettings, shippingRulesFrom } from './settings';
+import type { ShippingRules } from './pricing';
 
 export interface CustomerPayload {
   firstName: string;
@@ -90,6 +92,8 @@ export interface CreatePendingOrderInput {
   couponCode?: string | null;
   /** Lo que reporta Stripe (incluye el envío). */
   paymentAmount?: number;
+  /** Reglas de envío vigentes (panel → `store_settings`). */
+  shippingRules?: ShippingRules;
 }
 
 export async function createPendingOrder({
@@ -100,9 +104,10 @@ export async function createPendingOrder({
   shippingCost,
   discount = 0,
   couponCode = null,
+  shippingRules,
   paymentAmount,
 }: CreatePendingOrderInput) {
-  const { subtotal, shipping } = totalsFor(items);
+  const { subtotal, shipping } = totalsFor(items, shippingRules);
   const total = round2(subtotal - discount + shipping);
 
   if (shippingCost !== shipping) {
@@ -467,7 +472,11 @@ export async function startStripeCheckout({
     return { ok: false, code: 'SERVER', message: 'No pudimos validar tu carrito.', status: 500 };
   }
 
-  const { subtotal, shipping } = totalsFor(items);
+  // Reglas de envío configurables desde el panel (con respaldo en constantes).
+  const settings = await getStoreSettings(db);
+  const rules = shippingRulesFrom(settings);
+
+  const { subtotal, shipping } = totalsFor(items, rules);
   const safeReturn = returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
     ? returnPath
     : defaultReturnPath;
@@ -506,6 +515,7 @@ export async function startStripeCheckout({
     shippingCost: shipping,
     discount,
     couponCode: appliedCoupon,
+    shippingRules: rules,
     paymentAmount: finalAmount,
   });
 

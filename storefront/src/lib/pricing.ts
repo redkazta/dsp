@@ -23,9 +23,22 @@ export interface PricedItem {
   color?: string | null;
 }
 
-/** Envío estándar, gratis a partir del umbral. */
-export function shippingCostFor(subtotal: number) {
-  return subtotal >= FREE_SHIPPING_THRESHOLD || subtotal <= 0 ? 0 : STANDARD_SHIPPING;
+/** Reglas de envío editables desde el panel (`store_settings`). */
+export interface ShippingRules {
+  /** Subtotal a partir del cual el envío es gratis. */
+  freeFrom: number;
+  /** Costo del envío estándar. */
+  cost: number;
+}
+
+export const DEFAULT_SHIPPING_RULES: ShippingRules = {
+  freeFrom: FREE_SHIPPING_THRESHOLD,
+  cost: STANDARD_SHIPPING,
+};
+
+/** Envío estándar, gratis a partir del umbral configurado. */
+export function shippingCostFor(subtotal: number, rules: ShippingRules = DEFAULT_SHIPPING_RULES) {
+  return subtotal >= rules.freeFrom || subtotal <= 0 ? 0 : rules.cost;
 }
 
 export function round2(n: number) {
@@ -141,8 +154,8 @@ export async function priceItems(
   });
 }
 
-export function totalsFor(items: PricedItem[]) {
+export function totalsFor(items: PricedItem[], rules: ShippingRules = DEFAULT_SHIPPING_RULES) {
   const subtotal = round2(items.reduce((sum, i) => sum + i.price * i.qty, 0));
-  const shipping = shippingCostFor(subtotal);
+  const shipping = shippingCostFor(subtotal, rules);
   return { subtotal, shipping, total: round2(subtotal + shipping) };
 }

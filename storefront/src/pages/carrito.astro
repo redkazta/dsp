@@ -4,11 +4,15 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
-import { FREE_SHIPPING_THRESHOLD } from '../lib/constants';
+import { getStoreSettings, shippingRulesFrom } from '../lib/settings';
 import { getCopy, type Lang } from '../lib/i18n';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+
+// Reglas de envío configuradas en el panel (con respaldo en constantes).
+const settings = await getStoreSettings();
+const shippingRules = shippingRulesFrom(settings);
 
 // Textos que necesita el script del navegador.
 const ui = {
@@ -44,6 +48,7 @@ import { localize } from '../lib/routes';
 
 <BaseLayout title={t.cart.metaTitle} description={t.cart.metaDescription}>
   <script type="application/json" id="cart-ui" set:html={JSON.stringify(ui)} />
+  <script type="application/json" id="cart-rules" set:html={JSON.stringify(shippingRules)} />
   <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-4 sm:py-5">
       <div class="flex items-baseline justify-between gap-4">
@@ -194,7 +199,7 @@ import { localize } from '../lib/routes';
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
-              {t.cart.freeFrom} {`$${FREE_SHIPPING_THRESHOLD.toLocaleString('en-US')} USD`}
+              {t.cart.freeFrom} {`$${shippingRules.freeFrom.toLocaleString('en-US')} USD`}
             </p>
             <p class="text-[11px] text-white/55 leading-snug">{t.cart.madeToOrderTime}</p>
           </div>
@@ -229,8 +234,15 @@ import { localize } from '../lib/routes';
       formatMXN,
       startCartSync,
     } from '../lib/cart';
-    import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from '../lib/pricing';
+    import { shippingCostFor } from '../lib/pricing';
     import { escapeHtml, safeUrl } from '../lib/html';
+
+    // Reglas de envío que resolvió el servidor (panel → store_settings).
+    const rules = JSON.parse(
+      document.getElementById('cart-rules')?.textContent || '{}'
+    ) as { freeFrom: number; cost: number };
+    const freeFrom = Number(rules.freeFrom) || 0;
+    const shipCost = Number(rules.cost) || 0;
 
     const ui = JSON.parse(document.getElementById('cart-ui')?.textContent || '{}') as Record<string, string>;
     const uiText = (key: string) => ui[key] ?? '';
@@ -301,24 +313,24 @@ import { localize } from '../lib/routes';
         .join('');
 
       const subtotal = cartSubtotal();
-      const shipping = shippingCostFor(subtotal);
+      const shipping = shippingCostFor(subtotal, { freeFrom, cost: shipCost });
 
       document.getElementById('sum-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
       document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
       document.getElementById('sum-shipping')!.textContent =
-        subtotal === 0 ? '—' : shipping === 0 ? uiText('free') : `$${formatMXN(STANDARD_SHIPPING)}`;
+        subtotal === 0 ? '—' : shipping === 0 ? uiText('free') : `$${formatMXN(shipCost)}`;
 
       const progress = document.getElementById('free-shipping-progress')!;
       const bar = document.getElementById('free-shipping-bar')!;
       const text = document.getElementById('free-shipping-text')!;
 
       progress.classList.remove('hidden');
-      if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+      if (subtotal >= freeFrom) {
         bar.style.width = '100%';
         text.textContent = uiText('freeShippingDone');
       } else {
-        bar.style.width = `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%`;
-        text.textContent = `${uiText('freeShippingMissing')} $${formatMXN(FREE_SHIPPING_THRESHOLD - subtotal)} ${uiText('forFree')}`;
+        bar.style.width = `${Math.min(100, (subtotal / freeFrom) * 100)}%`;
+        text.textContent = `${uiText('freeShippingMissing')} $${formatMXN(freeFrom - subtotal)} ${uiText('forFree')}`;
       }
 
       list.querySelectorAll<HTMLElement>('[data-inc]').forEach((b) =>
