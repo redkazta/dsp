@@ -155,6 +155,17 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
       ? normalizeLang(cookieLang)
       : langFromAcceptHeader(context.request.headers.get('accept-language'));
 
+  // Entrar por una ruta inglesa (`/shop`, `/product/…`) fija el idioma en la
+  // cookie: las rutas que no tienen alias (`/checkout`, `/cuenta`) y los
+  // correos transaccionales se resuelven después con esa cookie.
+  if (cameFromAlias && normalizeLang(cookieLang) !== 'en') {
+    context.cookies.set(LANG_COOKIE, 'en', {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365,
+    });
+  }
+
   // `rewrite` de Astro 5: renderiza la página canónica conservando la URL del
   // navegador. Se hace aquí, con `locals` ya resuelto.
   const response = canonical ? await context.rewrite(canonical) : await next();
