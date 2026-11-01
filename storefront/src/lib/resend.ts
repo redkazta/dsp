@@ -115,11 +115,14 @@ export async function sendOrderConfirmation({
   orderNumber,
   customerName,
   total,
+  lang = 'es',
 }: {
   to: string;
   orderNumber: string;
   customerName: string;
   total: string;
+  /** Idioma con el que se compró; el correo sale en ese idioma. */
+  lang?: 'es' | 'en';
 }) {
   const { apiKey, from, contactEmail } = resendConfig();
 
@@ -127,6 +130,40 @@ export async function sendOrderConfirmation({
     console.warn('[resend] RESEND_API_KEY no configurado; no se envía confirmación.');
     return { ok: false, reason: 'no_key' };
   }
+
+  const es = lang !== 'en';
+
+  const title = es ? `Pedido #${orderNumber}` : `Order #${orderNumber}`;
+  const subject = es
+    ? `Confirmación de pedido #${orderNumber}`
+    : `Order confirmation #${orderNumber}`;
+
+  const body = `
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${es ? `¡Gracias por tu compra, ${customerName}!` : `Thanks for your purchase, ${customerName}!`}
+    </p>
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${
+        es
+          ? `Tu pedido <strong style="color:#ffffff;">#${orderNumber}</strong> quedó confirmado.`
+          : `Your order <strong style="color:#ffffff;">#${orderNumber}</strong> is confirmed.`
+      }
+    </p>
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${es ? 'Total pagado' : 'Total paid'}: <strong style="color:#FFE28A;">${total}</strong>
+    </p>
+    <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
+      ${
+        es
+          ? 'Te avisamos en cuanto tu pieza entre a producción y de nuevo cuando salga a camino.'
+          : 'We will let you know as soon as your piece enters production and again when it ships.'
+      }
+    </p>
+    <p style="margin:0;">
+      <a href="${SITE}/cuenta#pedidos" style="display:inline-block;padding:12px 22px;background:#FFE28A;color:#0a0a0a;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;font-weight:700;">
+        ${es ? 'Ver mi pedido' : 'View my order'}
+      </a>
+    </p>`;
 
   try {
     const res = await fetch(RESEND_API, {
@@ -140,27 +177,8 @@ export async function sendOrderConfirmation({
         to,
         // Las respuestas las atiende una persona, no el remitente técnico.
         reply_to: contactEmail,
-        subject: `Confirmación de pedido #${orderNumber}`,
-        html: emailShell(
-          `Pedido #${orderNumber}`,
-          `<p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
-             ¡Gracias por tu compra, ${customerName}!
-           </p>
-           <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
-             Tu pedido <strong style="color:#ffffff;">#${orderNumber}</strong> quedó confirmado.
-           </p>
-           <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
-             Total pagado: <strong style="color:#FFE28A;">${total}</strong>
-           </p>
-           <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
-             Te avisamos en cuanto tu pieza entre a producción y de nuevo cuando salga a camino.
-           </p>
-           <p style="margin:0;">
-             <a href="${SITE}/cuenta#pedidos" style="display:inline-block;padding:12px 22px;background:#FFE28A;color:#0a0a0a;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;text-decoration:none;font-weight:700;">
-               Ver mi pedido
-             </a>
-           </p>`
-        ),
+        subject,
+        html: emailShell(title, body, lang),
       }),
     });
 

@@ -117,6 +117,8 @@ export interface CheckoutSessionInput {
   shipping: number;
   /** Id de cupón de Stripe (descuento ya validado en servidor). */
   stripeCouponId?: string | null;
+  /** Idioma de la compra: viaja en la metadata para el correo. */
+  lang?: 'es' | 'en';
   clientReference: string;
   customerEmail?: string | null;
   successUrl: string;
@@ -164,11 +166,13 @@ export async function createCheckoutSession(input: CheckoutSessionInput) {
     metadata: {
       order_id: input.orderId,
       order_number: input.orderNumber ?? '',
+      lang: input.lang ?? 'es',
     },
     payment_intent_data: {
       metadata: {
         order_id: input.orderId,
         order_number: input.orderNumber ?? '',
+        lang: input.lang ?? 'es',
       },
     },
     billing_address_collection: 'required',

@@ -127,7 +127,7 @@ async function isOrderPaid(db: SupabaseClient, orderId: string): Promise<boolean
   return data?.payment_status === 'approved';
 }
 
-async function sendConfirmation(db: SupabaseClient, orderId: string) {
+async function sendConfirmation(db: SupabaseClient, orderId: string, lang: 'es' | 'en' = 'es') {
   const { data: order } = await db
     .from('orders')
     .select('contact_email, contact_name, order_number, total_amount')
@@ -142,6 +142,7 @@ async function sendConfirmation(db: SupabaseClient, orderId: string) {
       orderNumber: order.order_number ?? orderId,
       customerName: order.contact_name ?? 'Valoración',
       total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
+      lang,
     });
   } catch (err: any) {
     // El pedido ya está pagado: un correo fallido no debe tumbar el webhook.
@@ -178,7 +179,9 @@ async function processEvent(db: SupabaseClient, event: StripeEvent): Promise<str
       });
 
       // Solo el tránsito no-pagado → pagado manda correo.
-      if (!wasPaid) await sendConfirmation(db, orderId);
+      if (!wasPaid) {
+        await sendConfirmation(db, orderId, object?.metadata?.lang === 'en' ? 'en' : 'es');
+      }
 
       return orderId;
     }

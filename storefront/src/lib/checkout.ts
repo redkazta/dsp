@@ -534,6 +534,7 @@ export async function startStripeCheckout({
       })),
       shipping,
       stripeCouponId: stripeCoupon?.id ?? null,
+      lang,
       shippingLabel: lang === 'en' ? 'Standard shipping' : 'Envío estándar',
       clientReference: order.id,
       customerEmail: customer.email,
@@ -571,6 +572,8 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
 
   if (!orderId || session.payment_status !== 'paid') return null;
 
+  const sessionLang = session.metadata?.lang === 'en' ? 'en' : 'es';
+
   // Si ya estaba pagado, el correo ya salió (webhook o esta misma vuelta).
   const { data: before } = await db
     .from('orders')
@@ -604,6 +607,7 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
         orderNumber: order.order_number ?? orderId,
         customerName: order.contact_name ?? 'Cliente',
         total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
+        lang: sessionLang,
       }).catch(() => {});
     }
   }
