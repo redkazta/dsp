@@ -12,9 +12,9 @@
  * La clave se acepta también como `RESENDAPIKEY` (sin guiones bajos): así
  * está creada hoy en Vercel y renombrarla ahí no es posible.
  *
- * Remitente: se firma con `RESEND_DOMAIN`. Mientras
- * `dinerosobreproblemas.com` no esté verificado en Resend (hoy sale
- * `not_started` y el envío da 403), se usa `wildgvng.com.mx`.
+ * Remitente: se firma con `RESEND_DOMAIN`, que ya está verificado en Resend
+ * (`dinerosobreproblemas.com`). Si la variable faltara, se usa
+ * `wildgvng.com.mx` como respaldo verificado.
  */
 
 import { serverEnv } from './env';
@@ -64,9 +64,9 @@ function emailShell(title: string, body: string, lang: 'es' | 'en' = 'es') {
 </html>`;
 }
 
-/** Dominio verificado en Resend con el que se firma hoy. */
+/** Dominio de respaldo (verificado) si `RESEND_DOMAIN` no está definido. */
 const SENDING_DOMAIN = 'wildgvng.com.mx';
-/** Dominio de la marca: pendiente de DNS en Resend. */
+/** Dominio de la marca. */
 const BRAND_DOMAIN = 'dinerosobreproblemas.com';
 
 /** Nombres aceptados para la clave, en orden de preferencia. */
@@ -97,10 +97,8 @@ export function resendConfig() {
   const apiKey = resendApiKey();
   const requested = normalizeDomain(serverEnv('RESEND_DOMAIN'));
 
-  // Cuando `dinerosobreproblemas.com` pase a `verified` en Resend, elimina la
-  // comparación con BRAND_DOMAIN: el remitente debe volver al de la marca.
-  const domain =
-    !requested || requested === BRAND_DOMAIN ? SENDING_DOMAIN : requested;
+  // `dinerosobreproblemas.com` ya está verificado en Resend: se firma con él.
+  const domain = requested || SENDING_DOMAIN;
 
   return {
     apiKey,
