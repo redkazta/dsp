@@ -46,6 +46,23 @@ export const GET: APIRoute = async (context: any) => {
   const status = url.searchParams.get('status') ?? 'all';
   const search = (url.searchParams.get('search') ?? '').trim();
 
+  // Conteos por estado (para las pestañas), independientes del filtro activo.
+  const [allCount, newCount, readCount, repliedCount, archivedCount] = await Promise.all([
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID),
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('status', 'new'),
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('status', 'read'),
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('status', 'replied'),
+    db.from('contact_messages').select('id', { count: 'exact', head: true }).eq('tenant_id', TENANT_ID).eq('status', 'archived'),
+  ]);
+
+  const counts = {
+    all: allCount.count ?? 0,
+    new: newCount.count ?? 0,
+    read: readCount.count ?? 0,
+    replied: repliedCount.count ?? 0,
+    archived: archivedCount.count ?? 0,
+  };
+
   let query = db
     .from('contact_messages')
     .select('id, name, email, subject, message, lang, status, user_agent, created_at')
@@ -70,7 +87,7 @@ export const GET: APIRoute = async (context: any) => {
     return json({ error: error.message }, 500);
   }
 
-  return json({ messages: data ?? [] });
+  return json({ messages: data ?? [], counts });
 };
 
 export const POST: APIRoute = async (context: any) => {

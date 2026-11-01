@@ -50,13 +50,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     const API = '/api/admin/contact-messages';
 
-    async function fetchMessages(): Promise<ContactMessage[]> {
-      const params = new URLSearchParams({ status: 'all', search: searchEl.value });
+    async function fetchMessages(): Promise<{ messages: ContactMessage[]; counts: Counts }> {
+      const params = new URLSearchParams({ status: filter, search: searchEl.value });
       const res = await fetch(`${API}?${params.toString()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error('No se pudieron cargar los mensajes.');
 
       const data = await res.json().catch(() => ({}));
-      return (data.messages ?? []) as ContactMessage[];
+      return {
+        messages: (data.messages ?? []) as ContactMessage[],
+        counts: (data.counts ?? { all: 0, new: 0, read: 0, replied: 0, archived: 0 }) as Counts,
+      };
     }
 
     async function changeStatus(id: string, status: ContactStatus) {
@@ -87,6 +90,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     let selectedId: string | null = null;
     let filter: ContactStatus | 'all' = 'all';
 
+    type Counts = Record<'all' | ContactStatus, number>;
+    let counts: Counts = { all: 0, new: 0, read: 0, replied: 0, archived: 0 };
+
     const TABS: Array<{ value: ContactStatus | 'all'; label: string }> = [
       { value: 'all', label: 'Todos' },
       { value: 'new', label: 'Nuevos' },
@@ -113,13 +119,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     function paintTabs() {
       tabsEl.innerHTML = TABS.map((tab) => {
         const active = tab.value === filter;
-        const count =
-          tab.value === 'all'
-            ? messages.length
-            : messages.filter((m) => m.status === tab.value).length;
+        const count = counts[tab.value] ?? 0;
 
         return `
           <button type="button" data-tab="${tab.value}"
+            aria-pressed="${active}"
             class="px-3 py-1.5 min-h-[34px] text-[11px] uppercase tracking-[0.16em] border-2 transition-colors ${
               active
                 ? 'border-oro-brillo text-oro-brillo bg-oro-brillo/10'
@@ -131,17 +135,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       tabsEl.querySelectorAll<HTMLElement>('[data-tab]').forEach((btn) =>
         btn.addEventListener('click', () => {
-          filter = btn.dataset.tab as ContactStatus | 'all';
+          const next = btn.dataset.tab as ContactStatus | 'all';
+          if (next === filter) return;
+
+          filter = next;
+          selectedId = null;
           void load();
         })
       );
     }
 
     function paintList() {
-      const visible = messages.filter((m) => {
-        if (filter === 'all') return true;
-        return m.status === filter;
-      });
+      // El servidor ya devuelve solo el estado activo.
+      const visible = messages;
 
       countEl.textContent = `${visible.length} ${visible.length === 1 ? 'mensaje' : 'mensajes'}`;
 
@@ -253,17 +259,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (current && current.status === 'new') {
         current.status = 'read';
         // Best effort: si falla, el mensaje se sigue leyendo igual.
-        void changeStatus(id, 'read');
+        void changeStatus(id, 'read').then(() => load());
       }
 
+      paintTabs();
       paintList();
       paintDetail(current);
     }
 
     async function load() {
       try {
-        messages = await fetchMessages();
-        countEl.textContent = `${messages.length} ${messages.length === 1 ? 'mensaje' : 'mensajes'}`;
+        const data = await fetchMessages();
+        messages = data.messages;
+        counts = data.counts;
       } catch {
         messages = [];
         countEl.textContent = 'No se pudieron cargar los mensajes.';
