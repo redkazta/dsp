@@ -94,6 +94,8 @@ export interface CreatePendingOrderInput {
   paymentAmount?: number;
   /** Reglas de envío vigentes (panel → `store_settings`). */
   shippingRules?: ShippingRules;
+  /** Idioma con el que se compró: viaja al pedido para que sus correos salgan en ese idioma. */
+  lang?: 'es' | 'en';
 }
 
 export async function createPendingOrder({
@@ -106,6 +108,7 @@ export async function createPendingOrder({
   couponCode = null,
   shippingRules,
   paymentAmount,
+  lang = 'es',
 }: CreatePendingOrderInput) {
   const { subtotal, shipping } = totalsFor(items, shippingRules);
   const total = round2(subtotal - discount + shipping);
@@ -114,71 +117,64 @@ export async function createPendingOrder({
     throw new Error(`Envío inconsistente: ${shippingCost} != ${shipping}`);
   }
 
-  const { data: order, error } = await db
-    .from('orders')
-    .insert({
-      tenant_id: TENANT_ID,
-      user_id: userId,
-      status: 'pending',
-      payment_status: 'pending',
-      payment_method: 'stripe',
-      subtotal,
-      shipping_cost: shipping,
-      total_amount: total,
-      discount_amount: discount,
-      coupon_code: couponCode,
-      shipping_method: shipping === 0 ? 'free' : 'standard',
-      contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
-      contact_email: customer.email,
-      contact_phone: customer.phone,
-      shipping_street: customer.street,
-      shipping_colonia: customer.colonia,
-      shipping_city: customer.city,
-      shipping_state: customer.state,
-      shipping_postal_code: customer.postalCode,
-      shipping_references: customer.references ?? null,
-      notes: composeNotes(customer),
-    })
-    .select('id, order_number, total_amount')
-    .single();
+  const baseRow = {
+    tenant_id: TENANT_ID,
+    user_id: userId,
+    status: 'pending',
+    payment_status: 'pending',
+    payment_method: 'stripe',
+    subtotal,
+    shipping_cost: shipping,
+    total_amount: total,
+    shipping_method: shipping === 0 ? 'free' : 'standard',
+    contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
+    contact_email: customer.email,
+    contact_phone: customer.phone,
+    shipping_street: customer.street,
+    shipping_colonia: customer.colonia,
+    shipping_city: customer.city,
+    shipping_state: customer.state,
+    shipping_postal_code: customer.postalCode,
+    shipping_references: customer.references ?? null,
+    notes: composeNotes(customer),
+    lang,
+  };
 
-  // Red de seguridad: si `scripts/coupons.sql` aún no se corrió, las columnas
-  // de descuento no existen. Se reintenta sin ellas para no tumbar la venta
-  // (el total ya lleva el descuento aplicado).
-  let finalOrder = order;
-  let finalError = error;
+  // Red de seguridad: si `scripts/coupons.sql` u `orders_lang.sql` aún no se
+  // corrieron, las columnas nuevas no existen y PostgREST rechaza el insert.
+  // Se reintenta sin ellas para no tumbar la venta (el total ya lleva el
+  // descuento aplicado y el idioma se queda en el default 'es').
+  const { lang: _lang, ...rowWithoutLang } = baseRow;
 
-  if (finalError && (finalError.code === 'PGRST204' || finalError.code === '42703')) {
-    console.warn('[orders] columnas de cupón ausentes; se guarda sin ellas');
+  const attempts = [
+    { ...baseRow, discount_amount: discount, coupon_code: couponCode },
+    baseRow,
+    rowWithoutLang,
+  ];
 
-    const retry = await db
+  let finalOrder: any = null;
+  let finalError: any = null;
+
+  for (const [index, row] of attempts.entries()) {
+    const { data, error } = await db
       .from('orders')
-      .insert({
-        tenant_id: TENANT_ID,
-        user_id: userId,
-        status: 'pending',
-        payment_status: 'pending',
-        payment_method: 'stripe',
-        subtotal,
-        shipping_cost: shipping,
-        total_amount: total,
-        shipping_method: shipping === 0 ? 'free' : 'standard',
-        contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
-        contact_email: customer.email,
-        contact_phone: customer.phone,
-        shipping_street: customer.street,
-        shipping_colonia: customer.colonia,
-        shipping_city: customer.city,
-        shipping_state: customer.state,
-        shipping_postal_code: customer.postalCode,
-        shipping_references: customer.references ?? null,
-        notes: composeNotes(customer),
-      })
+      .insert(row)
       .select('id, order_number, total_amount')
       .single();
 
-    finalOrder = retry.data;
-    finalError = retry.error;
+    finalOrder = data;
+    finalError = error;
+
+    if (!finalError) break;
+
+    const missingColumn = finalError.code === 'PGRST204' || finalError.code === '42703';
+    if (!missingColumn) break;
+
+    console.warn(
+      index === 0
+        ? '[orders] columnas de cupón ausentes; se guarda sin ellas'
+        : '[orders] columna lang ausente; se guarda con el idioma por defecto'
+    );
   }
 
   if (finalError || !finalOrder) {
@@ -517,6 +513,7 @@ export async function startStripeCheckout({
     couponCode: appliedCoupon,
     shippingRules: rules,
     paymentAmount: finalAmount,
+    lang,
   });
 
   try {

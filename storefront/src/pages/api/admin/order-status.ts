@@ -67,11 +67,29 @@ export const POST: APIRoute = async (context: any) => {
 
   // Aviso al cliente (no bloquea la respuesta si falla).
   try {
-    const { data: order } = await db
+    type OrderForMail = { order_number: string | null; contact_email: string | null; lang?: string | null };
+
+    let order: OrderForMail | null;
+
+    const withLang = await db
       .from('orders')
-      .select('order_number, contact_email')
+      .select('order_number, contact_email, lang')
       .eq('id', orderId)
-      .maybeSingle();
+      .maybeSingle<OrderForMail>();
+
+    order = withLang.data;
+
+    // Si `scripts/orders_lang.sql` aún no se corrió, la columna no existe:
+    // se reintenta sin ella para no perder el aviso.
+    if (withLang.error && (withLang.error.code === 'PGRST204' || withLang.error.code === '42703')) {
+      const withoutLang = await db
+        .from('orders')
+        .select('order_number, contact_email')
+        .eq('id', orderId)
+        .maybeSingle<OrderForMail>();
+
+      order = withoutLang.data;
+    }
 
     if (order?.contact_email) {
       await sendOrderStatusEmail({
@@ -80,8 +98,8 @@ export const POST: APIRoute = async (context: any) => {
         status,
         carrier: (patch.carrier as string | null) ?? null,
         trackingNumber: (patch.tracking_number as string | null) ?? null,
-        // El pedido no guarda idioma; la tienda es principalmente ES.
-        lang: 'es',
+        // El pedido guarda el idioma de la compra (`scripts/orders_lang.sql`).
+        lang: order.lang === 'en' ? 'en' : 'es',
       });
     }
   } catch (err: any) {
