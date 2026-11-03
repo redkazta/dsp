@@ -561,7 +561,7 @@ export async function startStripeCheckout({
     // Sin pago no debe quedar un pedido vivo.
     await db.from('order_items').delete().eq('order_id', order.id);
     await db.from('orders').delete().eq('id', order.id);
-    console.error('[checkout] stripe session', err?.message);
+    console.error('[checkout] stripe session', err?.status ?? '', err?.message);
     return {
       ok: false,
       code: 'PAYMENT_ERROR',
