@@ -18,9 +18,17 @@ interface ImportMetaEnv {
 
   // Stripe (Checkout alojado): el secreto solo lo lee el servidor.
   readonly STRIPE_SECRET_KEY?: string;
+  readonly STRIPE_SECRET_KEY_LIVE?: string;
+  readonly STRIPE_SECRET_KEY_TEST?: string;
   readonly STRIPE_WEBHOOK_SECRET?: string;
+  readonly STRIPE_WEBHOOK_SECRET_LIVE?: string;
+  readonly STRIPE_WEBHOOK_SECRET_TEST?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
-  readonly PUBLIC_STRIPE_TEST_MODE?: string;
+  readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE?: string;
+  readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST?: string;
+
+  /** `live` | `test`: elige la ranura de llaves de Stripe. Por defecto se deduce de la llave. */
+  readonly PUBLIC_STRIPE_ENV?: string;
 }
 
 interface ImportMeta {

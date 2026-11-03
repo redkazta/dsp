@@ -15,7 +15,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CHECKOUT_NOTES_MARKER, TENANT_ID } from './constants';
 import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './pricing';
-import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, StripeError } from './stripe';
+import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, usStateCode, isUsPostalCode } from './us';
@@ -454,9 +454,12 @@ export async function startStripeCheckout({
     };
   }
 
-  if (stripeMode() === 'test' && (import.meta.env.PUBLIC_STRIPE_TEST_MODE as string | undefined) !== 'true') {
-    // Evita "ventas" fantasma si producción quedó apuntando a llaves de prueba.
-    console.warn('[checkout] STRIPE_SECRET_KEY es de prueba y PUBLIC_STRIPE_TEST_MODE no está activo');
+  if (stripeMode() === 'test' && stripeEnv() === 'live') {
+    // `PUBLIC_STRIPE_ENV=live` pero la llave activa sigue siendo de prueba:
+    // se avisa fuerte porque el cobro real no está pasando.
+    console.error(
+      '[checkout] PUBLIC_STRIPE_ENV=live pero la llave secreta es de prueba (sk_test_). Revisa STRIPE_SECRET_KEY_LIVE.'
+    );
   }
 
   let items: PricedItem[];

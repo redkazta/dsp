@@ -17,8 +17,52 @@ import { serverEnv } from './env';
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
-const secretKey = () => serverEnv('STRIPE_SECRET_KEY') ?? '';
-const publishableKey = () => (import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY as string | undefined) ?? '';
+/**
+ * Entorno de Stripe: `live` o `test`.
+ *
+ * `PUBLIC_STRIPE_ENV` manda (`live` | `test`). Si falta, se deduce de la llave
+ * genérica `STRIPE_SECRET_KEY`, así el sitio sigue funcionando con las
+ * variables de siempre.
+ */
+export function stripeEnv(): 'live' | 'test' {
+  const explicit = String((import.meta.env.PUBLIC_STRIPE_ENV as string | undefined) ?? '')
+    .trim()
+    .toLowerCase();
+
+  if (['live', 'prod', 'production'].includes(explicit)) return 'live';
+  if (['test', 'sandbox'].includes(explicit)) return 'test';
+
+  return (serverEnv('STRIPE_SECRET_KEY') ?? '').startsWith('sk_live_') ? 'live' : 'test';
+}
+
+/** Nombre de la ranura del entorno activo: `_LIVE` o `_TEST`. */
+const slot = (base: string) => `${base}_${stripeEnv() === 'live' ? 'LIVE' : 'TEST'}`;
+
+/**
+ * Llave secreta del entorno activo.
+ * Primero la ranura (`STRIPE_SECRET_KEY_LIVE` / `_TEST`); si no existe, la
+ * variable genérica `STRIPE_SECRET_KEY`.
+ */
+export function stripeSecretKey(): string {
+  return serverEnv(slot('STRIPE_SECRET_KEY')) ?? serverEnv('STRIPE_SECRET_KEY') ?? '';
+}
+
+/** Llave publicable del entorno activo (`PUBLIC_*`: se graba en el build). */
+export function stripePublishableKey(): string {
+  const env = import.meta.env as Record<string, string | undefined>;
+  return env[slot('PUBLIC_STRIPE_PUBLISHABLE_KEY')] || env.PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+}
+
+/**
+ * Secreto del webhook. Cada entorno (test/live) tiene el suyo en Stripe, con
+ * su propia URL de endpoint.
+ */
+export function stripeWebhookSecret(): string | undefined {
+  return serverEnv(slot('STRIPE_WEBHOOK_SECRET')) ?? serverEnv('STRIPE_WEBHOOK_SECRET');
+}
+
+const secretKey = () => stripeSecretKey();
+const publishableKey = () => stripePublishableKey();
 
 /** ¿Está configurado el pago real? Si no, el checkout no se ofrece. */
 export function isStripeConfigured() {

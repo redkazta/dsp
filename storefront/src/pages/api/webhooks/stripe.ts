@@ -28,8 +28,7 @@
 import type { APIRoute } from 'astro';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
-import { serverEnv } from '../../../lib/env';
-import { verifyWebhookSignature, type StripeEvent } from '../../../lib/stripe';
+import { verifyWebhookSignature, stripeWebhookSecret, type StripeEvent } from '../../../lib/stripe';
 import { applyPaidStatus, applyFailedStatus, applyRefundedStatus } from '../../../lib/checkout';
 import { sendOrderConfirmation } from '../../../lib/resend';
 
@@ -227,10 +226,10 @@ async function processEvent(db: SupabaseClient, event: StripeEvent): Promise<str
 }
 
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
-  const secret = serverEnv('STRIPE_WEBHOOK_SECRET');
+  const secret = stripeWebhookSecret();
 
   if (!secret) {
-    console.error('[webhook] STRIPE_WEBHOOK_SECRET no configurado');
+    console.error('[webhook] STRIPE_WEBHOOK_SECRET(_LIVE|_TEST) no configurado');
     return reply({ error: 'Webhook no configurado.' }, 503);
   }
 
