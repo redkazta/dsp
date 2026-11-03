@@ -1,29 +1,29 @@
 /**
- * Precios de prueba a $0.65 USD — HARDCODEADO (sin switch).
+ * Precios de prueba al mínimo de Stripe — HARDCODEADO (sin switch).
  *
- * Todo precio > 0 se muestra y se cobra como `DEMO_PRICE`. No hay variable de
- * entorno: para volver a los precios reales, pon `PRICES_ARE_DEMO` en `false`.
+ * Cada artículo cuesta exactamente **10.00 MXN**, que es el mínimo que Stripe
+ * acepta por cargo cuando la cuenta liquida en MXN (1000 centavos). Para que
+ * sea exacto y no dependa del tipo de cambio, la sesión de pago se crea en MXN
+ * en vez de convertir desde USD.
  *
- * ¿Por qué 0.65? La cuenta de Stripe liquida en MXN y exige un mínimo de
- * 10 MXN por cargo, validado con conversión. El piso en USD es:
- *
- *     DEMO_PRICE ≥ 10 / tipo_de_cambio + margen
- *
- * Con 18.58 MXN/USD el mínimo ronda 0.54; 0.65 aguanta hasta 15.4 MXN/USD.
- * Si Stripe vuelve a decir "must convert to at least 1000 centavo", sube el
- * valor 0.05 y listo.
- *
- * OJO: con llaves live esto cobra dinero real (comisión incluida).
+ * Si se cobrara en USD habría que acertar la conversión (hoy ~$0.54) y
+ * cualquier movimiento del peso rompería el checkout.
  *
  * Efectos:
- *   · Catálogo, carrito, favoritos y Stripe cobran 0.65 USD por pieza.
+ *   · Catálogo, carrito, favoritos y Stripe cobran 10.00 por pieza (MXN).
  *   · El envío es gratis.
  *   · Los cupones quedan desactivados.
  *   · El panel (`/admin`) NO cambia: ahí se ven y editan los precios reales.
+ *
+ * Con llaves live esto cobra dinero real (10 MXN + comisión por prueba).
+ * Para volver a precios reales: `PRICES_ARE_DEMO = false`.
  */
 
-/** Precio único de vitrina (USD). Por encima del mínimo de Stripe en MXN. */
-export const DEMO_PRICE = 0.65;
+/** Precio único de vitrina, en la moneda de demo. Piso de Stripe en MXN. */
+export const DEMO_PRICE = 10;
+
+/** Moneda de la sesión de pago en modo demo. */
+export const DEMO_CURRENCY = 'MXN';
 
 /** Interruptor del código. `false` = precios reales de la base de datos. */
 const PRICES_ARE_DEMO = true;

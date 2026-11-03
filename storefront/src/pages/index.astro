@@ -5,6 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroCarousel from '../components/hero/HeroCarousel.astro';
 import { getHomeSlides } from '../lib/home-products';
 import { getCopy, type Lang } from '../lib/i18n';
+import { isDemoMode, DEMO_CURRENCY } from '../lib/demo';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -22,7 +23,7 @@ import { localize } from '../lib/routes';
   -->
   <div class="home-screen">
     <section class="hero-section relative overflow-hidden bg-negro-profundo">
-      <HeroCarousel slides={slides} t={t} currency="USD" />
+      <HeroCarousel slides={slides} t={t} currency={isDemoMode() ? DEMO_CURRENCY : 'USD'} />
 
       <div class="hero-actions">
         <a href={localize(lang, 'shop')} class="btn-drop">{t.hero.cta}</a>

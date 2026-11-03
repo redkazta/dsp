@@ -183,18 +183,25 @@ export interface CheckoutSession {
 const toMinor = (amount: number) => Math.round(amount * 100);
 
 /**
- * Stripe rechaza cargos por debajo del mínimo, y lo valida convertido a la
- * moneda de la cuenta: $0.50 USD no alcanza si la cuenta liquida en MXN
- * (mínimo 10 MXN ≈ 0.54 USD). Se valida antes de llamar a la API para que el
- * error diga qué pasa en vez de devolver un 400 genérico.
+ * Mínimo que Stripe acepta por cargo, en la unidad mínima de cada moneda.
+ * Si la cuenta liquida en otra divisa, Stripe convierte el importe y puede
+ * exigir más: por eso el modo demo cobra directamente en MXN.
  */
-const STRIPE_MIN_MINOR = 50;
+const STRIPE_MIN_MINOR: Record<string, number> = {
+  usd: 50, // $0.50
+  mxn: 1000, // $10.00
+};
 
-export function assertStripeMinimum(total: number) {
-  if (toMinor(total) < STRIPE_MIN_MINOR) {
+const DEFAULT_MIN_MINOR = 50;
+
+export function assertStripeMinimum(total: number, currency = 'usd') {
+  const code = currency.toLowerCase();
+  const min = STRIPE_MIN_MINOR[code] ?? DEFAULT_MIN_MINOR;
+
+  if (toMinor(total) < min) {
     throw new StripeError(
-      `Stripe no acepta cobros menores a $0.50 USD (el carrito suma $${total.toFixed(2)}). ` +
-        'Sube el precio de prueba o agrega más piezas.',
+      `Stripe no acepta cobros menores a ${(min / 100).toFixed(2)} ${code.toUpperCase()} ` +
+        `(el carrito suma ${total.toFixed(2)}). Sube el precio de prueba o agrega más piezas.`,
       400
     );
   }
@@ -215,7 +222,7 @@ export async function createCheckoutSession(input: CheckoutSessionInput) {
   // Mínimo de Stripe antes de construir la sesión.
   const amount =
     input.lines.reduce((sum, line) => sum + line.amount * line.qty, 0) + (input.shipping || 0);
-  assertStripeMinimum(amount);
+  assertStripeMinimum(amount, currency);
 
   const body: Record<string, unknown> = {
     mode: 'payment',

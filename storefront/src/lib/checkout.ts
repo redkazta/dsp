@@ -13,14 +13,14 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { CHECKOUT_NOTES_MARKER, TENANT_ID } from './constants';
+import { CHECKOUT_NOTES_MARKER, CURRENCY, TENANT_ID } from './constants';
 import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './pricing';
 import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
-import { isDemoMode } from './demo';
+import { isDemoMode, DEMO_CURRENCY } from './demo';
 import type { ShippingRules } from './pricing';
 
 export interface CustomerPayload {
@@ -537,7 +537,7 @@ export async function startStripeCheckout({
     const session = await createCheckoutSession({
       orderId: order.id,
       orderNumber: order.order_number,
-      currency: 'USD',
+      currency: isDemoMode() ? DEMO_CURRENCY : CURRENCY,
       lines: items.map((i) => ({
         name: i.variantName ? `${i.name} — ${i.variantName}` : i.name,
         amount: i.price,
