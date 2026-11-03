@@ -21,9 +21,6 @@ interface ImportMetaEnv {
   readonly STRIPE_WEBHOOK_SECRET?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
   readonly PUBLIC_STRIPE_TEST_MODE?: string;
-
-  /** Modo demo: precios a 6 centavos y envío gratis. Requiere redeploy. */
-  readonly PUBLIC_DEMO_MODE?: string;
 }
 
 interface ImportMeta {

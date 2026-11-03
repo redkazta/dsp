@@ -1,32 +1,26 @@
 /**
- * Modo demo — precios de vitrina a 6 centavos.
+ * Precios de prueba a 6 centavos — HARDCODEADO (sin switch).
  *
- * Se activa con `PUBLIC_DEMO_MODE=true` y se desactiva igual. Es una variable
- * de build: al cambiarla hay que volver a desplegar (Vercel → Deployments).
+ * Todo precio > 0 se muestra y se cobra como `DEMO_PRICE`. No hay variable de
+ * entorno: para volver a los precios reales, borra este módulo y sus usos, o
+ * deja `PRICES_ARE_DEMO` en `false`.
  *
- * Qué hace:
- *   · Todo precio > 0 se muestra y se cobra como `DEMO_PRICE` (0.06 USD).
- *   · El envío es gratis y los cupones no aplican, para que una compra de
- *     prueba cueste exactamente 6 centavos por pieza.
- *   · El panel (`/admin`) NO cambia: ahí se siguen viendo los precios reales
- *     del catálogo, que es lo que se administra.
- *   · El sitio se marca `noindex` mientras el modo está activo (ver
- *     `BaseLayout.astro`), para no indexar precios de prueba.
- *
- * Los precios se siguen recalculando en servidor: `priceItems()` pasa cada
- * importe por `demoPrice()`, así que el navegador no puede saltárselo.
+ * Efectos:
+ *   · Catálogo, carrito, favoritos y Stripe cobran 0.06 USD por pieza.
+ *   · El envío es gratis (para que una compra de prueba cueste 6 centavos).
+ *   · Los cupones quedan desactivados.
+ *   · El panel (`/admin`) NO cambia: ahí se ven y editan los precios reales.
  */
 
-/** Precio único en modo demo (USD). */
+/** Precio único de vitrina (USD). */
 export const DEMO_PRICE = 0.06;
 
-/** ¿Está activo el modo demo? Acepta `true` / `1` / `yes`. */
-export function isDemoMode(): boolean {
-  const raw = String((import.meta.env.PUBLIC_DEMO_MODE as string | undefined) ?? '')
-    .trim()
-    .toLowerCase();
+/** Interruptor del código. `false` = precios reales de la base de datos. */
+const PRICES_ARE_DEMO = true;
 
-  return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on';
+/** `true` en todo el sitio: precios simbólicos y envío gratis. */
+export function isDemoMode(): boolean {
+  return PRICES_ARE_DEMO;
 }
 
 /**
