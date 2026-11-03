@@ -20,7 +20,7 @@ import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
-import { isDemoMode, DEMO_CURRENCY } from './demo';
+import { isDemoMode } from './demo';
 import type { ShippingRules } from './pricing';
 
 export interface CustomerPayload {
@@ -537,7 +537,7 @@ export async function startStripeCheckout({
     const session = await createCheckoutSession({
       orderId: order.id,
       orderNumber: order.order_number,
-      currency: isDemoMode() ? DEMO_CURRENCY : CURRENCY,
+      currency: CURRENCY,
       lines: items.map((i) => ({
         name: i.variantName ? `${i.name} — ${i.variantName}` : i.name,
         amount: i.price,
