@@ -23,9 +23,14 @@ const isLiveKey = (key: string) => key.startsWith('sk_live_') || key.startsWith(
 /**
  * Entorno de Stripe: `live` o `test`.
  *
- * `PUBLIC_STRIPE_ENV` manda (`live` | `test`). Si falta, se deduce de la llave
- * genérica `STRIPE_SECRET_KEY`, así el sitio sigue funcionando con las
- * variables de siempre.
+ * Precedencia:
+ *   1. `PUBLIC_STRIPE_ENV` (`live` | `test`).
+ *   2. Si solo existe una de las ranuras (`_LIVE` o `_TEST`), esa manda.
+ *   3. Si no, se deduce de la llave genérica `STRIPE_SECRET_KEY`.
+ *
+ * El paso 2 existe para que agregar `STRIPE_SECRET_KEY_LIVE` baste aunque se
+ * olvide crear el interruptor (fue justo el error que dejaba sesiones
+ * `cs_test_`).
  */
 export function stripeEnv(): 'live' | 'test' {
   const explicit = String((import.meta.env.PUBLIC_STRIPE_ENV as string | undefined) ?? '')
@@ -34,6 +39,12 @@ export function stripeEnv(): 'live' | 'test' {
 
   if (['live', 'prod', 'production'].includes(explicit)) return 'live';
   if (['test', 'sandbox'].includes(explicit)) return 'test';
+
+  const hasLive = Boolean(serverEnv('STRIPE_SECRET_KEY_LIVE'));
+  const hasTest = Boolean(serverEnv('STRIPE_SECRET_KEY_TEST'));
+
+  if (hasLive && !hasTest) return 'live';
+  if (hasTest && !hasLive) return 'test';
 
   return isLiveKey(serverEnv('STRIPE_SECRET_KEY') ?? '') ? 'live' : 'test';
 }
