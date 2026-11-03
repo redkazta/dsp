@@ -458,7 +458,7 @@ export async function startStripeCheckout({
     // `PUBLIC_STRIPE_ENV=live` pero la llave activa sigue siendo de prueba:
     // se avisa fuerte porque el cobro real no está pasando.
     console.error(
-      '[checkout] PUBLIC_STRIPE_ENV=live pero la llave secreta es de prueba (sk_test_). Revisa STRIPE_SECRET_KEY_LIVE.'
+      '[checkout] PUBLIC_STRIPE_ENV=live pero la llave secreta es de prueba (sk_test_ / rk_test_). Revisa STRIPE_SECRET_KEY_LIVE.'
     );
   }
 

@@ -17,6 +17,9 @@ import { serverEnv } from './env';
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
+/** `sk_live_…` (secreta) y `rk_live_…` (restringida) cobran dinero real. */
+const isLiveKey = (key: string) => key.startsWith('sk_live_') || key.startsWith('rk_live_');
+
 /**
  * Entorno de Stripe: `live` o `test`.
  *
@@ -32,7 +35,7 @@ export function stripeEnv(): 'live' | 'test' {
   if (['live', 'prod', 'production'].includes(explicit)) return 'live';
   if (['test', 'sandbox'].includes(explicit)) return 'test';
 
-  return (serverEnv('STRIPE_SECRET_KEY') ?? '').startsWith('sk_live_') ? 'live' : 'test';
+  return isLiveKey(serverEnv('STRIPE_SECRET_KEY') ?? '') ? 'live' : 'test';
 }
 
 /** Nombre de la ranura del entorno activo: `_LIVE` o `_TEST`. */
@@ -73,7 +76,7 @@ export function isStripeConfigured() {
 export function stripeMode(): 'test' | 'live' | 'off' {
   const key = secretKey();
   if (!key) return 'off';
-  return key.startsWith('sk_live_') ? 'live' : 'test';
+  return isLiveKey(key) ? 'live' : 'test';
 }
 
 const authHeaders = () => ({

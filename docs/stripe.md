@@ -57,8 +57,8 @@ guardar la llave de producción sin borrar la de pruebas:
 | Variable | Tipo | Para qué |
 |---|---|---|
 | `PUBLIC_STRIPE_ENV` | público (build) | `live` o `test`. Elige la ranura. |
-| `STRIPE_SECRET_KEY_LIVE` | secreto (runtime) | `sk_live_…` |
-| `STRIPE_SECRET_KEY_TEST` | secreto (runtime) | `sk_test_…` |
+| `STRIPE_SECRET_KEY_LIVE` | secreto (runtime) | `sk_live_…` o `rk_live_…` |
+| `STRIPE_SECRET_KEY_TEST` | secreto (runtime) | `sk_test_…` o `rk_test_…` |
 | `PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE` | público (build) | `pk_live_…` |
 | `PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST` | público (build) | `pk_test_…` |
 | `STRIPE_WEBHOOK_SECRET_LIVE` | secreto (runtime) | firma del endpoint live |
@@ -74,7 +74,8 @@ prefijo real de la llave: es la fuente de verdad de lo que se está cobrando.
 
 ### Pasar a producción
 
-1. Stripe → Developers → API keys → **Reveal live key** → `sk_live_…` y `pk_live_…`.
+1. Stripe → Developers → API keys → **Reveal live key** → `sk_live_…` (o una
+   *restricted key* `rk_live_…`, ver abajo). Copia también `pk_live_…`.
 2. Stripe → Developers → Webhooks → **Add endpoint** con la URL
    `https://www.dinerosobreproblemas.com/api/webhooks/stripe`, los mismos
    eventos que el de pruebas, y copia su `whsec_…`.
@@ -96,6 +97,18 @@ scripts/stripe_checkout.sql
 ```
 
 Agrega `orders.payment_reference` y el índice por `provider_transaction_id`.
+
+## Llaves restringidas (`rk_live_…`)
+
+Una `rk_live_…` funciona igual que una `sk_live_…`: el código acepta ambos
+prefijos como producción (`isLiveKey` en `lib/stripe.ts`). La diferencia es que
+tú eliges los permisos, así que la llave debe incluir como mínimo:
+
+- **Checkout Sessions**: Write (crear la sesión) y Read (consultarla al volver)
+- **Coupons**: Write (descuentos de un solo uso)
+
+No se necesitan permisos de Customers, Products ni Refunds: el producto viaja
+como `price_data` en la sesión y los reembolsos los avisa el webhook de Stripe.
 
 ## Modo prueba
 
