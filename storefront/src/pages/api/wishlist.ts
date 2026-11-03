@@ -13,6 +13,7 @@ import type { AstroCookies } from 'astro';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
+import { demoPrice } from '../../lib/demo';
 
 export const prerender = false;
 
@@ -30,7 +31,7 @@ function toItem(row: any) {
     productId: row.product_id,
     slug: row.product_slug ?? null,
     name: row.product_name ?? '',
-    price: Number(row.price ?? 0),
+    price: demoPrice(row.price ?? 0),
     image: row.image_url ?? null,
   };
 }

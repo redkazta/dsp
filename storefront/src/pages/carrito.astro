@@ -6,9 +6,11 @@ import ProductCarousel from '../components/product/ProductCarousel.astro';
 import { createSupabaseServerClient } from '../lib/supabase-server';
 import { getStoreSettings, shippingRulesFrom } from '../lib/settings';
 import { getCopy, type Lang } from '../lib/i18n';
+import { isDemoMode } from '../lib/demo';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
+const demo = isDemoMode();
 
 // Reglas de envío configuradas en el panel (con respaldo en constantes).
 const settings = await getStoreSettings();
@@ -195,12 +197,14 @@ import { localize } from '../lib/routes';
           </a>
 
           <div class="mt-4 pt-4 border-t border-white/20 space-y-1.5">
-            <p class="flex items-center gap-2 text-xs text-white/75">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-              {t.cart.freeFrom} {`$${shippingRules.freeFrom.toLocaleString('en-US')} USD`}
-            </p>
+            {!demo && (
+              <p class="flex items-center gap-2 text-xs text-white/75">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                {t.cart.freeFrom} {`$${shippingRules.freeFrom.toLocaleString('en-US')} USD`}
+              </p>
+            )}
             <p class="text-[11px] text-white/55 leading-snug">{t.cart.madeToOrderTime}</p>
           </div>
         </div>
@@ -235,6 +239,7 @@ import { localize } from '../lib/routes';
       startCartSync,
     } from '../lib/cart';
     import { shippingCostFor } from '../lib/pricing';
+    import { isDemoMode } from '../lib/demo';
     import { escapeHtml, safeUrl } from '../lib/html';
 
     // Reglas de envío que resolvió el servidor (panel → store_settings).
@@ -324,13 +329,18 @@ import { localize } from '../lib/routes';
       const bar = document.getElementById('free-shipping-bar')!;
       const text = document.getElementById('free-shipping-text')!;
 
-      progress.classList.remove('hidden');
-      if (subtotal >= freeFrom) {
-        bar.style.width = '100%';
-        text.textContent = uiText('freeShippingDone');
+      // En modo demo el envío siempre es gratis: la barra de progreso estorba.
+      if (isDemoMode()) {
+        progress.classList.add('hidden');
       } else {
-        bar.style.width = `${Math.min(100, (subtotal / freeFrom) * 100)}%`;
-        text.textContent = `${uiText('freeShippingMissing')} $${formatMXN(freeFrom - subtotal)} ${uiText('forFree')}`;
+        progress.classList.remove('hidden');
+        if (subtotal >= freeFrom) {
+          bar.style.width = '100%';
+          text.textContent = uiText('freeShippingDone');
+        } else {
+          bar.style.width = `${Math.min(100, (subtotal / freeFrom) * 100)}%`;
+          text.textContent = `${uiText('freeShippingMissing')} $${formatMXN(freeFrom - subtotal)} ${uiText('forFree')}`;
+        }
       }
 
       list.querySelectorAll<HTMLElement>('[data-inc]').forEach((b) =>

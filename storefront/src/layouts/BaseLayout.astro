@@ -9,6 +9,7 @@ import StoreDrawer from '../components/store/StoreDrawer.astro';
 import CookieConsent from '../components/CookieConsent.astro';
 import { getCopy, LANG_TOGGLE_LABEL, LOCALE, type Lang } from '../lib/i18n';
 import { localize, translateUrl } from '../lib/routes';
+import { demoPrice, isDemoMode } from '../lib/demo';
 
 export interface Props {
   title?: string;
@@ -90,7 +91,7 @@ if (isAuth && Astro.locals.user) {
         productId: row.product_id,
         slug: row.product_slug,
         name: row.product_name ?? '',
-        price: Number(row.price ?? 0),
+        price: demoPrice(row.price ?? 0),
         image: row.image_url,
       }));
   } catch {
@@ -126,6 +127,7 @@ const jsonLd = {
     <!-- SEO -->
     <title>{title}</title>
     <meta name="description" content={description} />
+    {isDemoMode() && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="es-MX" href={esUrl} />
     <link rel="alternate" hreflang="en" href={enUrl} />

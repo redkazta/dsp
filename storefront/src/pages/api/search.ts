@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
 import { categoryName, type Lang } from '../../lib/i18n';
 import { productName } from '../../lib/product-texts';
+import { demoPrice } from '../../lib/demo';
 
 export const prerender = false;
 
@@ -58,7 +59,7 @@ export const GET: APIRoute = async ({
       name: productName(p, lang),
       slug: p.slug ?? p.id,
       category: categoryName(lang, p.categories),
-      price: Number(variants[0]?.price ?? p.base_price ?? 0),
+      price: demoPrice(variants[0]?.price ?? p.base_price ?? 0),
       image: images[0]?.url ?? null,
     };
   });

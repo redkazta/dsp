@@ -9,6 +9,7 @@
 import { supabase, TENANT_ID } from './supabase';
 import { categoryName, type Lang } from './i18n';
 import { productName } from './product-texts';
+import { demoPrice } from './demo';
 
 export interface HomeSlide {
   id: string;
@@ -57,7 +58,7 @@ export async function getHomeSlides(
     .map((p: any) => {
       const category = Array.isArray(p.categories) ? p.categories[0] : p.categories;
       const images = imagesOf(p);
-      const price = Number(p.product_variants?.[0]?.price ?? p.base_price ?? 0);
+      const price = demoPrice(p.product_variants?.[0]?.price ?? p.base_price ?? 0);
 
       return {
         id: p.id,

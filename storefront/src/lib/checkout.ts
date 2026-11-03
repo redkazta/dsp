@@ -20,6 +20,7 @@ import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
+import { isDemoMode } from './demo';
 import type { ShippingRules } from './pricing';
 
 export interface CustomerPayload {
@@ -479,10 +480,11 @@ export async function startStripeCheckout({
 
   // Cupón: si viene un código y no es válido, se corta la compra en vez de
   // cobrar de más. Si no viene, no se toca nada.
+  // En modo demo no se aplican descuentos: el precio ya es simbólico.
   let discount = 0;
   let appliedCoupon: string | null = null;
 
-  if (couponCode) {
+  if (couponCode && !isDemoMode()) {
     const coupon = await resolveCoupon(db, couponCode, subtotal);
 
     if (!coupon.ok) {

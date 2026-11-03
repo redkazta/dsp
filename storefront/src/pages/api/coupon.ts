@@ -10,6 +10,7 @@
 import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../lib/supabase-server';
 import { normalizeCouponCode, resolveCoupon, couponMessage } from '../../lib/coupons';
+import { isDemoMode } from '../../lib/demo';
 
 export const prerender = false;
 
@@ -29,6 +30,16 @@ export const POST: APIRoute = async ({ request }) => {
 
   const lang = payload?.lang === 'en' ? 'en' : 'es';
   const code = normalizeCouponCode(payload?.code);
+
+  // Modo demo: los precios son simbólicos, no tiene sentido descontar.
+  if (isDemoMode()) {
+    return json({
+      ok: false,
+      reason: 'invalid',
+      message:
+        lang === 'en' ? 'Coupons are off in demo mode.' : 'Los cupones están desactivados en modo demo.',
+    });
+  }
 
   if (!code) {
     return json({ ok: false, reason: 'invalid', message: couponMessage({ ok: false, reason: 'invalid' }, lang) });

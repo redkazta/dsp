@@ -13,6 +13,7 @@ import type { AstroCookies } from 'astro';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
+import { demoPrice } from '../../lib/demo';
 
 export const prerender = false;
 
@@ -52,7 +53,7 @@ async function defaultVariant(supabase: SupabaseClient, productId: string) {
     name: row.name ?? '',
     size: row.size ?? null,
     color: row.color ?? null,
-    price: Number(row.price) || 0,
+    price: demoPrice(row.price),
     stock: Number(row.stock) || 0,
   };
 }
@@ -77,7 +78,7 @@ async function variantsForProducts(supabase: SupabaseClient, ids: string[]) {
       name: row.name ?? '',
       size: row.size ?? null,
       color: row.color ?? null,
-      price: Number(row.price) || 0,
+      price: demoPrice(row.price),
       stock: Number(row.stock) || 0,
     });
   }

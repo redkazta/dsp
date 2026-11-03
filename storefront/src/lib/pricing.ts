@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, TENANT_ID } from './constants';
+import { demoPrice, isDemoMode } from './demo';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, CURRENCY } from './constants';
 
@@ -36,8 +37,9 @@ export const DEFAULT_SHIPPING_RULES: ShippingRules = {
   cost: STANDARD_SHIPPING,
 };
 
-/** Envío estándar, gratis a partir del umbral configurado. */
+/** Envío estándar, gratis a partir del umbral configurado. En demo siempre es gratis. */
 export function shippingCostFor(subtotal: number, rules: ShippingRules = DEFAULT_SHIPPING_RULES) {
+  if (isDemoMode()) return 0;
   return subtotal >= rules.freeFrom || subtotal <= 0 ? 0 : rules.cost;
 }
 
@@ -145,7 +147,7 @@ export async function priceItems(
       productSlug: product.slug ?? null,
       name: product.name,
       variantName: row.name ?? [row.size, row.color].filter(Boolean).join(' · '),
-      price: Number(row.price),
+      price: demoPrice(row.price),
       qty: quantities.get(row.id)!,
       image: images[0]?.url ?? null,
       size: row.size ?? null,

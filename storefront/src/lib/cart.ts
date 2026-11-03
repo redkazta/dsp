@@ -26,6 +26,7 @@ export interface CartItem {
 
 export { formatMXN } from './pricing';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from './pricing';
+import { demoPrice } from './demo';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor };
 
@@ -239,7 +240,7 @@ export async function refreshCartPrices(): Promise<{
         name: product.name,
         slug: product.slug ?? item.slug ?? null,
         variantName: row.name ?? item.variantName,
-        price: Number(row.price),
+        price: demoPrice(row.price),
         size: row.size ?? item.size ?? null,
         color: row.color ?? item.color ?? null,
         image: images[0]?.url ?? item.image,
