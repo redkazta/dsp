@@ -1,21 +1,26 @@
-# Precios de prueba a $1.00 USD (hardcodeado)
+# Precios de prueba a $0.65 USD (hardcodeado)
 
-El sitio cobra y muestra **$1.00 USD por pieza**. No hay variable de entorno ni
+El sitio cobra y muestra **$0.65 USD por pieza**. No hay variable de entorno ni
 interruptor en el panel: está fijado en código, a propósito, mientras se prueba
 el flujo real de compra.
 
-> **¿Por qué no $0.06 ni $0.50?** La cuenta de Stripe liquida en **MXN** y exige
-> un mínimo de **10 MXN** por cargo, validado con conversión:
-> $0.50 USD ≈ $9.29 MXN → rechazado. $1.00 USD ≈ $18.58 MXN → pasa con margen.
-> El piso real ronda $0.54 USD, pero el tipo de cambio se mueve; $1.00 no
-depende del día.
+> **El mínimo lo pone la moneda de la cuenta.** Stripe liquida en **MXN** y
+> exige **10 MXN** por cargo, validado con conversión:
+>
+> ```
+> DEMO_PRICE ≥ 10 / tipo_de_cambio + margen
+> ```
+>
+> Con 18.58 MXN/USD el piso ronda **$0.54**. Se usa **$0.65** para aguantar
+> hasta 15.4 MXN/USD. Si Stripe responde
+> `must convert to at least 1000 centavo`, sube el valor 0.05 y despliega.
 
 ## Dónde se cambia
 
 `storefront/src/lib/demo.ts`
 
 ```ts
-export const DEMO_PRICE = 1;      // nunca por debajo de ~0.55 con cuenta MXN
+export const DEMO_PRICE = 0.65;   // ≥ 10 MXN convertidos
 const PRICES_ARE_DEMO = true;    // ← false = precios reales de la base
 ```
 
@@ -26,9 +31,9 @@ sin tocar otra línea. Requiere desplegar.
 
 | Superficie | Efecto |
 |---|---|
-| Catálogo, ficha, favoritos, home, buscador | Todo precio > 0 se muestra como `$1.00` |
-| Carrito y drawer | `$1.00` por pieza y subtotal recalculado |
-| `/api/checkout` → Stripe | Cobra `1.00` por unidad |
+| Catálogo, ficha, favoritos, home, buscador | Todo precio > 0 se muestra como `$0.65` |
+| Carrito y drawer | `$0.65` por pieza y subtotal recalculado |
+| `/api/checkout` → Stripe | Cobra `0.65` por unidad |
 | Envío | Gratis, sin barra de "envío gratis desde $150" |
 | Cupones | Desactivados (`/api/coupon` responde que no aplican) |
 | `/admin` | **Sin cambios**: el panel muestra y edita los precios reales |
@@ -63,4 +68,11 @@ Con cuenta MXN son 10 MXN por cargo.
 
 1. Poner `PRICES_ARE_DEMO = false` y desplegar.
 2. Revisar que `PUBLIC_STRIPE_ENV=live` y las llaves `_LIVE` estén puestas.
-3. Los pedidos hechos en pruebas quedan en `orders` con importes de 1.00.
+3. Los pedidos hechos en pruebas quedan en `orders` con importes de 0.65.
+
+## Cuidado con llaves live
+
+Con llaves de producción cada prueba cobra dinero real y su comisión. Para
+repetir pruebas sin costo, usa las llaves de **test** (`PUBLIC_STRIPE_ENV=test`)
+— el mínimo de 10 MXN se valida igual, pero la tarjeta `4242 4242 4242 4242`
+no mueve dinero.
