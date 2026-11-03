@@ -427,7 +427,7 @@ export interface StartCheckoutInput {
 
 export type StartCheckoutResult =
   | { ok: true; orderId: string; orderNumber: string | null; url: string }
-  | { ok: false; code: string; message: string; status: number };
+  | { ok: false; code: string; message: string; status: number; detail?: string };
 
 /**
  * Valida el carrito, crea el pedido pendiente y devuelve la URL de Stripe.
@@ -567,6 +567,9 @@ export async function startStripeCheckout({
       code: 'PAYMENT_ERROR',
       message: 'No pudimos iniciar el pago. Intenta de nuevo en un momento.',
       status: 502,
+      // Con el modo demo activo el único que compra es el dueño: se devuelve
+      // el motivo real de Stripe en vez de un mensaje ciego.
+      detail: isDemoMode() ? String(err?.message ?? 'Error de Stripe') : undefined,
     };
   }
 }

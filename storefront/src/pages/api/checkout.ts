@@ -117,7 +117,9 @@ export const POST: APIRoute = async ({
     couponCode: payload?.coupon,
   });
 
-  if (!result.ok) return error(result.code, result.message, result.status);
+  if (!result.ok) {
+    return json({ error: result.message, code: result.code, detail: result.detail }, result.status);
+  }
 
   // Recordatorio de carrito: se programa al abrir Stripe y se cancela solo
   // cuando el pago se aprueba. `CART_REMINDER_DELAY_SECONDS` manda el ritmo.
