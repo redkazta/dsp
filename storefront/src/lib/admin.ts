@@ -326,8 +326,13 @@ export async function listOrders(tenantId: string) {
  */
 export async function updateOrderStatus(
   orderId: string,
-  status: string,
-  extra: { trackingNumber?: string; carrier?: string; notes?: string } = {}
+  status: string | null,
+  extra: {
+    trackingNumber?: string;
+    carrier?: string;
+    /** Reconciliación manual del pago (p. ej. reembolso hecho en Stripe). */
+    paymentStatus?: 'pending' | 'approved' | 'failed' | 'refunded';
+  } = {}
 ) {
   // Va por el servidor: actualiza el pedido (service role), dispara el trigger
   // del historial y manda el correo al cliente.
@@ -336,7 +341,8 @@ export async function updateOrderStatus(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       orderId,
-      status,
+      status: status ?? undefined,
+      paymentStatus: extra.paymentStatus,
       trackingNumber: extra.trackingNumber,
       carrier: extra.carrier,
     }),

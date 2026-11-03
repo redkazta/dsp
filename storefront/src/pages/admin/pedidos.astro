@@ -642,7 +642,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
 
         ${
-          next.length > 0 || canShip
+          next.length > 0 || canShip || o.payment_status === 'approved'
             ? `<footer class="order-foot">
                  ${
                    canShip
@@ -666,6 +666,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                        </button>`;
                      })
                      .join('')}
+                   ${
+                     o.payment_status === 'approved'
+                       ? `<button type="button" data-refund="${o.id}" class="action-btn action-btn--danger"
+                            title="Marca el pedido como reembolsado en el panel (no mueve dinero en Stripe)">
+                            Marcar reembolsado
+                          </button>`
+                       : ''
+                   }
                  </div>
                </footer>`
             : ''
@@ -796,9 +804,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           (btn as HTMLButtonElement).disabled = true;
 
           try {
-            await updateOrderStatus(orderId, status, {
-              notes: `Movido a ${STATUS_LABEL[status]} desde el panel`,
+            await updateOrderStatus(orderId, status);
+            await refresh();
+          } catch (err: any) {
+            await notify(err?.message ?? 'No se pudo actualizar el pedido.', {
+              title: 'No se pudo actualizar',
+              tone: 'danger',
             });
+            (btn as HTMLButtonElement).disabled = false;
+          }
+        })
+      );
+
+      document.querySelectorAll<HTMLElement>('[data-refund]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const orderId = btn.dataset.refund!;
+
+          const ok = await askConfirm({
+            title: 'Marcar reembolsado',
+            message:
+              'Esto solo actualiza el pedido en el panel. La devolución del dinero se hace en Stripe.',
+            confirmLabel: 'Marcar',
+            tone: 'danger',
+          });
+
+          if (!ok) return;
+
+          btn.textContent = 'Guardando…';
+          (btn as HTMLButtonElement).disabled = true;
+
+          try {
+            await updateOrderStatus(orderId, null, { paymentStatus: 'refunded' });
             await refresh();
           } catch (err: any) {
             await notify(err?.message ?? 'No se pudo actualizar el pedido.', {

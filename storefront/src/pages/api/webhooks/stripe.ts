@@ -149,6 +149,34 @@ async function sendConfirmation(db: SupabaseClient, orderId: string, lang: 'es' 
   }
 }
 
+/**
+ * Pedido al que pertenece un PaymentIntent.
+ *
+ * Primero por `payments` (auditoría). Si esa fila no existe —p. ej. el pago se
+ * aplicó por la vuelta del navegador y el espejo falló— se busca por
+ * `orders.payment_reference`, que se escribe al aprobar el pago.
+ */
+async function resolveOrderForPayment(
+  db: SupabaseClient,
+  paymentIntent: string
+): Promise<string | null> {
+  const { data: payment } = await db
+    .from('payments')
+    .select('order_id')
+    .eq('provider_transaction_id', paymentIntent)
+    .maybeSingle();
+
+  if (payment?.order_id) return payment.order_id;
+
+  const { data: order } = await db
+    .from('orders')
+    .select('id')
+    .eq('payment_reference', paymentIntent)
+    .maybeSingle();
+
+  return order?.id ?? null;
+}
+
 /** Lógica del evento. Devuelve el pedido afectado, si lo hubo. */
 async function processEvent(db: SupabaseClient, event: StripeEvent): Promise<string | null> {
   const object = event.data?.object ?? {};
@@ -198,26 +226,40 @@ async function processEvent(db: SupabaseClient, event: StripeEvent): Promise<str
       return orderId;
     }
 
-    case 'charge.refunded': {
-      if (!paymentIntent) return null;
+    case 'charge.refunded':
+    case 'refund.created':
+    case 'refund.updated': {
+      // Los reembolsos no llevan la metadata del pedido: se resuelven por el
+      // PaymentIntent. En `refund.*` solo se aplica cuando ya está liquidado.
+      if (event.type !== 'charge.refunded' && object.status && object.status !== 'succeeded') {
+        return null;
+      }
 
-      // Un `charge` no lleva la metadata del pedido: se resuelve por `payments`.
-      const { data: payment } = await db
-        .from('payments')
-        .select('order_id')
-        .eq('provider_transaction_id', paymentIntent)
-        .maybeSingle();
+      if (!paymentIntent) {
+        console.warn('[webhook] reembolso sin payment_intent:', event.id, event.type);
+        return null;
+      }
 
-      if (!payment?.order_id) return null;
+      const refundedOrderId = orderId ?? (await resolveOrderForPayment(db, paymentIntent));
+
+      if (!refundedOrderId) {
+        console.warn('[webhook] reembolso sin pedido para', paymentIntent, event.type);
+        return null;
+      }
+
+      const refundedAmount =
+        event.type === 'charge.refunded'
+          ? object.amount_refunded
+          : object.amount;
 
       await applyRefundedStatus({
         db,
-        orderId: payment.order_id,
+        orderId: refundedOrderId,
         paymentIntentId: paymentIntent,
-        amount: typeof object.amount_refunded === 'number' ? object.amount_refunded / 100 : null,
+        amount: typeof refundedAmount === 'number' ? refundedAmount / 100 : null,
       });
 
-      return payment.order_id;
+      return refundedOrderId;
     }
 
     default:

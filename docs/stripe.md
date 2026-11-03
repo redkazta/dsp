@@ -88,6 +88,28 @@ prefijo real de la llave: es la fuente de verdad de lo que se está cobrando.
 
 Volver a pruebas: `PUBLIC_STRIPE_ENV=test` y redeploy. No hay que borrar nada.
 
+## Reembolsos
+
+Cuando devuelves dinero desde Stripe, el pedido se actualiza solo
+(`payment_status = refunded`, `status = returned`) al llegar estos eventos al
+webhook:
+
+- `charge.refunded` — reembolso total hecho desde el dashboard o la API
+- `refund.created` / `refund.updated` — reembolsos parciales o asíncronos
+
+**El endpoint live tiene que estar suscrito a esos eventos.** Si solo marcas
+`checkout.session.*`, el pago entra pero el reembolso nunca llega y el pedido se
+queda en “Aprobado”.
+
+El pedido se busca primero en `payments.provider_transaction_id` y, si esa fila
+no existe, por `orders.payment_reference` con el mismo `pi_…`.
+
+### Reconciliar a mano
+
+Si un reembolso no llegó (webhook caído, endpoint mal configurado), en
+`/admin/pedidos` el pedido tiene el botón **Marcar reembolsado**: solo cambia el
+estado en el panel, no devuelve dinero.
+
 ## SQL
 
 Correr una vez en Supabase → SQL Editor:
