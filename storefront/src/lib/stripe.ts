@@ -183,9 +183,10 @@ export interface CheckoutSession {
 const toMinor = (amount: number) => Math.round(amount * 100);
 
 /**
- * Stripe rechaza cualquier cargo por debajo de $0.50 USD (aplica también en
- * modo test). Se valida antes de llamar a la API para que el error diga qué
- * pasa en vez de devolver un 400 genérico.
+ * Stripe rechaza cargos por debajo del mínimo, y lo valida convertido a la
+ * moneda de la cuenta: $0.50 USD no alcanza si la cuenta liquida en MXN
+ * (mínimo 10 MXN ≈ 0.54 USD). Se valida antes de llamar a la API para que el
+ * error diga qué pasa en vez de devolver un 400 genérico.
  */
 const STRIPE_MIN_MINOR = 50;
 
