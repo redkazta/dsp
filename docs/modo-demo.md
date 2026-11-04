@@ -1,75 +1,45 @@
-# Precios de prueba a $0.65 USD (hardcodeado)
+# Modo demo de precios (APAGADO)
 
-La tienda sigue operando en **USD**: se muestra y se cobra en dólares. El precio
-de demo es el mínimo de Stripe convertido a dólares, con un colchón para el tipo
-de cambio. No hay variable de entorno ni interruptor en el panel.
+Los precios de prueba existen para recorrer el flujo de pago sin editar el
+catálogo. **Ahora está apagado**: el sitio muestra y cobra los precios reales de
+`product_variants` ($35.00 USD).
 
-> **El mínimo lo pone la moneda de la cuenta.** Stripe liquida en **MXN** y exige
-> 10.00 MXN por cargo, validado con conversión. No se puede cobrar en pesos
-> porque la tienda maneja USD, así que el piso se traduce:
->
-> ```
-> DEMO_PRICE_USD = 10 / tipo_de_cambio + margen
-> ```
->
-> Hoy (18.58 MXN/USD) el piso exacto es **$0.54**; se usa **$0.65** para que
-> aguante hasta 15.4 MXN/USD. Si Stripe responde
-> `must convert to at least 1000 centavo`, sube 0.05 aquí y despliega.
-
-## Dónde se cambia
+## Estado actual
 
 `storefront/src/lib/demo.ts`
 
 ```ts
-export const DEMO_PRICE = 0.65;  // 10 MXN convertidos a USD
-const PRICES_ARE_DEMO = true;    // ← false = precios reales de la base
+const PRICES_ARE_DEMO = false;  // ← apagado
+export const DEMO_PRICE = 0.65; // solo se usa con el interruptor encendido
 ```
 
-Con `PRICES_ARE_DEMO = false` todo vuelve a los precios de `product_variants`
-sin tocar otra línea. Requiere desplegar.
+Con el interruptor apagado:
+- `demoPrice()` devuelve el precio de la base tal cual.
+- El envío vuelve a las reglas de `store_settings` ($15, gratis desde $150).
+- Los cupones funcionan otra vez.
+- El checkout no expone el detalle de Stripe al cliente.
 
-## Qué cambia
+## Si hay que volver a probar
 
-| Superficie | Efecto |
+1. Poner `PRICES_ARE_DEMO = true`.
+2. Desplegar.
+3. `DEMO_PRICE` debe quedar por encima del mínimo de Stripe convertido:
+   la cuenta liquida en **MXN** y exige 10 MXN por cargo. Con 18.58 MXN/USD eso
+   son ~$0.54; por eso el valor de trabajo es **0.65**.
+4. Al terminar, volver a `false` y desplegar.
+
+En modo demo no se modifica la base: los precios reales siguen intactos.
+
+## Verificar que quedó en 35
+
+`scripts/prices_35.sql` (idempotente) muestra el estado y fuerza `35.00` en
+`products.base_price` y `product_variants.price` si algo quedó distinto.
+
+## Historial
+
+| Fecha | Cambio |
 |---|---|
-| Catálogo, ficha, favoritos, home, buscador | Todo precio > 0 se muestra como `$0.65` |
-| Carrito y drawer | `$0.65` por pieza y subtotal recalculado |
-| `/api/checkout` → Stripe | Sesión en **USD** por `0.65` por unidad |
-| Envío | Gratis, sin barra de "envío gratis desde $150" |
-| Cupones | Desactivados (`/api/coupon` responde que no aplican) |
-| `/admin` | **Sin cambios**: el panel muestra y edita los precios reales |
-| Pedidos ya creados | Sin cambios: muestran lo que realmente se cobró |
-
-## Dónde se aplica
-
-El precio nunca se toma del navegador:
-
-1. `lib/pricing.ts` → `priceItems()` pasa cada precio por `demoPrice()`.
-   Es lo que se cobra y lo que se guarda en `orders` / `order_items`.
-2. `lib/pricing.ts` → `shippingCostFor()` devuelve `0`.
-3. `lib/checkout.ts` → ignora cupones y mantiene `CURRENCY` (USD).
-
-Superficies que solo repiten ese valor:
-
-- Server-rendered: `ProductCard`, `producto/[slug]`, `favoritos`, `home-products`, `BaseLayout` (drawer), `index`.
-- APIs: `api/variant`, `api/search`, `api/wishlist`.
-- Navegador: `lib/cart.ts` (`refreshCartPrices`).
-
-## Red de seguridad
-
-`lib/stripe.ts` → `assertStripeMinimum(total, currency)` corta antes de llamar
-a Stripe si el total no llega al mínimo de esa moneda (USD 0.50, MXN 10.00) y
-devuelve un mensaje explícito. El motivo real de un fallo de Stripe se muestra
-en la pantalla de checkout mientras el modo demo esté activo.
-
-## Antes de volver a vender
-
-1. Poner `PRICES_ARE_DEMO = false` y desplegar.
-2. Revisar que `PUBLIC_STRIPE_ENV=live` y las llaves `_LIVE` estén puestas.
-3. Los pedidos de prueba quedan en `orders` con importe de 0.65.
-
-## Cuidado con llaves live
-
-Con llaves de producción cada prueba cobra ~0.65 USD reales más comisión. Para
-repetir pruebas sin costo, usa `PUBLIC_STRIPE_ENV=test` y la tarjeta
-`4242 4242 4242 4242`: el mínimo se valida igual, pero no se mueve dinero.
+| 2026-11 | Demo a $0.06 → rechazado por Stripe (mínimo) |
+| 2026-11 | Demo a $0.50 → rechazado (cuenta MXN, mínimo 10 MXN) |
+| 2026-11 | Demo a $0.65 y cobro en MXN → probado end-to-end |
+| 2026-11 | Demo apagado, precios reales de $35.00 |
