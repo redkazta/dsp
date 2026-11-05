@@ -21,6 +21,11 @@ const t = getCopy(lang);
 const settings = await getStoreSettings();
 const shippingRules = shippingRulesFrom(settings);
 
+const paymentAvailable = isStripeConfigured();
+// Con FedEx configurado el checkout cotiza envío real; si no, tarifa plana.
+// Debe declararse antes de `ui`: ese objeto ya lo consume.
+const fedexReady = isFedexConfigured();
+
 // Textos y mensajes del script del navegador.
 const ui = {
   required: t.checkout.required,
@@ -62,9 +67,6 @@ const ui = {
 
 const { firstName, email, phone } = Astro.locals;
 
-const paymentAvailable = isStripeConfigured();
-// Con FedEx configurado el checkout cotiza envío real; si no, tarifa plana.
-const fedexReady = isFedexConfigured();
 const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 
