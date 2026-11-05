@@ -63,6 +63,7 @@ const ui = {
   shippingChangedMessage: t.checkout.shippingChangedMessage,
   shippingChangeAccept: t.checkout.shippingChangeAccept,
   shippingDays: t.checkout.shippingDays,
+  shippingDay: t.checkout.shippingDay,
 };
 
 const { firstName, email, phone } = Astro.locals;
@@ -282,7 +283,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             <div id="shipping-quote" class="mt-6 border-t-2 border-white/15 pt-5 hidden">
               <div class="flex items-center justify-between gap-3 mb-3">
                 <p class="field-label !mb-0">{t.checkout.shippingTitle}</p>
-                <span class="text-[10px] uppercase tracking-[0.16em] text-oro-brillo">
+                <span
+                  id="shipping-estimated-badge"
+                  class="text-[10px] uppercase tracking-[0.16em] text-oro-brillo hidden"
+                >
                   {t.checkout.shippingEstimated}
                 </span>
               </div>
@@ -518,6 +522,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       currency: string;
       deliveryDate: string | null;
       estimatedDays: number | null;
+      /** Días de la tabla local porque FedEx no dio compromiso. */
+      estimated: boolean;
     }
 
     const fedexReady = ui.fedex === '1';
@@ -553,13 +559,18 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     }
 
     function quoteEta(option: QuoteOption): string {
-      if (option.estimatedDays) return `${option.estimatedDays} ${uiText('shippingDays')}`;
+      if (option.estimatedDays) {
+        const unit = option.estimatedDays === 1 ? uiText('shippingDay') : uiText('shippingDays');
+        return `${option.estimatedDays} ${unit}`;
+      }
       return option.deliveryDate ?? '';
     }
 
     function optionHtml(option: QuoteOption): string {
       const selected = selectedQuote?.productCode === option.productCode;
       const eta = quoteEta(option);
+      // Solo se marca "estimado" cuando el plazo no es un compromiso de FedEx.
+      const etaNote = option.estimated ? uiText('shippingEstimated') : '';
       const classes =
         'w-full text-left border-2 ' +
         (selected ? 'border-oro-brillo bg-oro-brillo/10' : 'border-white/40 hover:border-white/80') +
@@ -589,8 +600,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         (eta
           ? '<span class="mt-1 block text-[11px] text-white/60">' +
             escapeHtml(eta) +
-            ' · ' +
-            escapeHtml(uiText('shippingEstimated')) +
+            (etaNote ? ' · ' + escapeHtml(etaNote) : '') +
             '</span>'
           : '') +
         '</button>'
@@ -606,6 +616,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             escapeHtml(uiText('shippingUnavailable')) +
             '</p>'
           : quoteOptions.map(optionHtml).join('');
+
+      // El aviso "estimado" de la cabecera solo aplica si algún plazo es de respaldo.
+      document
+        .getElementById('shipping-estimated-badge')
+        ?.classList.toggle('hidden', !quoteOptions.some((o) => o.estimated));
 
       quoteOptionsEl.querySelectorAll<HTMLElement>('[data-quote]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -838,7 +853,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       if (shippingNoteEl) {
         if (selectedQuote && !pending) {
-          shippingNoteEl.textContent = `${selectedQuote.productName} · ${uiText('shippingEstimated')}`;
+          shippingNoteEl.textContent = selectedQuote.estimated
+            ? `${selectedQuote.productName} · ${uiText('shippingEstimated')}`
+            : selectedQuote.productName;
           shippingNoteEl.classList.remove('hidden');
         } else {
           shippingNoteEl.classList.add('hidden');
@@ -949,7 +966,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             hideRedirect();
             restoreButton();
 
-            const next = data.shipping as QuoteOption;
+            const next = data.shipping as QuoteOption & { name?: string };
+            const previous = quoteOptions.find((o) => o.productCode === next.productCode);
             const confirmed = await askConfirm({
               title: uiText('shippingChangedTitle'),
               message:
@@ -964,8 +982,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
               productName: next.name ?? next.productName,
               amount: next.amount,
               currency: 'USD',
-              deliveryDate: null,
-              estimatedDays: null,
+              // El servidor solo confirma precio y servicio: el ETA se conserva
+              // del selector ya cotizado en el navegador.
+              deliveryDate: previous?.deliveryDate ?? null,
+              estimatedDays: previous?.estimatedDays ?? null,
+              estimated: previous?.estimated ?? true,
             };
             quoteOptions = quoteOptions.map((o) =>
               o.productCode === next.productCode ? { ...o, amount: next.amount } : o

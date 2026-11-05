@@ -88,5 +88,8 @@ de datos ni variable de entorno nueva.
 - Con FedEx configurado, el checkout cotiza en `/api/shipping/quote` y
   `/api/checkout` re-cotiza en servidor. Detalle en
   [`docs/envios-fedex.md`](envios-fedex.md).
+- El selector muestra el tiempo estimado de cada servicio. Si FedEx no devuelve
+  compromiso (sandbox), se usan días de respaldo y la opción se marca
+  “estimado”.
 - Sin FedEx, se aplica la tarifa plana de `store_settings`.
 - El pago se abre en Stripe; el pedido se crea antes de redirigir.

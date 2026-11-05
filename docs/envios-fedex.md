@@ -108,12 +108,37 @@ dura 60 min; se cachea en memoria **55 min** y se renueva antes de expirar
 1. El cliente captura ZIP + estado (y ciudad). El navegador espera 500 ms tras
    el último cambio y llama a `/api/shipping/quote`; mientras espera pinta
    skeletons `.shimmer` con la misma forma que las tarjetas finales.
-2. Se listan los servicios con **nombre, precio USD y tiempo estimado**
-   (marcado como "estimado"). La opción más barata queda seleccionada.
+2. Se listan los servicios con **nombre, precio USD y tiempo estimado**. La
+   opción más barata queda seleccionada.
 3. Si no hay destino válido, envío gratis o FedEx no está configurado, se
    aplica la tarifa plana de `store_settings` y no se muestra el selector.
 4. Si la cotización falla, se muestra el aviso de tarifa estándar; el checkout
    nunca se bloquea.
+
+#### Tiempo de tránsito (ETA)
+
+La petición a `/rate` manda `returnTransitAndCommit: true`. Cuando FedEx devuelve
+compromiso (`commitmentDetails.transitDays` / `commitDate` u
+`operationalDetail.transitTime`), esos valores son los que se muestran y la
+opción **no** se marca como estimada.
+
+El sandbox de FedEx no emite ese compromiso, así que como respaldo se usan los
+días de `FALLBACK_TRANSIT_DAYS` en `lib/fedex.ts`. En ese caso la opción lleva
+`estimated: true` y el selector le agrega “estimado” al plazo:
+
+| Servicio (`serviceType`) | Días |
+|---|---|
+| `FIRST_OVERNIGHT`, `PRIORITY_OVERNIGHT`, `STANDARD_OVERNIGHT` | 1 |
+| `FEDEX_2_DAY_AM`, `FEDEX_2_DAY` | 2 |
+| `FEDEX_EXPRESS_SAVER` | 3 |
+| `FEDEX_GROUND`, `GROUND_HOME_DELIVERY` | 5 |
+
+Ojo: los servicios overnight llegan **sin** el prefijo `FEDEX_`. Los códigos que
+no están en la tabla quedan con `estimatedDays: null` (solo nombre y precio).
+
+Los días de respaldo son un plazo de reparto, no una fecha: no se inventa
+`deliveryDate`. El resumen del pedido muestra “estimado” únicamente cuando el
+plazo viene del respaldo, no cuando es un compromiso de FedEx.
 
 Al pagar, el navegador manda `shipping: { productCode, amount }`.
 `/api/checkout` **re-cotiza siempre en el servidor** con el destino capturado y

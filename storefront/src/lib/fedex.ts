@@ -42,8 +42,15 @@ export interface FedexRateOption {
   productName: string;
   amount: number;
   currency: string;
+  /** Fecha de entrega comprometida por FedEx, si la devolvió. */
   deliveryDate: string | null;
+  /** Días de tránsito: reales de FedEx o el respaldo local. */
   estimatedDays: number | null;
+  /**
+   * `true` cuando los días salieron de `FALLBACK_TRANSIT_DAYS` porque FedEx no
+   * devolvió compromiso (el sandbox no lo emite). La UI lo marca como estimado.
+   */
+  estimated: boolean;
 }
 
 export type FedexResult<T> = { ok: true; data: T } | { ok: false; reason: string };
@@ -54,6 +61,30 @@ export interface FedexDocument {
   imageFormat: string;
   /** Contenido base64 tal como lo entrega FedEx. */
   content: string;
+}
+
+/**
+ * Días de tránsito por servicio cuando FedEx no devuelve compromiso.
+ *
+ * Solo se usa como respaldo: si `returnTransitAndCommit` trae
+ * `commitmentDetails`/`operationalDetail`, esos valores mandan. El sandbox de
+ * FedEx no emite el compromiso, así que sin esta tabla el selector se queda
+ * sin tiempo estimado (solo nombre y precio).
+ */
+const FALLBACK_TRANSIT_DAYS: Record<string, number> = {
+  FIRST_OVERNIGHT: 1,
+  PRIORITY_OVERNIGHT: 1,
+  STANDARD_OVERNIGHT: 1,
+  FEDEX_2_DAY_AM: 2,
+  FEDEX_2_DAY: 2,
+  FEDEX_EXPRESS_SAVER: 3,
+  FEDEX_GROUND: 5,
+  GROUND_HOME_DELIVERY: 5,
+};
+
+/** Días estimados por servicio; `null` si no hay respaldo para ese código. */
+export function fallbackTransitDays(productCode: string): number | null {
+  return FALLBACK_TRANSIT_DAYS[productCode.toUpperCase()] ?? null;
 }
 
 const TOKEN_TTL_MS = 55 * 60 * 1000;
@@ -423,7 +454,9 @@ function normalizeRates(parsed: any): FedexRateOption[] {
 
       const commitment = detail?.commitmentDetails ?? detail?.commitDetails ?? {};
       const operational = detail?.operationalDetail ?? {};
-      const transit = Number(operational?.transitTime ?? commitment?.transitDays ?? NaN);
+      const realTransit = Number(operational?.transitTime ?? commitment?.transitDays ?? NaN);
+      const hasRealTransit = Number.isFinite(realTransit) && realTransit > 0;
+      const days = hasRealTransit ? realTransit : fallbackTransitDays(serviceType);
 
       return {
         productCode: serviceType,
@@ -435,7 +468,9 @@ function normalizeRates(parsed: any): FedexRateOption[] {
           operational?.deliveryDate ??
           operational?.commitDate ??
           null,
-        estimatedDays: Number.isFinite(transit) ? transit : null,
+        estimatedDays: days,
+        // Solo es estimado si hubo que sustituir el compromiso de FedEx.
+        estimated: !hasRealTransit && days !== null,
       } as FedexRateOption;
     })
     .filter((o) => isDomesticService(o.productCode) && o.currency === 'USD' && o.amount > 0);

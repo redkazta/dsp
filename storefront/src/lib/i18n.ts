@@ -352,6 +352,7 @@ export const copy = {
       shippingChangedMessage: 'La nueva tarifa es',
       shippingChangeAccept: 'Aceptar y pagar',
       shippingDays: 'días',
+      shippingDay: 'día',
     },
 
     // ---------------- Cuenta / acceso ----------------
@@ -1156,6 +1157,7 @@ export const copy = {
       shippingChangedMessage: 'The new rate is',
       shippingChangeAccept: 'Accept and pay',
       shippingDays: 'days',
+      shippingDay: 'day',
     },
 
     // ---------------- Account / sign in ----------------

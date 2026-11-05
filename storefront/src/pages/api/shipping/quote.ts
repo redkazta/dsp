@@ -6,7 +6,11 @@
  * tarifa plana configurada en `store_settings`.
  *
  *   POST { zip, city, state?, items: [{ qty }] }
- *   → { configured, options: [{ productCode, productName, amount, currency, estimatedDays }] }
+ *   → { configured, options: [{ productCode, productName, amount, currency,
+ *       estimatedDays, deliveryDate, estimated }] }
+ *
+ * `estimated: true` significa que los días vienen del respaldo local porque
+ * FedEx no devolvió compromiso (sandbox); el cliente lo ve como "estimado".
  */
 import type { APIRoute } from 'astro';
 import { isUsPostalCode } from '../../../lib/us';

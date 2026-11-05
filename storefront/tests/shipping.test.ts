@@ -13,6 +13,7 @@ const ground: FedexRateOption = {
   currency: 'USD',
   deliveryDate: '2026-11-10',
   estimatedDays: 3,
+  estimated: false,
 };
 
 const twoDay: FedexRateOption = {
@@ -22,6 +23,7 @@ const twoDay: FedexRateOption = {
   currency: 'USD',
   deliveryDate: '2026-11-08',
   estimatedDays: 2,
+  estimated: false,
 };
 
 const options = [ground, twoDay];

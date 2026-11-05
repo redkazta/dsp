@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createLabel,
+  fallbackTransitDays,
   fedexConfig,
   isFedexConfigured,
   labelBlockReason,
@@ -96,6 +97,7 @@ describe('FedEx /rate/v1/rates/quotes', () => {
       currency: 'USD',
       deliveryDate: '2026-11-10',
       estimatedDays: 3,
+      estimated: false,
     });
 
     const [url, init] = rateCalls(mock)[0] as [string, RequestInit];
@@ -185,7 +187,101 @@ describe('FedEx /rate/v1/rates/quotes', () => {
       productCode: 'FEDEX_2_DAY',
       estimatedDays: 2,
       deliveryDate: '2026-11-08',
+      estimated: false,
     });
+  });
+
+  it('usa los días de respaldo y marca estimated cuando FedEx no da compromiso', async () => {
+    mockFedex(() =>
+      jsonResponse({
+        output: {
+          rateReplyDetails: [
+            {
+              serviceType: 'FIRST_OVERNIGHT',
+              serviceName: 'FedEx First Overnight',
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 160 },
+              ],
+            },
+            {
+              serviceType: 'FEDEX_2_DAY_AM',
+              serviceName: 'FedEx 2Day AM',
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 70 },
+              ],
+            },
+            {
+              serviceType: 'FEDEX_EXPRESS_SAVER',
+              serviceName: 'FedEx Express Saver',
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 55 },
+              ],
+            },
+          ],
+        },
+      })
+    );
+
+    const result = await quoteRates({
+      destinationZip: '84101',
+      destinationCity: 'Salt Lake City',
+      destinationState: 'UT',
+      packages: [pkg],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const byCode = Object.fromEntries(result.data.map((o) => [o.productCode, o]));
+
+    expect(byCode.FIRST_OVERNIGHT).toMatchObject({
+      estimatedDays: 1,
+      deliveryDate: null,
+      estimated: true,
+    });
+    expect(byCode.FEDEX_2_DAY_AM).toMatchObject({ estimatedDays: 2, estimated: true });
+    expect(byCode.FEDEX_EXPRESS_SAVER).toMatchObject({ estimatedDays: 3, estimated: true });
+  });
+
+  it('deja el ETA en null si el servicio no tiene respaldo conocido', async () => {
+    mockFedex(() =>
+      jsonResponse({
+        output: {
+          rateReplyDetails: [
+            {
+              serviceType: 'FEDEX_HOME_DELIVERY_CUSTOM',
+              serviceName: 'FedEx Custom',
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 30 },
+              ],
+            },
+          ],
+        },
+      })
+    );
+
+    const result = await quoteRates({
+      destinationZip: '89101',
+      destinationCity: 'Las Vegas',
+      destinationState: 'NV',
+      packages: [pkg],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data[0]).toMatchObject({ estimatedDays: null, estimated: false });
+  });
+
+  it('fallbackTransitDays cubre los servicios domésticos del selector', () => {
+    expect(fallbackTransitDays('FIRST_OVERNIGHT')).toBe(1);
+    expect(fallbackTransitDays('PRIORITY_OVERNIGHT')).toBe(1);
+    expect(fallbackTransitDays('STANDARD_OVERNIGHT')).toBe(1);
+    expect(fallbackTransitDays('FEDEX_2_DAY_AM')).toBe(2);
+    expect(fallbackTransitDays('FEDEX_2_DAY')).toBe(2);
+    expect(fallbackTransitDays('FEDEX_EXPRESS_SAVER')).toBe(3);
+    expect(fallbackTransitDays('fedex_ground')).toBe(5);
+    expect(fallbackTransitDays('UNKNOWN')).toBeNull();
   });
 
   it('descarta tarifas que no estén en USD', async () => {
