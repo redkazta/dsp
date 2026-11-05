@@ -284,6 +284,45 @@ describe('FedEx /rate/v1/rates/quotes', () => {
     expect(fallbackTransitDays('UNKNOWN')).toBeNull();
   });
 
+  it('reintenta una vez si FedEx rechaza el token (401)', async () => {
+    let rateAttempts = 0;
+
+    const mock = mockFedex((url) => {
+      if (!url.includes('/rate/v1/rates/quotes')) return jsonResponse({}, 404);
+      rateAttempts += 1;
+
+      if (rateAttempts === 1) {
+        return jsonResponse({ errors: [{ message: 'Token expired' }] }, 401);
+      }
+
+      return jsonResponse({
+        output: {
+          rateReplyDetails: [
+            {
+              serviceType: 'FEDEX_GROUND',
+              serviceName: 'FedEx Ground',
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 19.5 },
+              ],
+            },
+          ],
+        },
+      });
+    });
+
+    const result = await quoteRates({
+      destinationZip: '80201',
+      destinationCity: 'Denver',
+      destinationState: 'CO',
+      packages: [pkg],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data[0]).toMatchObject({ productCode: 'FEDEX_GROUND', amount: 19.5 });
+    expect(rateCalls(mock)).toHaveLength(2);
+  });
+
   it('descarta tarifas que no estén en USD', async () => {
     mockFedex(() =>
       jsonResponse({

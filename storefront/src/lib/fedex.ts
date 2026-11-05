@@ -6,6 +6,7 @@
  *
  * Reglas:
  *   · OAuth 2.0 `client_credentials`; el token dura 60 min y se cachea ~55 min.
+ *   · Token caducado (401): se descarta el caché y se reintenta una vez.
  *   · Credenciales por variables de entorno; nunca llegan al cliente.
  *   · Tarifas en USD y solo servicios domésticos de EE. UU.
  *   · Caché de tarifas en memoria de 10 min. Jamás en base de datos.
@@ -276,12 +277,16 @@ async function fedexFetch(
   config: FedexConfig,
   path: string,
   body: unknown,
-  timeoutMs: number
+  timeoutMs: number,
+  retry = true
 ): Promise<{ status: number; data: any }> {
   const token = await accessToken(config);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let status = 0;
+  let data: any = {};
 
   try {
     const res = await fetch(`${config.baseUrl}${path}`, {
@@ -296,7 +301,7 @@ async function fedexFetch(
     });
 
     const text = await res.text();
-    let data: any = {};
+    status = res.status;
 
     try {
       data = text ? JSON.parse(text) : {};
@@ -304,11 +309,18 @@ async function fedexFetch(
       // FedEx devolvió algo que no es JSON: se conserva para diagnóstico.
       data = { responseText: text };
     }
-
-    return { status: res.status, data };
   } finally {
     clearTimeout(timer);
   }
+
+  // Token caducado o revocado en FedEx: se descarta el caché y se reintenta
+  // una sola vez. Evita perder una cotización por un token local viejo.
+  if (status === 401 && retry) {
+    tokenCache = null;
+    return fedexFetch(config, path, body, timeoutMs, false);
+  }
+
+  return { status, data };
 }
 
 /** Loguea `errors[]` y `warnings[]` sin volcar detalles sensibles. */
