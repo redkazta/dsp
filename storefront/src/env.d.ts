@@ -34,6 +34,8 @@ interface ImportMetaEnv {
   readonly DHL_ORIGIN_CITY?: string;
   readonly DHL_ORIGIN_COUNTRY?: string;
   readonly DHL_ORIGIN_COMPANY?: string;
+  readonly DHL_ORIGIN_ADDRESS?: string;
+  readonly DHL_ORIGIN_PHONE?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST?: string;

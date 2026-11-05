@@ -25,6 +25,10 @@ ALTER TABLE public.orders
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS address_verified_at TIMESTAMPTZ;
 
+-- URL del PDF de la guía (bucket `shipping-labels`).
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS shipping_label_url TEXT;
+
 -- Constraint del estado (Postgres no tiene ADD CONSTRAINT IF NOT EXISTS).
 DO $$
 BEGIN

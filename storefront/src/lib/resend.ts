@@ -367,6 +367,82 @@ export async function sendOrderStatusEmail({
 }
 
 /**
+ * Guía de envío al cliente, con el PDF adjunto.
+ *
+ * `pdfBase64` es el documento tal como lo entrega DHL (sin prefijo `data:`).
+ */
+export async function sendShippingLabel({
+  to,
+  orderNumber,
+  trackingNumber,
+  carrier = 'DHL',
+  pdfBase64,
+  imageFormat = 'PDF',
+  lang = 'es',
+}: {
+  to: string;
+  orderNumber: string | null;
+  trackingNumber: string;
+  carrier?: string;
+  pdfBase64?: string | null;
+  imageFormat?: string;
+  lang?: 'es' | 'en';
+}) {
+  const { apiKey, from, contactEmail } = resendConfig();
+
+  if (!apiKey) {
+    console.warn('[resend] RESEND_API_KEY no configurado; no se envía la guía.');
+    return { ok: false, reason: 'no_key' };
+  }
+
+  const es = lang !== 'en';
+  const title = es ? 'Tu pedido va en camino' : 'Your order is on its way';
+
+  const body = `
+    <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${es ? 'Ya generamos la guía de tu envío.' : 'We created the shipping label for your order.'}
+    </p>
+    ${orderNumber ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">${es ? 'Pedido' : 'Order'} <strong style="color:#ffffff;">#${orderNumber}</strong></p>` : ''}
+    <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
+      ${es ? 'Guía' : 'Tracking'}: <strong style="color:#FFE28A;">${carrier} · ${trackingNumber}</strong>
+    </p>`;
+
+  const attachment =
+    pdfBase64 && imageFormat === 'PDF'
+      ? [{ filename: `guia-${orderNumber ?? trackingNumber}.pdf`, content: pdfBase64 }]
+      : undefined;
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to,
+        reply_to: contactEmail,
+        subject: `${title}${orderNumber ? ` · #${orderNumber}` : ''} · ¡D$P!`,
+        html: emailShell(title, body, lang),
+        ...(attachment ? { attachments: attachment } : {}),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[resend] guía:', res.status, err);
+      return { ok: false, reason: 'resend_error', status: res.status };
+    }
+
+    return { ok: true };
+  } catch (e: any) {
+    console.error('[resend] guía exception:', e?.message);
+    return { ok: false, reason: 'exception' };
+  }
+}
+
+/**
  * Recordatorio de carrito / checkout abandonado.
  *
  * Se programa al abrir Stripe y se cancela si el pago se aprueba. El retraso
