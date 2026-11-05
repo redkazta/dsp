@@ -27,6 +27,9 @@ const ui = {
   invalidEmail: t.checkout.invalidEmail,
   invalidPhone: t.checkout.invalidPhone,
   invalidPostal: t.checkout.invalidPostal,
+  zipLooking: t.checkout.zipLooking,
+  zipAutocompleteFilled: t.checkout.zipAutocompleteFilled,
+  zipStateUnavailable: t.checkout.zipStateUnavailable,
   fixErrors: t.checkout.fixErrors,
   emptyCartError: t.checkout.emptyCartError,
   waitCart: t.checkout.waitCart,
@@ -150,20 +153,6 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                   value={email ?? ''}
                 />
               </div>
-              <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="phone">{t.checkout.phone} *</label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  class="input-dark"
-                  autocomplete="tel"
-                  inputmode="tel"
-                  placeholder={t.checkout.phonePlaceholder}
-                  value={phone ?? ''}
-                />
-              </div>
             </div>
           </section>
 
@@ -175,36 +164,26 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-2 sm:col-span-2">
-                <label class="field-label" for="street">{t.checkout.street} *</label>
-                <input
-                  id="street"
-                  name="street"
-                  required
-                  class="input-dark"
-                  autocomplete="street-address"
-                />
-              </div>
-              <div class="space-y-2">
-                <label class="field-label" for="colonia">{t.checkout.colonia}</label>
-                <input
-                  id="colonia"
-                  name="colonia"
-                  class="input-dark"
-                  placeholder={t.checkout.coloniaHint}
-                />
-              </div>
-              <div class="space-y-2">
                 <label class="field-label" for="postalCode">{t.checkout.postalCode} *</label>
-                <input
-                  id="postalCode"
-                  name="postalCode"
-                  required
-                  class="input-dark"
-                  autocomplete="postal-code"
-                  inputmode="numeric"
-                  maxlength="10"
-                  placeholder="12345"
-                />
+                <div class="relative">
+                  <input
+                    id="postalCode"
+                    name="postalCode"
+                    required
+                    class="input-dark pr-20"
+                    autocomplete="postal-code"
+                    inputmode="numeric"
+                    maxlength="10"
+                    placeholder="12345"
+                    aria-describedby="zip-note"
+                  />
+                  <span
+                    id="zip-status"
+                    class="shimmer hidden absolute right-3 top-1/2 -translate-y-1/2 h-1.5 w-12 rounded-full"
+                    aria-hidden="true"
+                  ></span>
+                </div>
+                <p id="zip-note" class="hidden text-[11px] text-white/80 leading-snug" role="status"></p>
               </div>
               <div class="space-y-2">
                 <label class="field-label" for="city">{t.checkout.city} *</label>
@@ -224,6 +203,39 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                     <option value={s.code}>{s.name}</option>
                   ))}
                 </select>
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label" for="street">{t.checkout.street} *</label>
+                <input
+                  id="street"
+                  name="street"
+                  required
+                  class="input-dark"
+                  autocomplete="street-address"
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label" for="colonia">{t.checkout.colonia}</label>
+                <input
+                  id="colonia"
+                  name="colonia"
+                  class="input-dark"
+                  placeholder={t.checkout.coloniaHint}
+                />
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <label class="field-label" for="phone">{t.checkout.phone} *</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  class="input-dark"
+                  autocomplete="tel"
+                  inputmode="tel"
+                  placeholder={t.checkout.phonePlaceholder}
+                  value={phone ?? ''}
+                />
               </div>
               <div class="space-y-2 sm:col-span-2">
                 <label class="field-label" for="country">{t.checkout.country}</label>
@@ -483,6 +495,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     import { shippingCostFor } from '../../lib/pricing';
     import { escapeHtml, friendlyError } from '../../lib/html';
     import { askConfirm } from '../../lib/dialog';
+    import { wireZipAutocomplete } from '../../lib/zip-autocomplete';
 
     const ui = JSON.parse(document.getElementById('checkout-ui')?.textContent || '{}') as Record<string, string>;
     const uiText = (key: string) => ui[key] ?? '';
@@ -1007,6 +1020,32 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       const el = form?.elements.namedItem(name) as HTMLElement | null;
       el?.addEventListener('input', scheduleQuotes);
       el?.addEventListener('change', scheduleQuotes);
+    });
+
+    // Autocompletado ZIP → ciudad/estado desde el catálogo local.
+    // Si el ZIP no existe o el endpoint falla, no se bloquea ni se avisa: el
+    // cliente escribe ciudad y estado a mano.
+    const zipStatusEl = document.getElementById('zip-status');
+    const zipNoteEl = document.getElementById('zip-note');
+
+    function showZipNote(message: string | null) {
+      if (!zipNoteEl) return;
+      zipNoteEl.textContent = message ?? '';
+      zipNoteEl.classList.toggle('hidden', !message);
+    }
+
+    wireZipAutocomplete(form, {
+      onLoading(loading) {
+        // Una espera visible usa siempre `.shimmer` (forma reservada).
+        zipStatusEl?.classList.toggle('hidden', !loading);
+        showZipNote(loading ? uiText('zipLooking') : null);
+      },
+      onFilled() {
+        showZipNote(uiText('zipAutocompleteFilled'));
+      },
+      onStateUnavailable() {
+        showZipNote(uiText('zipStateUnavailable'));
+      },
     });
 
     // Prellenar con los datos de la cuenta

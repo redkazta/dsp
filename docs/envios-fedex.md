@@ -14,6 +14,9 @@ otras monedas.
   completas para corregir pedidos históricos.
 - Validación **solo de formato**: región del catálogo, ZIP `^\d{5}(-\d{4})?$`,
   obligatorios y longitudes máximas. Cero llamadas a Google/SmartyStreets/USPS.
+- El checkout pide **primero el ZIP** y autocompleta ciudad/estado desde el
+  catálogo local de ZIP codes (`/api/zipcode-lookup`). El cliente puede
+  corregirlos. Detalle en [`docs/checkout.md`](checkout.md).
 - El formulario usa `autocomplete` HTML solo para el autofill del navegador.
 - Aviso no bloqueante de PO Box / APO-FPO-DPO.
 - La dirección se guarda tal cual con `address_verification_status = 'pending'`.
@@ -138,6 +141,38 @@ ZIP capturados (`shipping_street`, `shipping_city`, `shipping_state`,
 | Miami, FL | `33101` |
 | Seattle, WA | `98101` |
 
+### Endpoint temporal de pruebas (sandbox)
+
+> **TEMPORAL:** eliminar `src/pages/api/admin/test-fedex-rates.ts` antes del
+> lanzamiento. Está marcado con `// TEMPORAL: eliminar antes de producción`.
+
+```
+GET /api/admin/test-fedex-rates
+```
+
+- **Auth:** solo staff autenticado. La sesión viaja en la cookie de Supabase
+  (`Cookie: sb-<proyecto>-auth-token=…`), igual que el resto de `/api/admin/*`.
+  Sin sesión responde `401`; con sesión que no es staff, `403`; si FedEx no
+  está configurado, `503`.
+- **Qué hace:** cotiza una pieza (`DEFAULT_PACKAGE` de `lib/shipping.ts`) desde
+  el origen `FEDEX_ORIGIN_*` hacia los cinco ZIPs de prueba.
+- **Respuesta:** por ZIP, `status` (`ok`/`error`), `services` (servicio,
+  precio USD y tiempo estimado), el más barato en `priceUsd`/`estimatedDays`,
+  `warnings`/`errors` de FedEx y la **respuesta cruda** en `raw`.
+- La respuesta cruda solo se devuelve en este HTTP al admin: **no se persiste,
+  no se cachea y no se loguea** (restricción de Rating Data).
+- Un fallo de FedEx en un ZIP no corta los demás: ese ZIP sale `status:
+  "error"` con `error` y `errors[]`, y el resto se cotiza igual.
+
+Ejemplo desde el navegador, con la sesión de admin abierta:
+
+```
+https://www.dinerosobreproblemas.com/api/admin/test-fedex-rates
+```
+
+Para producción, cambiar `FEDEX_BASE_URL=https://apis.fedex.com` y **borrar el
+endpoint** antes de publicar.
+
 ### Guías
 
 `POST /api/admin/shipment` (`{ orderId, productCode? }`):
@@ -168,3 +203,4 @@ parsean y se loguean; un `status >= 400` se convierte en `ok: false` con motivo
 
 - Tracking público desde la tienda (`/track/v1/trackingnumbers`).
 - Probar el flujo completo en sandbox en cuanto estén las credenciales.
+- **Eliminar `/api/admin/test-fedex-rates` antes de producción.**

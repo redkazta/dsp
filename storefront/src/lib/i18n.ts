@@ -298,6 +298,10 @@ export const copy = {
       city: 'Ciudad',
       state: 'Estado',
       statePlaceholder: 'Elige tu estado',
+      zipLooking: 'Buscando ciudad y estado…',
+      zipAutocompleteFilled: 'Ciudad y estado completados con tu código postal. Puedes corregirlos.',
+      zipStateUnavailable:
+        'Ese código postal pertenece a un estado que no está disponible para envío. Elige tu estado manualmente.',
       country: 'País',
       countryUS: 'Estados Unidos',
       countryNote: 'Por ahora solo enviamos dentro de Estados Unidos. Para otro país, escríbenos a support@dinerosobreproblemas.com.',
@@ -1098,6 +1102,10 @@ export const copy = {
       city: 'City',
       state: 'State',
       statePlaceholder: 'Choose your state',
+      zipLooking: 'Looking up city and state…',
+      zipAutocompleteFilled: 'City and state filled from your ZIP code. You can edit them.',
+      zipStateUnavailable:
+        'That ZIP code belongs to a state that is not available for shipping. Please choose your state manually.',
       country: 'Country',
       countryUS: 'United States',
       countryNote: 'For now we only ship within the United States. For another country, email support@dinerosobreproblemas.com.',
