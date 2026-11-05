@@ -414,6 +414,7 @@ const fedexReady = isFedexConfigured();
       PAYMENT_METHOD_LABEL,
       formatOrderMoney,
       formatOrderDateTime,
+      shippingServiceLabel,
       type OrderStatus,
     } from '../../lib/orders';
 
@@ -580,6 +581,10 @@ const fedexReady = isFedexConfigured();
         .filter(Boolean)
         .join(' · ');
 
+      // Servicio que pagó el cliente: es el que se usa para la guía.
+      const service = shippingServiceLabel(o.shipping_method);
+      const shippingCost = Number(o.shipping_cost ?? 0);
+
       return `
       <article class="order-card" data-order-card="${o.id}">
         <header class="order-head">
@@ -590,6 +595,7 @@ const fedexReady = isFedexConfigured();
                 STATUS_LABEL[status] ?? status
               )}</span>
               ${paymentLine ? `<span class="pill">${esc(paymentLine)}</span>` : ''}
+              ${service ? `<span class="pill" title="Servicio con el que saldrá la guía">${esc(service)}</span>` : ''}
               ${!o.user_id ? '<span class="pill">Invitado</span>' : ''}
             </div>
             <p class="text-sm text-white/75 truncate">
@@ -606,6 +612,9 @@ const fedexReady = isFedexConfigured();
               ${formatOrderMoney(Number(o.total_amount))}
             </p>
             <p class="text-[10px] uppercase tracking-[0.14em] text-white/40 mt-1.5">
+              ${formatOrderMoney(shippingCost)} de envío
+            </p>
+            <p class="text-[10px] uppercase tracking-[0.14em] text-white/40 mt-1">
               ${(o.order_items ?? []).length} ${(o.order_items ?? []).length === 1 ? 'pieza' : 'piezas'}
             </p>
           </div>
@@ -968,7 +977,10 @@ const fedexReady = isFedexConfigured();
               throw new Error(reasons[data?.error] ?? 'No se pudo generar la guía.');
             }
 
-            await notify(`Guía ${data.trackingNumber} generada.`, { title: 'Listo' });
+            await notify(
+              `Guía ${data.trackingNumber} generada (${shippingServiceLabel(data.serviceType)}).`,
+              { title: 'Listo' }
+            );
             await refresh();
           } catch (err: any) {
             await notify(err?.message ?? 'No se pudo generar la guía.', {

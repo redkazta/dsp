@@ -71,9 +71,17 @@ export const POST: APIRoute = async ({
   locals: App.Locals;
 }) => {
   const sessionClient = createSupabaseServerClient(request, cookies);
-  const {
-    data: { user },
-  } = await sessionClient.auth.getUser();
+
+  // Un fallo del servicio de auth no debe reventar la compra con un 500: se
+  // responde un error controlado y el cliente puede reintentar.
+  let user: { id: string } | null = null;
+  try {
+    const { data } = await sessionClient.auth.getUser();
+    user = data?.user ?? null;
+  } catch (err: any) {
+    console.error('[checkout] auth no disponible:', err?.message ?? 'error');
+    return error('AUTH_UNAVAILABLE', 'No pudimos validar tu sesión. Intenta de nuevo.', 503);
+  }
 
   let payload: any;
   try {

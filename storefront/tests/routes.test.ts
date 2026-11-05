@@ -41,7 +41,7 @@ describe('aliasToCanonical', () => {
     expect(aliasToCanonical('/contact')).toBe('/contacto');
     expect(aliasToCanonical('/about')).toBe('/nosotros');
     expect(aliasToCanonical('/cart')).toBe('/carrito');
-    expect(aliasToCanonical('/favorites')).toBe('/favoritos');
+    expect(aliasToCanonical('/wishlist')).toBe('/favoritos');
     expect(aliasToCanonical('/login')).toBe('/entrar');
   });
 

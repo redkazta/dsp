@@ -87,6 +87,36 @@ export function fallbackTransitDays(productCode: string): number | null {
   return FALLBACK_TRANSIT_DAYS[productCode.toUpperCase()] ?? null;
 }
 
+/**
+ * Servicios domésticos que el checkout vende y que `/ship` acepta como
+ * `serviceType`. Ojo: los overnight llegan sin el prefijo `FEDEX_`.
+ */
+const DOMESTIC_SERVICE_CODES = [
+  'FIRST_OVERNIGHT',
+  'PRIORITY_OVERNIGHT',
+  'STANDARD_OVERNIGHT',
+  'FEDEX_2_DAY_AM',
+  'FEDEX_2_DAY',
+  'FEDEX_EXPRESS_SAVER',
+  'FEDEX_GROUND',
+  'GROUND_HOME_DELIVERY',
+] as const;
+
+/** Servicio usado cuando el pedido no trae un código FedEx válido. */
+export const DEFAULT_FEDEX_SERVICE = 'FEDEX_GROUND';
+
+/**
+ * ¿Es un `serviceType` de FedEx válido para generar guía?
+ *
+ * El pedido guarda en `shipping_method` el código cotizado (`FIRST_OVERNIGHT`,
+ * …), pero también puede tener `standard` o `free` cuando no se cotizó: esos no
+ * se mandan a FedEx, se usa `DEFAULT_FEDEX_SERVICE`.
+ */
+export function isFedexServiceCode(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return (DOMESTIC_SERVICE_CODES as readonly string[]).includes(code.trim().toUpperCase());
+}
+
 const TOKEN_TTL_MS = 55 * 60 * 1000;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const TOKEN_TIMEOUT_MS = 5000;

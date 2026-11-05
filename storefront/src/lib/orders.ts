@@ -143,6 +143,31 @@ export function trackingUrl(carrier: string | null | undefined, trackingNumber: 
   return `https://www.google.com/search?q=${encodeURIComponent(`${carrier ?? ''} ${trackingNumber}`.trim())}`;
 }
 
+/**
+ * Nombre legible del servicio guardado en `shipping_method`.
+ *
+ * Los overnight de FedEx llegan sin el prefijo `FEDEX_`. Sin cotización el
+ * pedido guarda `standard` o `free`.
+ */
+const SHIPPING_SERVICE_LABEL: Record<string, string> = {
+  FIRST_OVERNIGHT: 'FedEx First Overnight',
+  PRIORITY_OVERNIGHT: 'FedEx Priority Overnight',
+  STANDARD_OVERNIGHT: 'FedEx Standard Overnight',
+  FEDEX_2_DAY_AM: 'FedEx 2Day AM',
+  FEDEX_2_DAY: 'FedEx 2Day',
+  FEDEX_EXPRESS_SAVER: 'FedEx Express Saver',
+  FEDEX_GROUND: 'FedEx Ground',
+  GROUND_HOME_DELIVERY: 'FedEx Home Delivery',
+  standard: 'Envío estándar',
+  free: 'Envío gratis',
+};
+
+export function shippingServiceLabel(code: string | null | undefined): string {
+  const value = String(code ?? '').trim();
+  if (!value) return '';
+  return SHIPPING_SERVICE_LABEL[value] ?? SHIPPING_SERVICE_LABEL[value.toLowerCase()] ?? value;
+}
+
 export function formatOrderMoney(n: number) {
   return `$${Number(n).toLocaleString('en-US', {
     minimumFractionDigits: 2,

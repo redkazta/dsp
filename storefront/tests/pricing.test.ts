@@ -11,7 +11,7 @@ import {
 describe('shippingCostFor', () => {
   it('cobra envío estándar por debajo del umbral', () => {
     expect(shippingCostFor(0)).toBe(0);
-    expect(shippingCostFor(599)).toBe(STANDARD_SHIPPING);
+    expect(shippingCostFor(FREE_SHIPPING_THRESHOLD / 2)).toBe(STANDARD_SHIPPING);
     expect(shippingCostFor(FREE_SHIPPING_THRESHOLD - 0.01)).toBe(STANDARD_SHIPPING);
   });
 
@@ -32,7 +32,11 @@ describe('totalsFor', () => {
   });
 
   it('suma por cantidad y aplica envío', () => {
-    expect(totalsFor([item(599, 2)])).toEqual({ subtotal: 1198, shipping: 150, total: 1348 });
+    expect(totalsFor([item(35, 2)])).toEqual({
+      subtotal: 70,
+      shipping: STANDARD_SHIPPING,
+      total: 70 + STANDARD_SHIPPING,
+    });
   });
 
   it('no acumula error de punto flotante', () => {

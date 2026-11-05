@@ -156,6 +156,13 @@ Se guarda en el pedido: `shipping_method` = `productCode` del servicio,
 ZIP capturados (`shipping_street`, `shipping_city`, `shipping_state`,
 `shipping_postal_code`).
 
+La guía se genera con ese mismo servicio. `POST /api/admin/shipment` resuelve el
+`serviceType` en este orden: el que mande el operador (`productCode`), el
+`shipping_method` del pedido y, si no es un código FedEx (`standard`, `free` o
+vacío), `FEDEX_GROUND`. Los paquetes de la guía son un paquete por pieza, igual
+que en la cotización (`packagesFor`), y la respuesta devuelve `serviceType` para
+que el panel confirme con qué servicio salió.
+
 ### ZIPs de prueba (sandbox, origen 76104)
 
 | Destino | ZIP |

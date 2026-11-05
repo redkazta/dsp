@@ -7,12 +7,18 @@
  *   · La guía se guarda en Storage y se envía al cliente por correo.
  *
  *   POST { orderId, productCode? }
- *   → { ok, trackingNumber, labelUrl }
+ *   → { ok, trackingNumber, labelUrl, serviceType }
  */
 import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
-import { createLabel, isFedexConfigured, labelBlockReason } from '../../../lib/fedex';
-import { DEFAULT_PACKAGE } from '../../../lib/shipping';
+import {
+  createLabel,
+  DEFAULT_FEDEX_SERVICE,
+  isFedexConfigured,
+  isFedexServiceCode,
+  labelBlockReason,
+} from '../../../lib/fedex';
+import { packagesFor } from '../../../lib/shipping';
 import { sendShippingLabel } from '../../../lib/resend';
 
 export const prerender = false;
@@ -22,9 +28,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-
-/** Peso y medidas por defecto de una pieza (libras / pulgadas). */
-const LABEL_PACKAGE = DEFAULT_PACKAGE;
 
 const LABEL_BUCKET = 'shipping-labels';
 
@@ -59,7 +62,7 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
   const { data: order } = await db
     .from('orders')
     .select(
-      'id, order_number, contact_name, contact_email, contact_phone, shipping_street, shipping_colonia, shipping_city, shipping_state, shipping_postal_code, address_verification_status, carrier, tracking_number, notes'
+      'id, order_number, contact_name, contact_email, contact_phone, shipping_street, shipping_colonia, shipping_city, shipping_state, shipping_postal_code, shipping_method, address_verification_status, carrier, tracking_number, notes, order_items(quantity)'
     )
     .eq('id', orderId)
     .maybeSingle();
@@ -75,6 +78,20 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
     return json({ error: 'already_shipped', trackingNumber: order.tracking_number }, 409);
   }
 
+  // La guía debe salir con el servicio que pagó el cliente: se prefiere el que
+  // mande el operador y, si no, el que quedó guardado en el pedido.
+  // `standard` / `free` (sin cotización FedEx) no son válidos para /ship.
+  const requestedService = (productCode || String(order.shipping_method ?? '')).trim();
+  const serviceType = isFedexServiceCode(requestedService)
+    ? requestedService.toUpperCase()
+    : DEFAULT_FEDEX_SERVICE;
+
+  // Un paquete por pieza, igual que la cotización que vio el cliente.
+  const quantity = (Array.isArray(order.order_items) ? order.order_items : []).reduce(
+    (n: number, i: any) => n + (Number(i?.quantity) || 0),
+    0
+  );
+
   const result = await createLabel({
     orderNumber: String(order.order_number ?? order.id),
     destination: {
@@ -87,8 +104,8 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
       phone: String(order.contact_phone ?? ''),
       email: String(order.contact_email ?? ''),
     },
-    packages: [LABEL_PACKAGE],
-    productCode: productCode || 'FEDEX_GROUND',
+    packages: packagesFor(quantity),
+    productCode: serviceType,
   });
 
   if (!result.ok) {
@@ -165,5 +182,5 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
     }
   }
 
-  return json({ ok: true, trackingNumber, labelUrl });
+  return json({ ok: true, trackingNumber, labelUrl, serviceType });
 };

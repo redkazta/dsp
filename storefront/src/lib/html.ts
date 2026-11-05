@@ -37,6 +37,8 @@ export function friendlyError(code: string | null | undefined, fallback: string)
       return 'Inicia sesión o crea tu cuenta para completar el pedido.';
     case 'BAD_REQUEST':
       return 'Revisa los datos de contacto y envío.';
+    case 'AUTH_UNAVAILABLE':
+      return 'No pudimos validar tu sesión. Intenta de nuevo en un momento.';
     case 'CARD_DECLINED':
       return 'La tarjeta fue rechazada. Prueba con otra.';
     case 'PAYMENT_UNAVAILABLE':

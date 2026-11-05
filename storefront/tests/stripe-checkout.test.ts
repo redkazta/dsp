@@ -13,12 +13,14 @@ const customer = {
   firstName: 'Angel',
   lastName: 'Perez',
   email: 'angel@example.com',
-  phone: '5512345678',
-  street: 'Calle 1 #2',
-  colonia: 'Centro',
-  city: 'CDMX',
-  state: 'CDMX',
-  postalCode: '06000',
+  phone: '2145550000',
+  street: '1200 Main St',
+  colonia: 'Apt 4',
+  city: 'Fort Worth',
+  state: 'TX',
+  postalCode: '76104',
+  references: 'Casa azul con reja blanca',
+  notes: 'Sin logo en la espalda',
 };
 
 describe('verifyWebhookSignature', () => {
@@ -58,11 +60,20 @@ describe('readCustomer', () => {
     expect(readCustomer({ customer: { ...customer, email: 'sin-arroba' } })).toBeNull();
     expect(readCustomer({ customer: { ...customer, street: '' } })).toBeNull();
     expect(readCustomer({ customer: { ...customer, postalCode: 'ABCDE' } })).toBeNull();
+    expect(readCustomer({ customer: { ...customer, state: 'CDMX' } })).toBeNull();
   });
 
-  it('recorta y descarta las notas vacías', () => {
-    const parsed = readCustomer({ customer: { ...customer, notes: '   ' } });
-    expect(parsed?.notes).toBeUndefined();
+  it('exige referencias y notas: sin ellas el taller no sabe a dónde ir', () => {
+    expect(readCustomer({ customer: { ...customer, references: '' } })).toBeNull();
+    expect(readCustomer({ customer: { ...customer, notes: '   ' } })).toBeNull();
+  });
+
+  it('recorta los espacios de los campos', () => {
+    const parsed = readCustomer({
+      customer: { ...customer, city: '  Fort Worth  ', notes: '  Sin logo  ' },
+    });
+    expect(parsed?.city).toBe('Fort Worth');
+    expect(parsed?.notes).toBe('Sin logo');
   });
 });
 
