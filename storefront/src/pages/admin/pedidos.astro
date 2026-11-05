@@ -943,13 +943,18 @@ const fedexReady = isFedexConfigured();
       document.querySelectorAll<HTMLElement>('[data-label]').forEach((btn) =>
         btn.addEventListener('click', async () => {
           const orderId = btn.dataset.label!;
+          const order = orders.find((o: any) => o.id === orderId);
+          const service = shippingServiceLabel(order?.shipping_method);
+          const unpaid = order?.payment_status !== 'approved';
 
           const ok = await askConfirm({
             title: 'Generar guía FedEx',
             message:
-              'Se generará la guía con la dirección verificada. Esto tiene costo real en FedEx.',
+              `Se generará la guía ${service || 'FedEx'} con la dirección verificada. ` +
+              'Esto tiene costo real en FedEx.' +
+              (unpaid ? ' El pedido NO está marcado como pagado.' : ''),
             confirmLabel: 'Generar',
-            tone: 'default',
+            tone: unpaid ? 'danger' : 'default',
           });
 
           if (!ok) return;

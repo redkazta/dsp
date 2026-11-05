@@ -353,6 +353,7 @@ export const copy = {
       shippingChangeAccept: 'Aceptar y pagar',
       shippingDays: 'días',
       shippingDay: 'día',
+      shippingArrives: 'Entrega',
     },
 
     // ---------------- Cuenta / acceso ----------------
@@ -1158,6 +1159,7 @@ export const copy = {
       shippingChangeAccept: 'Accept and pay',
       shippingDays: 'days',
       shippingDay: 'day',
+      shippingArrives: 'Delivery',
     },
 
     // ---------------- Account / sign in ----------------

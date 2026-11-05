@@ -64,6 +64,7 @@ const ui = {
   shippingChangeAccept: t.checkout.shippingChangeAccept,
   shippingDays: t.checkout.shippingDays,
   shippingDay: t.checkout.shippingDay,
+  shippingArrives: t.checkout.shippingArrives,
 };
 
 const { firstName, email, phone } = Astro.locals;
@@ -563,7 +564,20 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         const unit = option.estimatedDays === 1 ? uiText('shippingDay') : uiText('shippingDays');
         return `${option.estimatedDays} ${unit}`;
       }
-      return option.deliveryDate ?? '';
+      if (option.deliveryDate) {
+        return `${uiText('shippingArrives')} ${formatDeliveryDate(option.deliveryDate)}`;
+      }
+      return '';
+    }
+
+    /** `2026-11-08` (o ISO completo) → `8 nov` / `Nov 8`. */
+    function formatDeliveryDate(value: string): string {
+      const day = String(value).slice(0, 10);
+      const date = new Date(`${day}T12:00:00`);
+      if (Number.isNaN(date.getTime())) return String(value);
+
+      const locale = (document.documentElement.lang || 'es').startsWith('en') ? 'en-US' : 'es-MX';
+      return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(date);
     }
 
     function optionHtml(option: QuoteOption): string {

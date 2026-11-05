@@ -24,6 +24,7 @@ vi.mock('../src/lib/supabase-server', async (importOriginal) => {
 });
 
 import { createLabel } from '../src/lib/fedex';
+import { shippingServiceLabel } from '../src/lib/orders';
 import { createSupabaseAdminClient } from '../src/lib/supabase-server';
 import { POST } from '../src/pages/api/admin/shipment';
 
@@ -171,5 +172,23 @@ describe('POST /api/admin/shipment — servicio de la guía', () => {
 
     expect(res.status).toBe(403);
     expect(createLabel).not.toHaveBeenCalled();
+  });
+});
+
+describe('shippingServiceLabel', () => {
+  it('nombra los servicios de FedEx que vende el checkout', () => {
+    expect(shippingServiceLabel('FIRST_OVERNIGHT')).toBe('FedEx First Overnight');
+    expect(shippingServiceLabel('FEDEX_EXPRESS_SAVER')).toBe('FedEx Express Saver');
+    expect(shippingServiceLabel('fedex_2_day')).toBe('FedEx 2Day');
+  });
+
+  it('distingue los pedidos sin cotización FedEx', () => {
+    expect(shippingServiceLabel('standard')).toBe('Envío estándar');
+    expect(shippingServiceLabel('free')).toBe('Envío gratis');
+    expect(shippingServiceLabel(null)).toBe('');
+  });
+
+  it('deja pasar un código desconocido en vez de ocultarlo', () => {
+    expect(shippingServiceLabel('OTRO_SERVICIO')).toBe('OTRO_SERVICIO');
   });
 });

@@ -165,7 +165,12 @@ const SHIPPING_SERVICE_LABEL: Record<string, string> = {
 export function shippingServiceLabel(code: string | null | undefined): string {
   const value = String(code ?? '').trim();
   if (!value) return '';
-  return SHIPPING_SERVICE_LABEL[value] ?? SHIPPING_SERVICE_LABEL[value.toLowerCase()] ?? value;
+  return (
+    SHIPPING_SERVICE_LABEL[value] ??
+    SHIPPING_SERVICE_LABEL[value.toUpperCase()] ??
+    SHIPPING_SERVICE_LABEL[value.toLowerCase()] ??
+    value
+  );
 }
 
 export function formatOrderMoney(n: number) {
