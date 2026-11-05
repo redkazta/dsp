@@ -11,7 +11,8 @@
  */
 import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
-import { createLabel, isFedexConfigured, labelBlockReason, type FedexPackage } from '../../../lib/fedex';
+import { createLabel, isFedexConfigured, labelBlockReason } from '../../../lib/fedex';
+import { DEFAULT_PACKAGE } from '../../../lib/shipping';
 import { sendShippingLabel } from '../../../lib/resend';
 
 export const prerender = false;
@@ -23,7 +24,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 /** Peso y medidas por defecto de una pieza (libras / pulgadas). */
-const DEFAULT_PACKAGE: FedexPackage = { weight: 1.2, length: 12, width: 10, height: 2 };
+const LABEL_PACKAGE = DEFAULT_PACKAGE;
 
 const LABEL_BUCKET = 'shipping-labels';
 
@@ -86,7 +87,7 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
       phone: String(order.contact_phone ?? ''),
       email: String(order.contact_email ?? ''),
     },
-    packages: [DEFAULT_PACKAGE],
+    packages: [LABEL_PACKAGE],
     productCode: productCode || 'FEDEX_GROUND',
   });
 

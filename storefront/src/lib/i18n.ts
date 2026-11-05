@@ -338,6 +338,16 @@ export const copy = {
       pieceOne: 'pieza',
       pieceMany: 'piezas',
       unavailableNow: 'que ya no están disponibles.',
+      shippingTitle: 'Método de envío',
+      shippingHint: 'Completa código postal y estado para ver las tarifas.',
+      shippingCalculating: 'Cotizando envíos…',
+      shippingEstimated: 'estimado',
+      shippingEstimateNote: 'Tarifas estimadas: se confirman al generar la guía.',
+      shippingUnavailable: 'No pudimos cotizar ahora. Aplicamos la tarifa estándar.',
+      shippingChangedTitle: 'El envío cambió de precio',
+      shippingChangedMessage: 'La nueva tarifa es',
+      shippingChangeAccept: 'Aceptar y pagar',
+      shippingDays: 'días',
     },
 
     // ---------------- Cuenta / acceso ----------------
@@ -1128,6 +1138,16 @@ export const copy = {
       pieceOne: 'item',
       pieceMany: 'items',
       unavailableNow: 'that are no longer available.',
+      shippingTitle: 'Shipping method',
+      shippingHint: 'Fill in the ZIP code and state to see rates.',
+      shippingCalculating: 'Getting shipping rates…',
+      shippingEstimated: 'estimated',
+      shippingEstimateNote: 'Rates are estimates and are confirmed when the label is created.',
+      shippingUnavailable: 'We could not get rates right now. Standard shipping applies.',
+      shippingChangedTitle: 'Shipping price changed',
+      shippingChangedMessage: 'The new rate is',
+      shippingChangeAccept: 'Accept and pay',
+      shippingDays: 'days',
     },
 
     // ---------------- Account / sign in ----------------

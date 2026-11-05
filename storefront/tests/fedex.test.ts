@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createLabel,
+  fedexConfig,
+  isFedexConfigured,
   labelBlockReason,
   quoteRates,
   type FedexPackage,
@@ -27,7 +29,7 @@ function mockFedex(handler: (url: string, init: RequestInit) => Response) {
 }
 
 const rateCalls = (mock: any) =>
-  mock.mock.calls.filter(([url]: [string]) => String(url).includes('/rate/v1/rates/quotes'));
+  mock.mock.calls.filter((call: any[]) => String(call[0]).includes('/rate/v1/rates/quotes'));
 
 describe('FedEx /rate/v1/rates/quotes', () => {
   const env = process.env;
@@ -133,7 +135,7 @@ describe('FedEx /rate/v1/rates/quotes', () => {
 
     expect(rateCalls(mock)).toHaveLength(1);
     expect(
-      mock.mock.calls.filter(([url]: [string]) => String(url).endsWith('/oauth/token')).length
+      mock.mock.calls.filter((call: any[]) => String(call[0]).endsWith('/oauth/token')).length
     ).toBeLessThanOrEqual(1);
   });
 
@@ -275,8 +277,8 @@ describe('FedEx /ship/v1/shipments — guía', () => {
       content: 'JVBERi0xLjQK',
     });
 
-    const [url, init] = mock.mock.calls.find(([u]: [string]) =>
-      String(u).includes('/ship/v1/shipments')
+    const [url, init] = mock.mock.calls.find((call: any[]) =>
+      String(call[0]).includes('/ship/v1/shipments')
     ) as [string, RequestInit];
     expect(url).toBe('https://fedex.test/ship/v1/shipments');
 
@@ -307,5 +309,82 @@ describe('FedEx /ship/v1/shipments — guía', () => {
     });
 
     expect(result).toEqual({ ok: false, reason: 'address_rejected' });
+  });
+});
+
+describe('FedEx origen (bodega)', () => {
+  const env = process.env;
+
+  afterEach(() => {
+    process.env = env;
+    vi.restoreAllMocks();
+  });
+
+  it('exige ciudad y estado cuando hay FEDEX_ORIGIN_ZIP', async () => {
+    process.env = {
+      ...env,
+      FEDEX_CLIENT_ID: 'client-id',
+      FEDEX_CLIENT_SECRET: 'client-secret',
+      FEDEX_ACCOUNT_NUMBER: '123456789',
+      FEDEX_ORIGIN_ZIP: '76104',
+    };
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(isFedexConfigured()).toBe(false);
+    expect(fedexConfig()).toBeNull();
+
+    const result = await quoteRates({
+      destinationZip: '10001',
+      destinationCity: 'New York',
+      packages: [pkg],
+    });
+
+    expect(result).toEqual({ ok: false, reason: 'not_configured' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('usa Fort Worth, TX como shipper', () => {
+    process.env = {
+      ...env,
+      FEDEX_CLIENT_ID: 'client-id',
+      FEDEX_CLIENT_SECRET: 'client-secret',
+      FEDEX_ACCOUNT_NUMBER: '123456789',
+      FEDEX_ORIGIN_ZIP: '76104',
+      FEDEX_ORIGIN_CITY: 'Fort Worth',
+      FEDEX_ORIGIN_STATE: 'TX',
+      FEDEX_ORIGIN_COUNTRY: 'US',
+    };
+
+    expect(fedexConfig()).toMatchObject({
+      originZip: '76104',
+      originCity: 'Fort Worth',
+      originState: 'TX',
+      originCountry: 'US',
+    });
+  });
+
+  it('rechaza un país distinto de US y un ZIP inválido', () => {
+    process.env = {
+      ...env,
+      FEDEX_CLIENT_ID: 'client-id',
+      FEDEX_CLIENT_SECRET: 'client-secret',
+      FEDEX_ACCOUNT_NUMBER: '123456789',
+      FEDEX_ORIGIN_ZIP: '76104',
+      FEDEX_ORIGIN_CITY: 'Fort Worth',
+      FEDEX_ORIGIN_STATE: 'TX',
+      FEDEX_ORIGIN_COUNTRY: 'MX',
+    };
+
+    expect(fedexConfig()).toBeNull();
+
+    process.env = {
+      ...process.env,
+      FEDEX_ORIGIN_COUNTRY: 'US',
+      FEDEX_ORIGIN_ZIP: '7610',
+    };
+
+    expect(fedexConfig()).toBeNull();
   });
 });

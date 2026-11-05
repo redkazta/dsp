@@ -10,7 +10,8 @@
  */
 import type { APIRoute } from 'astro';
 import { isUsPostalCode } from '../../../lib/us';
-import { isFedexConfigured, quoteRates, type FedexPackage } from '../../../lib/fedex';
+import { isFedexConfigured } from '../../../lib/fedex';
+import { quoteShipping } from '../../../lib/shipping';
 
 export const prerender = false;
 
@@ -20,8 +21,7 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 
-/** Peso y medidas por defecto de una pieza de ropa (libras / pulgadas). */
-const DEFAULT_PACKAGE: FedexPackage = { weight: 1.2, length: 12, width: 10, height: 2 };
+/** Peso y medidas por defecto viven en `lib/shipping.ts` (una sola fuente). */
 
 export const POST: APIRoute = async ({ request }) => {
   if (!isFedexConfigured()) {
@@ -48,19 +48,12 @@ export const POST: APIRoute = async ({ request }) => {
   );
 
   // Un paquete por pieza: simplifica el cálculo y evita sobrepeso por caja.
-  const packages: FedexPackage[] = Array.from({ length: quantity }, () => DEFAULT_PACKAGE);
-
-  const result = await quoteRates({
-    destinationZip: zip,
-    destinationCity: city,
-    destinationState: state || undefined,
-    packages,
-  });
+  const result = await quoteShipping({ zip, city, state, quantity });
 
   if (!result.ok) {
     // El checkout no se rompe: cae a la tarifa plana.
     return json({ configured: true, options: [], reason: result.reason });
   }
 
-  return json({ configured: true, options: result.data });
+  return json({ configured: true, options: result.options });
 };

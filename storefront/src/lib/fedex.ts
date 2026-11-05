@@ -17,6 +17,7 @@
  */
 
 import { serverEnv } from './env';
+import { isUsPostalCode, usStateCode } from './us';
 
 export interface FedexPackage {
   /** Libras. */
@@ -79,14 +80,51 @@ interface FedexConfig {
   originPhone: string;
 }
 
-/** Configuración efectiva. `null` cuando FedEx no está habilitado. */
+/** Aviso único: no se repite en cada request del servidor. */
+let originWarningShown = false;
+
+function warnOrigin(message: string) {
+  if (originWarningShown) return;
+  originWarningShown = true;
+  console.warn('[fedex]', message);
+}
+
+/**
+ * Configuración efectiva. `null` cuando FedEx no está habilitado.
+ *
+ * El origen es fijo (bodega). ZIP, ciudad y estado son **obligatorios**: sin
+ * ellos no se cotiza, para no mandar un shipper incoherente (ZIP de una
+ * ciudad con el nombre de otra). Países distintos de `US` no se aceptan.
+ */
 export function fedexConfig(): FedexConfig | null {
   const clientId = serverEnv('FEDEX_CLIENT_ID');
   const clientSecret = serverEnv('FEDEX_CLIENT_SECRET');
   const account = serverEnv('FEDEX_ACCOUNT_NUMBER');
-  const originZip = serverEnv('FEDEX_ORIGIN_ZIP');
+  const rawZip = serverEnv('FEDEX_ORIGIN_ZIP');
 
-  if (!clientId || !clientSecret || !account || !originZip) return null;
+  if (!clientId || !clientSecret || !account || !rawZip) return null;
+
+  const originZip = rawZip.trim();
+  const originCity = (serverEnv('FEDEX_ORIGIN_CITY') ?? '').trim();
+  const originState = usStateCode(serverEnv('FEDEX_ORIGIN_STATE') ?? '');
+  const originCountry = (serverEnv('FEDEX_ORIGIN_COUNTRY') ?? 'US').toUpperCase();
+
+  if (!isUsPostalCode(originZip)) {
+    warnOrigin('FEDEX_ORIGIN_ZIP debe ser un ZIP de EE. UU. (12345 o 12345-6789). No se cotiza con FedEx.');
+    return null;
+  }
+
+  if (originCountry !== 'US') {
+    warnOrigin('FEDEX_ORIGIN_COUNTRY debe ser US. No se cotiza con FedEx.');
+    return null;
+  }
+
+  if (!originCity || !originState) {
+    warnOrigin(
+      'FEDEX_ORIGIN_CITY y FEDEX_ORIGIN_STATE son obligatorias cuando FEDEX_ORIGIN_ZIP está definida. No se cotiza con FedEx.'
+    );
+    return null;
+  }
 
   return {
     clientId,
@@ -94,9 +132,9 @@ export function fedexConfig(): FedexConfig | null {
     account,
     baseUrl: serverEnv('FEDEX_BASE_URL')?.replace(/\/+$/, '') ?? 'https://apis-sandbox.fedex.com',
     originZip,
-    originCity: serverEnv('FEDEX_ORIGIN_CITY') ?? 'Los Angeles',
-    originState: serverEnv('FEDEX_ORIGIN_STATE') ?? 'CA',
-    originCountry: serverEnv('FEDEX_ORIGIN_COUNTRY') ?? 'US',
+    originCity,
+    originState,
+    originCountry,
     originAddress: serverEnv('FEDEX_ORIGIN_ADDRESS') ?? '',
     originCompany: serverEnv('FEDEX_ORIGIN_COMPANY') ?? 'Dinero Sobre Problemas',
     originPhone: serverEnv('FEDEX_ORIGIN_PHONE') ?? '',

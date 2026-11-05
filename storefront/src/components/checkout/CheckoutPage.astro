@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
 import { localize } from '../../lib/routes';
 import { isStripeConfigured } from '../../lib/stripe';
+import { isFedexConfigured } from '../../lib/fedex';
 import { SHIPPING_REGIONS } from '../../lib/us';
 import { getStoreSettings, shippingRulesFrom } from '../../lib/settings';
 
@@ -43,11 +44,24 @@ const ui = {
   free: t.cart.free,
   freeFrom: String(shippingRules.freeFrom),
   shipCost: String(shippingRules.cost),
+  fedex: fedexReady ? '1' : '0',
+  shippingTitle: t.checkout.shippingTitle,
+  shippingHint: t.checkout.shippingHint,
+  shippingCalculating: t.checkout.shippingCalculating,
+  shippingEstimated: t.checkout.shippingEstimated,
+  shippingEstimateNote: t.checkout.shippingEstimateNote,
+  shippingUnavailable: t.checkout.shippingUnavailable,
+  shippingChangedTitle: t.checkout.shippingChangedTitle,
+  shippingChangedMessage: t.checkout.shippingChangedMessage,
+  shippingChangeAccept: t.checkout.shippingChangeAccept,
+  shippingDays: t.checkout.shippingDays,
 };
 
 const { firstName, email, phone } = Astro.locals;
 
 const paymentAvailable = isStripeConfigured();
+// Con FedEx configurado el checkout cotiza envío real; si no, tarifa plana.
+const fedexReady = isFedexConfigured();
 const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 
@@ -249,6 +263,28 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 ></textarea>
               </div>
             </div>
+
+            <!-- Método de envío: tarifas FedEx para el ZIP/estado capturados -->
+            <div id="shipping-quote" class="mt-6 border-t-2 border-white/15 pt-5 hidden">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="field-label !mb-0">{t.checkout.shippingTitle}</p>
+                <span class="text-[10px] uppercase tracking-[0.16em] text-oro-brillo">
+                  {t.checkout.shippingEstimated}
+                </span>
+              </div>
+              <p id="shipping-quote-hint" class="text-[11px] text-white/70 leading-snug mb-3">
+                {t.checkout.shippingHint}
+              </p>
+              <div
+                id="shipping-options"
+                class="space-y-2"
+                role="radiogroup"
+                aria-label={t.checkout.shippingTitle}
+              ></div>
+              <p id="shipping-quote-note" class="hidden mt-3 text-[11px] text-white/60 leading-snug">
+                {t.checkout.shippingEstimateNote}
+              </p>
+            </div>
           </section>
 
           <!-- Sección de pago -->
@@ -298,6 +334,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
               <span class="text-white/80">{t.cart.shipping}</span>
               <span id="co-shipping" class="text-blancoRoto">—</span>
             </div>
+            <p id="co-shipping-note" class="hidden text-[11px] text-white/60 leading-snug text-right"></p>
           </div>
 
           <div class="flex justify-between items-center py-5">
@@ -445,6 +482,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     import { nudge, busy } from '../../lib/ux';
     import { shippingCostFor } from '../../lib/pricing';
     import { escapeHtml, friendlyError } from '../../lib/html';
+    import { askConfirm } from '../../lib/dialog';
 
     const ui = JSON.parse(document.getElementById('checkout-ui')?.textContent || '{}') as Record<string, string>;
     const uiText = (key: string) => ui[key] ?? '';
@@ -456,7 +494,196 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     const alertDiv = document.getElementById('checkout-alert') as HTMLElement;
     const paymentAvailable = payBtn?.getAttribute('data-available') !== 'false';
 
+    // ---------------- Envío (FedEx) ----------------
+
+    interface QuoteOption {
+      productCode: string;
+      productName: string;
+      amount: number;
+      currency: string;
+      deliveryDate: string | null;
+      estimatedDays: number | null;
+    }
+
+    const fedexReady = ui.fedex === '1';
+    const quoteBlock = document.getElementById('shipping-quote');
+    const quoteOptionsEl = document.getElementById('shipping-options');
+    const quoteHintEl = document.getElementById('shipping-quote-hint');
+    const quoteNoteEl = document.getElementById('shipping-quote-note');
+    const shippingNoteEl = document.getElementById('co-shipping-note');
+
+    let quoteOptions: QuoteOption[] = [];
+    let selectedQuote: QuoteOption | null = null;
+    let quoteLoading = false;
+    let quoteSeq = 0;
+    let quoteTimer: number | null = null;
+    // El cliente ya aceptó un cambio de precio en el servidor.
+    let acceptShippingChange = false;
+
     let cartReady = false;
+
+    function flatShipping(subtotal: number): number {
+      return shippingCostFor(subtotal, {
+        freeFrom: Number(ui.freeFrom) || 0,
+        cost: Number(ui.shipCost) || 0,
+      });
+    }
+
+    function cartSubtotal(): number {
+      return getCart().reduce((sum, i) => sum + i.price * i.qty, 0);
+    }
+
+    function destinationReady(): boolean {
+      return /^\d{5}(-\d{4})?$/.test(value('postalCode')) && !!value('state');
+    }
+
+    function quoteEta(option: QuoteOption): string {
+      if (option.estimatedDays) return `${option.estimatedDays} ${uiText('shippingDays')}`;
+      return option.deliveryDate ?? '';
+    }
+
+    function optionHtml(option: QuoteOption): string {
+      const selected = selectedQuote?.productCode === option.productCode;
+      const eta = quoteEta(option);
+      const classes =
+        'w-full text-left border-2 ' +
+        (selected ? 'border-oro-brillo bg-oro-brillo/10' : 'border-white/40 hover:border-white/80') +
+        ' px-4 py-3 transition-colors';
+      const priceClass =
+        'font-acentos text-base ' +
+        (selected ? 'text-oro-brillo' : 'text-blancoRoto') +
+        ' whitespace-nowrap';
+
+      return (
+        '<button type="button" role="radio" aria-checked="' +
+        selected +
+        '" data-quote="' +
+        escapeHtml(option.productCode) +
+        '" class="' +
+        classes +
+        '">' +
+        '<span class="flex items-center justify-between gap-3">' +
+        '<span class="text-sm text-blancoRoto">' +
+        escapeHtml(option.productName) +
+        '</span>' +
+        '<span class="' +
+        priceClass +
+        '">$' +
+        formatMXN(option.amount) +
+        '</span></span>' +
+        (eta
+          ? '<span class="mt-1 block text-[11px] text-white/60">' +
+            escapeHtml(eta) +
+            ' · ' +
+            escapeHtml(uiText('shippingEstimated')) +
+            '</span>'
+          : '') +
+        '</button>'
+      );
+    }
+
+    function renderShippingOptions() {
+      if (!quoteOptionsEl) return;
+
+      quoteOptionsEl.innerHTML =
+        quoteOptions.length === 0
+          ? '<p class="text-xs text-oro-brillo leading-snug">' +
+            escapeHtml(uiText('shippingUnavailable')) +
+            '</p>'
+          : quoteOptions.map(optionHtml).join('');
+
+      quoteOptionsEl.querySelectorAll<HTMLElement>('[data-quote]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.quote ?? '';
+          selectedQuote = quoteOptions.find((o) => o.productCode === code) ?? null;
+          acceptShippingChange = false;
+          renderShippingOptions();
+          renderSummary();
+        });
+      });
+    }
+
+    function showQuoteSkeleton() {
+      if (!quoteOptionsEl) return;
+      quoteOptionsEl.innerHTML =
+        '<div class="shimmer h-14 w-full" aria-hidden="true"></div>' +
+        '<div class="shimmer h-14 w-full mt-2" aria-hidden="true"></div>';
+    }
+
+    async function loadQuotes() {
+      if (!fedexReady || !quoteBlock) return;
+
+      const subtotal = cartSubtotal();
+
+      // Envío gratis (o carrito vacío): no hace falta cotizar.
+      if (subtotal <= 0 || flatShipping(subtotal) === 0) {
+        quoteBlock.classList.add('hidden');
+        quoteOptions = [];
+        selectedQuote = null;
+        quoteLoading = false;
+        renderSummary();
+        return;
+      }
+
+      if (!destinationReady()) {
+        quoteBlock.classList.remove('hidden');
+        quoteHintEl?.classList.remove('hidden');
+        quoteNoteEl?.classList.add('hidden');
+        if (quoteOptionsEl) quoteOptionsEl.innerHTML = '';
+        quoteOptions = [];
+        selectedQuote = null;
+        quoteLoading = false;
+        renderSummary();
+        return;
+      }
+
+      const seq = ++quoteSeq;
+      quoteLoading = true;
+      quoteBlock.classList.remove('hidden');
+      quoteHintEl?.classList.add('hidden');
+      quoteNoteEl?.classList.add('hidden');
+      showQuoteSkeleton();
+      renderSummary();
+
+      try {
+        const res = await fetch('/api/shipping/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            zip: value('postalCode'),
+            city: value('city'),
+            state: value('state'),
+            items: getCart().map((i) => ({ qty: i.qty })),
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        // Respuesta vieja: llegó después de otro cambio de ZIP/estado.
+        if (seq !== quoteSeq) return;
+
+        quoteOptions = Array.isArray(data?.options) ? (data.options as QuoteOption[]) : [];
+        selectedQuote = quoteOptions[0] ?? null;
+        acceptShippingChange = false;
+      } catch {
+        if (seq !== quoteSeq) return;
+        quoteOptions = [];
+        selectedQuote = null;
+      }
+
+      quoteLoading = false;
+      renderShippingOptions();
+      quoteNoteEl?.classList.toggle('hidden', quoteOptions.length === 0);
+      renderSummary();
+    }
+
+    function scheduleQuotes() {
+      if (quoteTimer) window.clearTimeout(quoteTimer);
+      quoteTimer = window.setTimeout(() => {
+        quoteTimer = null;
+        void loadQuotes();
+      }, 500);
+    }
 
     function getProfile() {
       return fetch('/api/profile')
@@ -577,15 +804,31 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         .join('');
 
       const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-      const shipping = shippingCostFor(subtotal, {
-        freeFrom: Number(ui.freeFrom) || 0,
-        cost: Number(ui.shipCost) || 0,
-      });
+      const flat = flatShipping(subtotal);
+      const shipping = selectedQuote ? selectedQuote.amount : flat;
+      const pending = quoteLoading && fedexReady && flat > 0;
+
+      const shippingEl = document.getElementById('co-shipping')!;
+      const totalEl = document.getElementById('co-total')!;
 
       document.getElementById('co-subtotal')!.textContent = `$${formatMXN(subtotal)}`;
-      document.getElementById('co-shipping')!.textContent =
-        shipping === 0 ? uiText('free') : `$${formatMXN(Number(ui.shipCost) || 0)}`;
-      document.getElementById('co-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
+
+      if (pending) {
+        shippingEl.textContent = '—';
+        totalEl.textContent = '—';
+      } else {
+        shippingEl.textContent = shipping === 0 ? uiText('free') : `$${formatMXN(shipping)}`;
+        totalEl.textContent = `$${formatMXN(subtotal + shipping)}`;
+      }
+
+      if (shippingNoteEl) {
+        if (selectedQuote && !pending) {
+          shippingNoteEl.textContent = `${selectedQuote.productName} · ${uiText('shippingEstimated')}`;
+          shippingNoteEl.classList.remove('hidden');
+        } else {
+          shippingNoteEl.classList.add('hidden');
+        }
+      }
     }
 
     function showError(message: string) {
@@ -648,6 +891,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         return;
       }
 
+      if (quoteLoading) {
+        showError(uiText('shippingCalculating'));
+        return;
+      }
+
       // `busy` pone spinner y bloquea el botón mientras se abre Stripe.
       restorePay = busy(payBtn, uiText('opening'));
       showRedirect();
@@ -672,12 +920,48 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
               notes: value('notes'),
             },
             coupon: sessionStorage.getItem('dsp_coupon') || undefined,
+            shipping: selectedQuote
+              ? { productCode: selectedQuote.productCode, amount: selectedQuote.amount }
+              : undefined,
+            acceptShippingChange,
           }),
         });
 
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
+          if (data?.code === 'SHIPPING_CHANGED' && data?.shipping) {
+            hideRedirect();
+            restoreButton();
+
+            const next = data.shipping as QuoteOption;
+            const confirmed = await askConfirm({
+              title: uiText('shippingChangedTitle'),
+              message:
+                `${uiText('shippingChangedMessage')} $${formatMXN(next.amount)} (${next.name ?? next.productName}).`,
+              confirmLabel: uiText('shippingChangeAccept'),
+            });
+
+            if (!confirmed) return;
+
+            selectedQuote = {
+              productCode: next.productCode,
+              productName: next.name ?? next.productName,
+              amount: next.amount,
+              currency: 'USD',
+              deliveryDate: null,
+              estimatedDays: null,
+            };
+            quoteOptions = quoteOptions.map((o) =>
+              o.productCode === next.productCode ? { ...o, amount: next.amount } : o
+            );
+            renderShippingOptions();
+            renderSummary();
+            acceptShippingChange = true;
+            form.requestSubmit();
+            return;
+          }
+
           if (data?.code === 'NO_SESSION') {
             sessionStorage.setItem('dsp_checkout_error', uiText('noSession'));
             window.location.href =
@@ -718,6 +1002,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       });
     });
 
+    // Volver a cotizar cuando cambia el destino (ZIP, estado o ciudad).
+    (['postalCode', 'state', 'city'] as const).forEach((name) => {
+      const el = form?.elements.namedItem(name) as HTMLElement | null;
+      el?.addEventListener('input', scheduleQuotes);
+      el?.addEventListener('change', scheduleQuotes);
+    });
+
     // Prellenar con los datos de la cuenta
     getProfile()
       .then((profile) => {
@@ -755,6 +1046,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       .catch(() => {
         cartReady = true;
         renderSummary();
+      })
+      .finally(() => {
+        void loadQuotes();
       });
 
     renderSummary();
@@ -762,7 +1056,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     // Otra pestaña cambió el carrito: el resumen se repinta antes de pagar
     // (nunca se cobra un carrito que ya no es el que se ve).
     startCartSync();
-    window.addEventListener('cart:updated', () => renderSummary());
+    window.addEventListener('cart:updated', () => {
+      renderSummary();
+      void loadQuotes();
+    });
 
     if (!paymentAvailable) {
       showError(uiText('unavailable'));

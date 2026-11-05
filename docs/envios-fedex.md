@@ -44,10 +44,10 @@ Todo en backend (`lib/fedex.ts`). Credenciales solo por entorno.
 | `FEDEX_CLIENT_SECRET` | sí | FedEx Developer Portal |
 | `FEDEX_ACCOUNT_NUMBER` | sí | contrato FedEx |
 | `FEDEX_BASE_URL` | no | sandbox por defecto |
-| `FEDEX_ORIGIN_ZIP` | sí | bodega |
-| `FEDEX_ORIGIN_CITY` | no | `Los Angeles` por defecto |
-| `FEDEX_ORIGIN_STATE` | no | `CA` por defecto |
-| `FEDEX_ORIGIN_COUNTRY` | no | `US` por defecto |
+| `FEDEX_ORIGIN_ZIP` | sí | bodega: `76104` |
+| `FEDEX_ORIGIN_CITY` | sí | bodega: `Fort Worth` |
+| `FEDEX_ORIGIN_STATE` | sí | bodega: `TX` |
+| `FEDEX_ORIGIN_COUNTRY` | no | `US` por defecto; otro valor desactiva FedEx |
 | `FEDEX_ORIGIN_ADDRESS` | no | aparece en la guía |
 | `FEDEX_ORIGIN_COMPANY` | no | `Dinero Sobre Problemas` por defecto |
 | `FEDEX_ORIGIN_PHONE` | no | recomendado para la guía |
@@ -55,6 +55,22 @@ Todo en backend (`lib/fedex.ts`). Credenciales solo por entorno.
 Sin `FEDEX_CLIENT_ID`, `FEDEX_CLIENT_SECRET`, `FEDEX_ACCOUNT_NUMBER` y
 `FEDEX_ORIGIN_ZIP` no se llama a FedEx: `isFedexConfigured()` → `false` y el
 checkout usa la tarifa plana de `store_settings`.
+
+**Coherencia del origen:** `FEDEX_ORIGIN_CITY` y `FEDEX_ORIGIN_STATE` son
+obligatorias en cuanto existe `FEDEX_ORIGIN_ZIP`. Si faltan, si el ZIP no tiene
+formato de EE. UU. o si el país no es `US`, `fedexConfig()` devuelve `null`,
+se registra un warning (`[fedex] … No se cotiza con FedEx.`) y el checkout cae a
+la tarifa plana. **Nunca se envía un shipper con el ZIP de una ciudad y el
+nombre de otra.**
+
+Origen real de la tienda (Fort Worth, TX):
+
+```
+FEDEX_ORIGIN_ZIP=76104
+FEDEX_ORIGIN_CITY=Fort Worth
+FEDEX_ORIGIN_STATE=TX
+FEDEX_ORIGIN_COUNTRY=US
+```
 
 ### Entornos
 
@@ -84,6 +100,44 @@ dura 60 min; se cachea en memoria **55 min** y se renueva antes de expirar
 `POST /api/shipping/quote` (`{ zip, city, state?, items }`) →
 `{ configured, options[] }`.
 
+### Selector de tarifas en el checkout
+
+1. El cliente captura ZIP + estado (y ciudad). El navegador espera 500 ms tras
+   el último cambio y llama a `/api/shipping/quote`; mientras espera pinta
+   skeletons `.shimmer` con la misma forma que las tarjetas finales.
+2. Se listan los servicios con **nombre, precio USD y tiempo estimado**
+   (marcado como "estimado"). La opción más barata queda seleccionada.
+3. Si no hay destino válido, envío gratis o FedEx no está configurado, se
+   aplica la tarifa plana de `store_settings` y no se muestra el selector.
+4. Si la cotización falla, se muestra el aviso de tarifa estándar; el checkout
+   nunca se bloquea.
+
+Al pagar, el navegador manda `shipping: { productCode, amount }`.
+`/api/checkout` **re-cotiza siempre en el servidor** con el destino capturado y
+la cantidad de piezas (un paquete por pieza, `lib/shipping.ts`).
+
+- El monto que se cobra es el de la cotización del servidor, nunca el del
+  navegador.
+- Si el importe cotizado difiere del que vio el cliente, la API responde `409
+  SHIPPING_CHANGED` con el nuevo importe; el checkout lo muestra en un diálogo
+  y, si el cliente acepta, reintenta con `acceptShippingChange: true`.
+- Si FedEx falla en la re-cotización, se cobra la tarifa plana.
+
+Se guarda en el pedido: `shipping_method` = `productCode` del servicio,
+`shipping_cost` = importe cotizado en USD, `carrier` = `FedEx` y la dirección /
+ZIP capturados (`shipping_street`, `shipping_city`, `shipping_state`,
+`shipping_postal_code`).
+
+### ZIPs de prueba (sandbox, origen 76104)
+
+| Destino | ZIP |
+|---|---|
+| New York, NY | `10001` |
+| Los Angeles, CA | `90001` |
+| Chicago, IL | `60601` |
+| Miami, FL | `33101` |
+| Seattle, WA | `98101` |
+
 ### Guías
 
 `POST /api/admin/shipment` (`{ orderId, productCode? }`):
@@ -112,7 +166,5 @@ parsean y se loguean; un `status >= 400` se convierte en `ok: false` con motivo
 
 ## 3. Pendiente
 
-- Selector de tarifa en el checkout: mostrar `options[]` y sumar la elegida
-  al total. El endpoint ya responde; falta la UI y la re-cotización en
-  `/api/checkout` para que el navegador no pueda alterar el monto.
-- Opcionales no implementados: tracking público (`/track/v1/trackingnumbers`).
+- Tracking público desde la tienda (`/track/v1/trackingnumbers`).
+- Probar el flujo completo en sandbox en cuanto estén las credenciales.

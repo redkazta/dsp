@@ -21,6 +21,13 @@ import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, isUsShippingRegion, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
 import { isDemoMode } from './demo';
+import { isFedexConfigured } from './fedex';
+import {
+  chooseShippingOption,
+  quoteShipping,
+  readShippingSelection,
+  type ResolvedShipping,
+} from './shipping';
 import type { ShippingRules } from './pricing';
 
 export interface CustomerPayload {
@@ -93,6 +100,15 @@ export interface CreatePendingOrderInput {
   couponCode?: string | null;
   /** Lo que reporta Stripe (incluye el envío). */
   paymentAmount?: number;
+  /**
+   * Envío ya re-cotizado en el servidor (FedEx). Si no viene, se aplican las
+   * reglas de `store_settings` (tarifa plana / gratis).
+   */
+  quotedShipping?: number | null;
+  /** Servicio de envío elegido (`FEDEX_GROUND`, …) para `shipping_method`. */
+  shippingService?: string | null;
+  /** Paquetería del servicio elegido (hoy solo `FedEx`). */
+  shippingCarrier?: string | null;
   /** Reglas de envío vigentes (panel → `store_settings`). */
   shippingRules?: ShippingRules;
   /** Idioma con el que se compró: viaja al pedido para que sus correos salgan en ese idioma. */
@@ -105,13 +121,22 @@ export async function createPendingOrder({
   customer,
   items,
   shippingCost,
+  quotedShipping,
+  shippingService,
+  shippingCarrier,
   discount = 0,
   couponCode = null,
   shippingRules,
   paymentAmount,
   lang = 'es',
 }: CreatePendingOrderInput) {
-  const { subtotal, shipping } = totalsFor(items, shippingRules);
+  const totals = totalsFor(items, shippingRules);
+  const { subtotal } = totals;
+  // El envío cotizado manda; sin cotización, la tarifa plana configurada.
+  const shipping =
+    typeof quotedShipping === 'number' && quotedShipping >= 0
+      ? round2(quotedShipping)
+      : totals.shipping;
   const total = round2(subtotal - discount + shipping);
 
   if (shippingCost !== shipping) {
@@ -127,7 +152,8 @@ export async function createPendingOrder({
     subtotal,
     shipping_cost: shipping,
     total_amount: total,
-    shipping_method: shipping === 0 ? 'free' : 'standard',
+    shipping_method: shippingService ?? (shipping === 0 ? 'free' : 'standard'),
+    carrier: shippingCarrier ?? null,
     contact_name: `${customer.firstName} ${customer.lastName}`.trim(),
     contact_email: customer.email,
     contact_phone: customer.phone,
@@ -423,11 +449,23 @@ export interface StartCheckoutInput {
   lang?: 'es' | 'en';
   /** Código de cupón tal cual lo escribió el cliente (se valida aquí). */
   couponCode?: unknown;
+  /** Opción de envío elegida en el checkout (`productCode` + `amount`). */
+  requestedShipping?: unknown;
+  /** El cliente ya aceptó el nuevo precio tras un `SHIPPING_CHANGED`. */
+  acceptShippingChange?: boolean;
 }
 
 export type StartCheckoutResult =
   | { ok: true; orderId: string; orderNumber: string | null; url: string }
-  | { ok: false; code: string; message: string; status: number; detail?: string };
+  | {
+      ok: false;
+      code: string;
+      message: string;
+      status: number;
+      detail?: string;
+      /** Solo en `SHIPPING_CHANGED`: precio confirmado por el servidor. */
+      shipping?: ResolvedShipping;
+    };
 
 /**
  * Valida el carrito, crea el pedido pendiente y devuelve la URL de Stripe.
@@ -444,6 +482,8 @@ export async function startStripeCheckout({
   defaultReturnPath = '/confirmacion',
   lang = 'es',
   couponCode,
+  requestedShipping,
+  acceptShippingChange = false,
 }: StartCheckoutInput): Promise<StartCheckoutResult> {
   if (!isStripeConfigured()) {
     return {
@@ -476,10 +516,52 @@ export async function startStripeCheckout({
   const settings = await getStoreSettings(db);
   const rules = shippingRulesFrom(settings);
 
-  const { subtotal, shipping } = totalsFor(items, rules);
+  const { subtotal, shipping: flatShipping } = totalsFor(items, rules);
   const safeReturn = returnPath && returnPath.startsWith('/') && !returnPath.startsWith('//')
     ? returnPath
     : defaultReturnPath;
+
+  // ---------------- Envío ----------------
+  // Con FedEx configurado se re-cotiza SIEMPRE en el servidor: el monto que
+  // llega del navegador nunca se cobra tal cual. Si la cotización falla, se usa
+  // la tarifa plana (el checkout no se rompe).
+  let shipping = flatShipping;
+  let resolvedShipping: ResolvedShipping | null = null;
+  const requested = readShippingSelection(requestedShipping);
+
+  if (isFedexConfigured() && flatShipping > 0) {
+    const quantity = items.reduce((n, i) => n + i.qty, 0);
+    const quote = await quoteShipping({
+      zip: customer.postalCode,
+      city: customer.city,
+      state: customer.state,
+      quantity,
+    });
+
+    if (quote.ok) {
+      const choice = chooseShippingOption(quote.options, requested, acceptShippingChange);
+
+      if (choice.status === 'changed' && choice.shipping) {
+        // El precio cambió desde que se pintó el selector: se devuelve el
+        // nuevo importe para que el cliente lo confirme antes de pagar.
+        return {
+          ok: false,
+          code: 'SHIPPING_CHANGED',
+          message:
+            lang === 'en'
+              ? 'The shipping price changed. Please confirm the new total.'
+              : 'El precio del envío cambió. Confirma el nuevo total.',
+          status: 409,
+          shipping: choice.shipping,
+        };
+      }
+
+      if (choice.shipping) {
+        resolvedShipping = choice.shipping;
+        shipping = choice.shipping.amount;
+      }
+    }
+  }
 
   // Cupón: si viene un código y no es válido, se corta la compra en vez de
   // cobrar de más. Si no viene, no se toca nada.
@@ -514,6 +596,9 @@ export async function startStripeCheckout({
     customer,
     items,
     shippingCost: shipping,
+    quotedShipping: shipping,
+    shippingService: resolvedShipping?.productCode ?? null,
+    shippingCarrier: resolvedShipping ? 'FedEx' : null,
     discount,
     couponCode: appliedCoupon,
     shippingRules: rules,
@@ -547,7 +632,7 @@ export async function startStripeCheckout({
       shipping,
       stripeCouponId: stripeCoupon?.id ?? null,
       lang,
-      shippingLabel: lang === 'en' ? 'Standard shipping' : 'Envío estándar',
+      shippingLabel: resolvedShipping?.name ?? (lang === 'en' ? 'Standard shipping' : 'Envío estándar'),
       clientReference: order.id,
       customerEmail: customer.email,
       successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return&session_id={CHECKOUT_SESSION_ID}`,

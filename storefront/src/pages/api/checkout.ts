@@ -115,10 +115,20 @@ export const POST: APIRoute = async ({
     defaultReturnPath: user ? '/confirmacion' : '/invitado/confirmacion',
     lang: locals.lang === 'en' ? 'en' : 'es',
     couponCode: payload?.coupon,
+    requestedShipping: payload?.shipping,
+    acceptShippingChange: payload?.acceptShippingChange === true,
   });
 
   if (!result.ok) {
-    return json({ error: result.message, code: result.code, detail: result.detail }, result.status);
+    return json(
+      {
+        error: result.message,
+        code: result.code,
+        detail: result.detail,
+        shipping: result.shipping,
+      },
+      result.status
+    );
   }
 
   // Recordatorio de carrito: se programa al abrir Stripe y se cancela solo
