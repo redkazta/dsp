@@ -141,37 +141,12 @@ ZIP capturados (`shipping_street`, `shipping_city`, `shipping_state`,
 | Miami, FL | `33101` |
 | Seattle, WA | `98101` |
 
-### Endpoint temporal de pruebas (sandbox)
+### Verificación en sandbox
 
-> **TEMPORAL:** eliminar `src/pages/api/admin/test-fedex-rates.ts` antes del
-> lanzamiento. Está marcado con `// TEMPORAL: eliminar antes de producción`.
-
-```
-GET /api/admin/test-fedex-rates
-```
-
-- **Auth:** solo staff autenticado. La sesión viaja en la cookie de Supabase
-  (`Cookie: sb-<proyecto>-auth-token=…`), igual que el resto de `/api/admin/*`.
-  Sin sesión responde `401`; con sesión que no es staff, `403`; si FedEx no
-  está configurado, `503`.
-- **Qué hace:** cotiza una pieza (`DEFAULT_PACKAGE` de `lib/shipping.ts`) desde
-  el origen `FEDEX_ORIGIN_*` hacia los cinco ZIPs de prueba.
-- **Respuesta:** por ZIP, `status` (`ok`/`error`), `services` (servicio,
-  precio USD y tiempo estimado), el más barato en `priceUsd`/`estimatedDays`,
-  `warnings`/`errors` de FedEx y la **respuesta cruda** en `raw`.
-- La respuesta cruda solo se devuelve en este HTTP al admin: **no se persiste,
-  no se cachea y no se loguea** (restricción de Rating Data).
-- Un fallo de FedEx en un ZIP no corta los demás: ese ZIP sale `status:
-  "error"` con `error` y `errors[]`, y el resto se cotiza igual.
-
-Ejemplo desde el navegador, con la sesión de admin abierta:
-
-```
-https://www.dinerosobreproblemas.com/api/admin/test-fedex-rates
-```
-
-Para producción, cambiar `FEDEX_BASE_URL=https://apis.fedex.com` y **borrar el
-endpoint** antes de publicar.
+El flujo se probó en sandbox desde Fort Worth, TX (`76104`) hacia los cinco
+ZIPs de prueba: OAuth, tarifas y las seis opciones domésticas respondieron en
+USD. Ya **no existe ningún endpoint temporal**: el checkout usa
+`/api/shipping/quote` y `/api/checkout`, y las guías `/api/admin/shipment`.
 
 ### Guías
 
@@ -199,8 +174,32 @@ FedEx responde `errors[]` y `warnings[]` incluso en respuestas 2xx. Ambos se
 parsean y se loguean; un `status >= 400` se convierte en `ok: false` con motivo
 (`upstream_error`, `address_rejected`, `no_rates`, `invalid_zip`).
 
+La respuesta cruda de FedEx no se expone al navegador ni se loguea: solo se
+traduce a opciones (`productCode`, nombre, importe USD y tiempo estimado).
+
+### Paso a producción (no ejecutar sin confirmación)
+
+Cuando el usuario lo autorice:
+
+1. En el **FedEx Developer Portal**, proyecto de producción, copiar el
+   **Production Key** y **Production Secret**. Las credenciales de sandbox no
+   funcionan en producción (ni al revés).
+2. En Vercel → Settings → Environment Variables, con scope **Production**:
+
+   ```
+   FEDEX_BASE_URL=https://apis.fedex.com
+   FEDEX_CLIENT_ID=<production key>
+   FEDEX_CLIENT_SECRET=<production secret>
+   FEDEX_ACCOUNT_NUMBER=<cuenta real>
+   ```
+
+   `FEDEX_ORIGIN_*` se mantienen: `76104` / `Fort Worth` / `TX` / `US`.
+3. **Redeploy.** Las variables no llegan a un deployment ya creado; el token en
+   caché (55 min) también se reinicia con la instancia nueva.
+4. Probar una cotización real desde el checkout y generar una guía de prueba.
+
 ## 3. Pendiente
 
 - Tracking público desde la tienda (`/track/v1/trackingnumbers`).
-- Probar el flujo completo en sandbox en cuanto estén las credenciales.
-- **Eliminar `/api/admin/test-fedex-rates` antes de producción.**
+- Cambio a `FEDEX_BASE_URL=https://apis.fedex.com` con credenciales de
+  producción, cuando el usuario lo confirme.

@@ -208,9 +208,8 @@ async function fedexRequest(
 }
 
 /**
- * POST autenticado que conserva el status y el cuerpo crudo aunque FedEx
- * responda con error. No loguea nada: lo usa el endpoint temporal de pruebas
- * para devolver la respuesta tal cual al admin.
+ * POST autenticado que devuelve el status y el cuerpo crudo tal como llegaron.
+ * `fedexRequest` se encarga de loguear y de lanzar cuando el status es de error.
  */
 async function fedexFetch(
   config: FedexConfig,
@@ -335,74 +334,6 @@ export async function quoteRates(input: FedexRateInput): Promise<FedexResult<Fed
 
   rateCache.set(key, { at: Date.now(), value });
   return value;
-}
-
-export interface FedexRawQuote {
-  ok: boolean;
-  /** `not_configured`, `invalid_zip`, `no_packages`, `upstream_error` o `no_rates`. */
-  reason: string | null;
-  /** HTTP status de FedEx (null si no se llegó a llamar). */
-  status: number | null;
-  options: FedexRateOption[];
-  /** Respuesta cruda de FedEx. Solo se devuelve al admin, nunca se persiste. */
-  raw: any;
-  /** Mensaje de error de FedEx, si lo hubo. */
-  error: string | null;
-}
-
-/**
- * Igual que `quoteRates`, pero sin caché y conservando la respuesta cruda.
- *
- * Uso exclusivo del endpoint temporal de diagnóstico: no persiste ni loguea la
- * respuesta (restricción de Rating Data).
- */
-export async function quoteRatesRaw(input: FedexRateInput): Promise<FedexRawQuote> {
-  const config = fedexConfig();
-  if (!config) {
-    return { ok: false, reason: 'not_configured', status: null, options: [], raw: null, error: null };
-  }
-
-  const zip = input.destinationZip.trim();
-  if (!/^\d{5}(-\d{4})?$/.test(zip)) {
-    return { ok: false, reason: 'invalid_zip', status: null, options: [], raw: null, error: null };
-  }
-
-  if (input.packages.length === 0) {
-    return { ok: false, reason: 'no_packages', status: null, options: [], raw: null, error: null };
-  }
-
-  try {
-    const { status, data } = await fedexFetch(
-      config,
-      '/rate/v1/rates/quotes',
-      rateBody(config, input, zip),
-      RATE_TIMEOUT_MS
-    );
-
-    const options = status < 400 ? normalizeRates(data) : [];
-    const ok = status < 400 && options.length > 0;
-
-    return {
-      ok,
-      reason: status >= 400 ? 'upstream_error' : options.length > 0 ? null : 'no_rates',
-      status,
-      options,
-      raw: data,
-      error:
-        status >= 400
-          ? (data?.errors?.[0]?.message ?? data?.error?.message ?? `FedEx ${status}`)
-          : null,
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      reason: 'upstream_error',
-      status: null,
-      options: [],
-      raw: null,
-      error: err?.message ?? 'fetch_failed',
-    };
-  }
 }
 
 function rateBody(config: FedexConfig, input: FedexRateInput, zip: string) {
