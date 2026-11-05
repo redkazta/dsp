@@ -2,12 +2,16 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { isDhlConfigured } from '../../lib/dhl';
+
+// Con DHL configurado aparece el botón para generar la guía tras verificar.
+const dhlReady = isDhlConfigured();
 ---
 
 <AdminLayout title="Pedidos">
   <div id="admin-loading" class="py-16 text-center text-sm text-white/70">Cargando pedidos…</div>
 
-  <div id="orders-view" class="hidden">
+  <div id="orders-view" class="hidden" data-dhl={dhlReady ? '1' : '0'}>
     <!-- Volver: solo cuando se entra a un pedido concreto (`?order=`) -->
     <a
       id="orders-back"
@@ -401,6 +405,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     import { TENANT_ID } from '../../lib/constants';
     import { safeUrl } from '../../lib/html';
     import { askConfirm, notify } from '../../lib/dialog';
+    import { US_REGIONS } from '../../lib/us';
     import {
       STATUS_FLOW,
       STATUS_LABEL,
@@ -431,6 +436,27 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     ];
 
     const CLOSED = ['cancelled', 'returned'];
+
+    /** DHL solo se ofrece si las credenciales están cargadas. */
+    const DHL_READY = document.getElementById('orders-view')?.dataset.dhl === '1';
+
+    /** Estado de verificación manual de la dirección. */
+    const VERIFICATION_LABEL: Record<string, string> = {
+      pending: 'Por verificar',
+      verified: 'Verificada',
+      corrected: 'Corregida',
+      invalid: 'Inválida',
+    };
+
+    const verificationLabel = (value: string | null | undefined) =>
+      VERIFICATION_LABEL[value ?? 'pending'] ?? 'Por verificar';
+
+    const verificationTone = (value: string | null | undefined) => {
+      if (value === 'verified') return 'text-emerald-300';
+      if (value === 'corrected') return 'text-oro-brillo';
+      if (value === 'invalid') return 'text-red-400';
+      return 'text-white/50';
+    };
 
     let orders: any[] = [];
     let filter = '';
@@ -543,6 +569,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       const next = NEXT_STATUS[status] ?? [];
       const canShip = status === 'ready';
       const closed = CLOSED.includes(status);
+      const addressOk =
+        o.address_verification_status === 'verified' || o.address_verification_status === 'corrected';
+      const canLabel = DHL_READY && !o.tracking_number && addressOk && !closed;
 
       const paymentLine = [
         PAYMENT_METHOD_LABEL[o.payment_method] ?? o.payment_method,
@@ -625,6 +654,55 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                   : ''
               }
             </p>
+
+            <p class="mt-2 text-[11px] uppercase tracking-[0.14em] ${verificationTone(
+              o.address_verification_status
+            )}">
+              Dirección ${verificationLabel(o.address_verification_status)}
+            </p>
+
+            <details class="mt-1.5">
+              <summary class="link-btn">Editar / verificar dirección</summary>
+              <div class="grid gap-1.5 mt-2">
+                <input data-addr-line1="${o.id}" class="event-input" placeholder="Calle y número"
+                  value="${esc(o.shipping_street ?? '')}" />
+                <input data-addr-line2="${o.id}" class="event-input" placeholder="Apto, suite o unidad"
+                  value="${esc(o.shipping_colonia ?? '')}" />
+                <div class="grid grid-cols-2 gap-1.5">
+                  <input data-addr-city="${o.id}" class="event-input" placeholder="Ciudad"
+                    value="${esc(o.shipping_city ?? '')}" />
+                  <input data-addr-zip="${o.id}" class="event-input" placeholder="ZIP" inputmode="numeric"
+                    value="${esc(o.shipping_postal_code ?? '')}" />
+                </div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <select data-addr-state="${o.id}" class="event-input">
+                    ${US_REGIONS.map(
+                      (r) =>
+                        `<option value="${r.code}"${r.code === (o.shipping_state ?? '') ? ' selected' : ''}>${r.code} — ${esc(
+                          r.name
+                        )}</option>`
+                    ).join('')}
+                  </select>
+                  <input data-addr-phone="${o.id}" class="event-input" placeholder="Teléfono"
+                    value="${esc(o.contact_phone ?? '')}" />
+                </div>
+                <select data-addr-status="${o.id}" class="event-input">
+                  ${Object.entries(VERIFICATION_LABEL)
+                    .map(
+                      ([value, label]) =>
+                        `<option value="${value}"${
+                          value === (o.address_verification_status ?? 'pending') ? ' selected' : ''
+                        }>${label}</option>`
+                    )
+                    .join('')}
+                </select>
+                <input data-addr-notes="${o.id}" class="event-input" placeholder="Nota de verificación (qué se corrigió)"
+                  value="${esc(o.address_verification_notes ?? '')}" />
+                <button type="button" data-save-address="${o.id}" class="action-btn">
+                  Guardar dirección
+                </button>
+              </div>
+            </details>
           </section>
 
           <section class="order-col">
@@ -642,7 +720,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
 
         ${
-          next.length > 0 || canShip || o.payment_status === 'approved'
+          next.length > 0 || canShip || canLabel || o.payment_status === 'approved'
             ? `<footer class="order-foot">
                  ${
                    canShip
@@ -671,6 +749,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                        ? `<button type="button" data-refund="${o.id}" class="action-btn action-btn--danger"
                             title="Marca el pedido como reembolsado en el panel (no mueve dinero en Stripe)">
                             Marcar reembolsado
+                          </button>`
+                       : ''
+                   }
+                   ${
+                     canLabel
+                       ? `<button type="button" data-label="${o.id}" class="action-btn">
+                            Generar guía DHL
                           </button>`
                        : ''
                    }
@@ -842,6 +927,105 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               tone: 'danger',
             });
             (btn as HTMLButtonElement).disabled = false;
+          }
+        })
+      );
+
+      document.querySelectorAll<HTMLElement>('[data-label]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const orderId = btn.dataset.label!;
+
+          const ok = await askConfirm({
+            title: 'Generar guía DHL',
+            message:
+              'Se generará la guía con la dirección verificada. Esto tiene costo real en DHL.',
+            confirmLabel: 'Generar',
+            tone: 'default',
+          });
+
+          if (!ok) return;
+
+          btn.textContent = 'Generando…';
+          (btn as HTMLButtonElement).disabled = true;
+
+          try {
+            const res = await fetch('/api/admin/shipment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ orderId }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+              const reasons: Record<string, string> = {
+                address_not_verified: 'Verifica la dirección antes de generar la guía.',
+                address_invalid: 'La dirección está marcada como inválida.',
+                dhl_not_configured: 'DHL no está configurado en este entorno.',
+                already_shipped: 'Este pedido ya tiene guía.',
+              };
+
+              throw new Error(reasons[data?.error] ?? 'No se pudo generar la guía.');
+            }
+
+            await notify(`Guía ${data.trackingNumber} generada.`, { title: 'Listo' });
+            await refresh();
+          } catch (err: any) {
+            await notify(err?.message ?? 'No se pudo generar la guía.', {
+              title: 'No se pudo generar',
+              tone: 'danger',
+            });
+            (btn as HTMLButtonElement).disabled = false;
+            btn.textContent = 'Generar guía DHL';
+          }
+        })
+      );
+
+      document.querySelectorAll<HTMLElement>('[data-save-address]').forEach((btn) =>
+        btn.addEventListener('click', async () => {
+          const orderId = btn.dataset.saveAddress!;
+          const field = (name: string) =>
+            (
+              document.querySelector<HTMLInputElement>(`[data-${name}="${orderId}"]`)
+            )?.value ?? '';
+
+          btn.textContent = 'Guardando…';
+          (btn as HTMLButtonElement).disabled = true;
+
+          try {
+            const res = await fetch('/api/admin/order-address', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId,
+                address: {
+                  line1: field('addr-line1'),
+                  line2: field('addr-line2'),
+                  city: field('addr-city'),
+                  state: field('addr-state'),
+                  zip: field('addr-zip'),
+                  phone: field('addr-phone'),
+                },
+                verificationStatus: field('addr-status'),
+                notes: field('addr-notes'),
+              }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data?.error ?? 'No se pudo guardar la dirección.');
+
+            await notify(
+              data?.changed > 0 ? 'Dirección corregida y registrada.' : 'Verificación guardada.',
+              { title: 'Listo' }
+            );
+            await refresh();
+          } catch (err: any) {
+            await notify(err?.message ?? 'No se pudo guardar la dirección.', {
+              title: 'No se pudo guardar',
+              tone: 'danger',
+            });
+            (btn as HTMLButtonElement).disabled = false;
+            btn.textContent = 'Guardar dirección';
           }
         })
       );

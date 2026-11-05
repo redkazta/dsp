@@ -23,6 +23,17 @@ interface ImportMetaEnv {
   readonly STRIPE_WEBHOOK_SECRET?: string;
   readonly STRIPE_WEBHOOK_SECRET_LIVE?: string;
   readonly STRIPE_WEBHOOK_SECRET_TEST?: string;
+
+  // DHL Express — MyDHL API (solo servidor). Sin estas variables el checkout
+  // usa la tarifa plana de `store_settings`.
+  readonly DHL_API_KEY?: string;
+  readonly DHL_API_SECRET?: string;
+  readonly DHL_ACCOUNT_NUMBER?: string;
+  readonly DHL_API_BASE_URL?: string;
+  readonly DHL_ORIGIN_ZIP?: string;
+  readonly DHL_ORIGIN_CITY?: string;
+  readonly DHL_ORIGIN_COUNTRY?: string;
+  readonly DHL_ORIGIN_COMPANY?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_LIVE?: string;
   readonly PUBLIC_STRIPE_PUBLISHABLE_KEY_TEST?: string;

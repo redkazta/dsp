@@ -18,7 +18,7 @@ import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './
 import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
-import { isUsState, usStateCode, isUsPostalCode } from './us';
+import { isUsState, isUsShippingRegion, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
 import { isDemoMode } from './demo';
 import type { ShippingRules } from './pricing';
@@ -60,9 +60,9 @@ export function readCustomer(payload: any): CustomerPayload | null {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(customer.email)) return null;
   if (!customer.street || !customer.city) return null;
 
-  // Envíos solo a EE. UU.: estado válido (se guarda como código de 2 letras)
-  // y ZIP de 5 dígitos o ZIP+4.
-  if (!isUsState(customer.state)) return null;
+  // Envíos solo a EE. UU.: la región debe estar habilitada en el catálogo
+  // (`lib/us.ts`) y el ZIP tener formato de 5 dígitos o ZIP+4.
+  if (!isUsShippingRegion(customer.state)) return null;
   customer.state = usStateCode(customer.state);
 
   if (!isUsPostalCode(customer.postalCode)) return null;

@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
 import { localize } from '../../lib/routes';
 import { isStripeConfigured } from '../../lib/stripe';
-import { US_STATES } from '../../lib/us';
+import { SHIPPING_REGIONS } from '../../lib/us';
 import { getStoreSettings, shippingRulesFrom } from '../../lib/settings';
 
 interface Props {
@@ -206,7 +206,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 <label class="field-label" for="state">{t.checkout.state} *</label>
                 <select id="state" name="state" required class="input-dark" autocomplete="address-level1">
                   <option value="">{t.checkout.statePlaceholder}</option>
-                  {US_STATES.map((s) => (
+                  {SHIPPING_REGIONS.map((s) => (
                     <option value={s.code}>{s.name}</option>
                   ))}
                 </select>
@@ -225,6 +225,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 <p id="country-note" class="text-[11px] text-white/50 leading-snug">
                   {t.checkout.countryNote}
                 </p>
+                <p class="text-[11px] text-white/50 leading-snug">{t.checkout.apoTip}</p>
               </div>
               <div class="space-y-2 sm:col-span-2">
                 <label class="field-label" for="references">{t.checkout.references} *</label>
