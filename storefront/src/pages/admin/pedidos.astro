@@ -2,16 +2,16 @@
 export const prerender = false;
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { isDhlConfigured } from '../../lib/dhl';
+import { isFedexConfigured } from '../../lib/fedex';
 
-// Con DHL configurado aparece el botón para generar la guía tras verificar.
-const dhlReady = isDhlConfigured();
+// Con FedEx configurado aparece el botón para generar la guía tras verificar.
+const fedexReady = isFedexConfigured();
 ---
 
 <AdminLayout title="Pedidos">
   <div id="admin-loading" class="py-16 text-center text-sm text-white/70">Cargando pedidos…</div>
 
-  <div id="orders-view" class="hidden" data-dhl={dhlReady ? '1' : '0'}>
+  <div id="orders-view" class="hidden" data-fedex={fedexReady ? '1' : '0'}>
     <!-- Volver: solo cuando se entra a un pedido concreto (`?order=`) -->
     <a
       id="orders-back"
@@ -437,8 +437,8 @@ const dhlReady = isDhlConfigured();
 
     const CLOSED = ['cancelled', 'returned'];
 
-    /** DHL solo se ofrece si las credenciales están cargadas. */
-    const DHL_READY = document.getElementById('orders-view')?.dataset.dhl === '1';
+    /** FedEx solo se ofrece si las credenciales están cargadas. */
+    const FEDEX_READY = document.getElementById('orders-view')?.dataset.fedex === '1';
 
     /** Estado de verificación manual de la dirección. */
     const VERIFICATION_LABEL: Record<string, string> = {
@@ -571,7 +571,7 @@ const dhlReady = isDhlConfigured();
       const closed = CLOSED.includes(status);
       const addressOk =
         o.address_verification_status === 'verified' || o.address_verification_status === 'corrected';
-      const canLabel = DHL_READY && !o.tracking_number && addressOk && !closed;
+      const canLabel = FEDEX_READY && !o.tracking_number && addressOk && !closed;
 
       const paymentLine = [
         PAYMENT_METHOD_LABEL[o.payment_method] ?? o.payment_method,
@@ -755,7 +755,7 @@ const dhlReady = isDhlConfigured();
                    ${
                      canLabel
                        ? `<button type="button" data-label="${o.id}" class="action-btn">
-                            Generar guía DHL
+                            Generar guía FedEx
                           </button>`
                        : ''
                    }
@@ -936,9 +936,9 @@ const dhlReady = isDhlConfigured();
           const orderId = btn.dataset.label!;
 
           const ok = await askConfirm({
-            title: 'Generar guía DHL',
+            title: 'Generar guía FedEx',
             message:
-              'Se generará la guía con la dirección verificada. Esto tiene costo real en DHL.',
+              'Se generará la guía con la dirección verificada. Esto tiene costo real en FedEx.',
             confirmLabel: 'Generar',
             tone: 'default',
           });
@@ -961,7 +961,7 @@ const dhlReady = isDhlConfigured();
               const reasons: Record<string, string> = {
                 address_not_verified: 'Verifica la dirección antes de generar la guía.',
                 address_invalid: 'La dirección está marcada como inválida.',
-                dhl_not_configured: 'DHL no está configurado en este entorno.',
+                fedex_not_configured: 'FedEx no está configurado en este entorno.',
                 already_shipped: 'Este pedido ya tiene guía.',
               };
 
@@ -976,7 +976,7 @@ const dhlReady = isDhlConfigured();
               tone: 'danger',
             });
             (btn as HTMLButtonElement).disabled = false;
-            btn.textContent = 'Generar guía DHL';
+            btn.textContent = 'Generar guía FedEx';
           }
         })
       );

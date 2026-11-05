@@ -136,7 +136,6 @@ export function trackingUrl(carrier: string | null | undefined, trackingNumber: 
   const n = encodeURIComponent(trackingNumber);
   const c = (carrier ?? '').toLowerCase();
 
-  if (c.includes('dhl')) return `https://www.dhl.com/mx-es/home/tracking.html?tracking-id=${n}`;
   if (c.includes('fedex')) return `https://www.fedex.com/fedextrack/?trknbr=${n}`;
   if (c.includes('estafeta')) return `https://www.estafeta.com/Herramientas/Rastreo?wayBill=${n}`;
   if (c.includes('ups')) return `https://www.ups.com/track?tracknum=${n}`;

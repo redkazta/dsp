@@ -369,13 +369,13 @@ export async function sendOrderStatusEmail({
 /**
  * Guía de envío al cliente, con el PDF adjunto.
  *
- * `pdfBase64` es el documento tal como lo entrega DHL (sin prefijo `data:`).
+ * `pdfBase64` es el documento tal como lo entrega FedEx (sin prefijo `data:`).
  */
 export async function sendShippingLabel({
   to,
   orderNumber,
   trackingNumber,
-  carrier = 'DHL',
+  carrier = 'FedEx',
   pdfBase64,
   imageFormat = 'PDF',
   lang = 'es',

@@ -1,9 +1,9 @@
 /**
- * POST /api/admin/shipment — genera la guía DHL de un pedido.
+ * POST /api/admin/shipment — genera la guía FedEx de un pedido.
  *
  * Solo staff, y solo si la dirección ya fue verificada a mano. Reglas:
  *   · `pending` o `invalid` → 409 (no se gasta guía).
- *   · DHL rechaza la dirección → el pedido pasa a `invalid` y se avisa.
+ *   · FedEx rechaza la dirección → el pedido pasa a `invalid` y se avisa.
  *   · La guía se guarda en Storage y se envía al cliente por correo.
  *
  *   POST { orderId, productCode? }
@@ -11,7 +11,7 @@
  */
 import type { APIRoute } from 'astro';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
-import { createLabel, isDhlConfigured, labelBlockReason, type DhlPackage } from '../../../lib/dhl';
+import { createLabel, isFedexConfigured, labelBlockReason, type FedexPackage } from '../../../lib/fedex';
 import { sendShippingLabel } from '../../../lib/resend';
 
 export const prerender = false;
@@ -23,7 +23,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 /** Peso y medidas por defecto de una pieza (libras / pulgadas). */
-const DEFAULT_PACKAGE: DhlPackage = { weight: 1.2, length: 12, width: 10, height: 2 };
+const DEFAULT_PACKAGE: FedexPackage = { weight: 1.2, length: 12, width: 10, height: 2 };
 
 const LABEL_BUCKET = 'shipping-labels';
 
@@ -39,7 +39,7 @@ function decodeBase64(value: string): Uint8Array {
 
 export const POST: APIRoute = async ({ locals, request }: any) => {
   if (!locals?.isStaff) return json({ error: 'forbidden' }, 403);
-  if (!isDhlConfigured()) return json({ error: 'dhl_not_configured' }, 503);
+  if (!isFedexConfigured()) return json({ error: 'fedex_not_configured' }, 503);
 
   let payload: any;
   try {
@@ -87,17 +87,17 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
       email: String(order.contact_email ?? ''),
     },
     packages: [DEFAULT_PACKAGE],
-    productCode: productCode || 'P',
+    productCode: productCode || 'FEDEX_GROUND',
   });
 
   if (!result.ok) {
-    // Dirección rechazada por DHL: se marca para que el operador la corrija.
+    // Dirección rechazada por FedEx: se marca para que el operador la corrija.
     if (result.reason === 'address_rejected') {
       await db
         .from('orders')
         .update({
           address_verification_status: 'invalid',
-          address_verification_notes: 'DHL rechazó la dirección al generar la guía.',
+          address_verification_notes: 'FedEx rechazó la dirección al generar la guía.',
           updated_at: new Date().toISOString(),
         })
         .eq('id', orderId);
@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ locals, request }: any) => {
   const { error: updateError } = await db
     .from('orders')
     .update({
-      carrier: 'DHL',
+      carrier: 'FedEx',
       tracking_number: trackingNumber,
       ...(labelUrl ? { shipping_label_url: labelUrl } : {}),
       updated_at: new Date().toISOString(),

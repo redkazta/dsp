@@ -77,7 +77,7 @@ export const US_REGIONS: UsRegion[] = [
   { code: 'WI', name: 'Wisconsin', type: 'state', enabledForShipping: true },
   { code: 'WY', name: 'Wyoming', type: 'state', enabledForShipping: true },
 
-  // Territorios. DHL entrega en PR, GU y VI; AS y MP quedan apagados por
+  // Territorios. FedEx entrega en PR, GU y VI; AS y MP quedan apagados por
   // logística. Se activan cambiando el flag (no hay que tocar código).
   { code: 'PR', name: 'Puerto Rico', type: 'territory', enabledForShipping: true },
   { code: 'GU', name: 'Guam', type: 'territory', enabledForShipping: true },

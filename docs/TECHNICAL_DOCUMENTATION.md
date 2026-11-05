@@ -241,7 +241,7 @@ services.AddAuthorization(options =>
 - Subdominios por tienda
 
 ### Fase 8: Integraciones Avanzadas (4-6 semanas)
-- Paqueterías (FedEx, DHL, Estafeta)
+- Paqueterías (FedEx, Estafeta)
 - Facturación electrónica
 - CRM básico
 
