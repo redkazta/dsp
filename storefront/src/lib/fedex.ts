@@ -361,6 +361,9 @@ function rateBody(config: FedexConfig, input: FedexRateInput, zip: string) {
       packagingType: 'YOUR_PACKAGING',
       packageCount: input.packages.length,
       rateRequestType: ['ACCOUNT', 'LIST'],
+      // Sin esto FedEx no devuelve compromiso/tránsito y el selector se queda
+      // sin tiempo estimado (solo nombre y precio).
+      returnTransitAndCommit: true,
       preferredCurrency: 'USD',
       shipDateStamp: shipDate(),
       isDocumentOnly: false,

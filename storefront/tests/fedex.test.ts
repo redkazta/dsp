@@ -106,6 +106,7 @@ describe('FedEx /rate/v1/rates/quotes', () => {
     const body = JSON.parse(String(init.body));
     expect(body.accountNumber).toEqual({ value: '123456789' });
     expect(body.requestedShipment.preferredCurrency).toBe('USD');
+    expect(body.requestedShipment.returnTransitAndCommit).toBe(true);
     expect(body.requestedShipment.packageCount).toBe(1);
     expect(body.requestedShipment.recipient.address.postalCode).toBe('10001');
     expect(body.requestedShipment.shipper.address.countryCode).toBe('US');
@@ -150,6 +151,41 @@ describe('FedEx /rate/v1/rates/quotes', () => {
     expect(first).toEqual({ ok: false, reason: 'upstream_error' });
     expect(second.ok).toBe(false);
     expect(rateCalls(mock)).toHaveLength(2);
+  });
+
+  it('lee tránsito desde commitDetails cuando falta operationalDetail', async () => {
+    mockFedex(() =>
+      jsonResponse({
+        output: {
+          rateReplyDetails: [
+            {
+              serviceType: 'FEDEX_2_DAY',
+              serviceName: 'FedEx 2Day',
+              commitDetails: { commitDate: '2026-11-08', transitDays: '2' },
+              ratedShipmentDetails: [
+                { rateType: 'ACCOUNT', currency: 'USD', totalNetCharge: 24 },
+              ],
+            },
+          ],
+        },
+      })
+    );
+
+    const result = await quoteRates({
+      destinationZip: '98101',
+      destinationCity: 'Seattle',
+      destinationState: 'WA',
+      packages: [pkg],
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data[0]).toMatchObject({
+      productCode: 'FEDEX_2_DAY',
+      estimatedDays: 2,
+      deliveryDate: '2026-11-08',
+    });
   });
 
   it('descarta tarifas que no estén en USD', async () => {

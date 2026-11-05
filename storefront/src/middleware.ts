@@ -53,9 +53,20 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
 
   const supabase = createSupabaseServerClient(context.request, context.cookies);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Un fallo de Supabase al validar la sesión no debe tumbar la página con un
+  // 500: se trata como visitante. Las rutas privadas ya redirigen a /entrar
+  // cuando no hay usuario, y las públicas se renderizan sin sesión.
+  let user: any = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.warn('[middleware] sesión no válida:', error.message);
+    }
+    user = data?.user ?? null;
+  } catch (err: any) {
+    console.error('[middleware] auth no disponible:', err?.message ?? 'error');
+    user = null;
+  }
 
   let firstName: string | null = null;
   let fullName: string | null = null;
