@@ -291,6 +291,63 @@ export async function createCheckoutSession(input: CheckoutSessionInput) {
   return stripeRequest<CheckoutSession>('POST', '/checkout/sessions', body);
 }
 
+// ---------------------------------------------------------- PaymentIntent
+
+/**
+ * PaymentElement (pago embebido en el checkout).
+ *
+ * El importe sale SIEMPRE del total recalculado en el servidor. El navegador
+ * solo recibe el `client_secret`, nunca la llave secreta ni el monto editable.
+ */
+export interface PaymentIntentInput {
+  orderId: string;
+  orderNumber: string | null;
+  currency: string;
+  /** Total final en la moneda de la tienda (unidades, no centavos). */
+  amount: number;
+  lang?: 'es' | 'en';
+  customerEmail?: string | null;
+  description?: string;
+}
+
+export interface PaymentIntentResult {
+  id: string;
+  client_secret: string;
+  status: string;
+  amount: number;
+  amount_received?: number;
+  metadata?: Record<string, string> | null;
+}
+
+export async function createPaymentIntent(input: PaymentIntentInput) {
+  const currency = input.currency.toLowerCase();
+  assertStripeMinimum(input.amount, currency);
+
+  const body: Record<string, unknown> = {
+    amount: toMinor(input.amount),
+    currency,
+    automatic_payment_methods: { enabled: true },
+    metadata: {
+      order_id: input.orderId,
+      order_number: input.orderNumber ?? '',
+      lang: input.lang ?? 'es',
+    },
+    description: (input.description ?? `Pedido ${input.orderNumber ?? input.orderId}`).slice(0, 250),
+  };
+
+  if (input.customerEmail) body.receipt_email = input.customerEmail;
+
+  return stripeRequest<PaymentIntentResult>('POST', '/payment_intents', body);
+}
+
+/** Estado del pago al volver del checkout embebido (3DS incluido). */
+export async function retrievePaymentIntent(paymentIntentId: string) {
+  return stripeRequest<PaymentIntentResult>(
+    'GET',
+    `/payment_intents/${encodeURIComponent(paymentIntentId)}`
+  );
+}
+
 // ---------------------------------------------------------------- Cupones
 
 /**

@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { createSupabaseServerClient, createSupabaseAdminClient } from '../../lib/supabase-server';
-import { confirmSessionOnReturn } from '../../lib/checkout';
-import { retrieveCheckoutSession } from '../../lib/stripe';
+import { confirmSessionOnReturn, confirmPaymentIntentOnReturn } from '../../lib/checkout';
+import { retrieveCheckoutSession, retrievePaymentIntent } from '../../lib/stripe';
 import { getCustomerOrder, getOrderByIdOrNumber } from '../../lib/customer-orders';
 import {
   STATUS_FLOW,
@@ -28,6 +28,7 @@ const { status: STATUS_LABEL, hint: STATUS_HINT } = orderLabels(lang);
 const user = Astro.locals.user;
 const orderParam = (Astro.url.searchParams.get('order') ?? '').trim();
 const sessionId = (Astro.url.searchParams.get('session_id') ?? '').trim();
+const paymentIntentId = (Astro.url.searchParams.get('payment_intent') ?? '').trim();
 const returning = Astro.url.searchParams.get('stripe') === 'return';
 const db = createSupabaseAdminClient();
 
@@ -54,28 +55,49 @@ if (orderParam && user) {
  * Se comprueba que esa sesión apunte a este pedido; si ya está pagada, se
  * aplica en el acto (el webhook puede tardar unos segundos).
  */
-if (!order && orderParam && sessionId && db) {
+if (!order && orderParam && (sessionId || paymentIntentId) && db) {
   try {
     const candidate = await getOrderByIdOrNumber(db, orderParam);
 
     if (candidate) {
-      const session = await retrieveCheckoutSession(sessionId).catch(() => null);
-      const ref = session?.metadata?.order_id ?? session?.client_reference_id ?? null;
+      if (sessionId) {
+        const session = await retrieveCheckoutSession(sessionId).catch(() => null);
+        const ref = session?.metadata?.order_id ?? session?.client_reference_id ?? null;
 
-      if (ref === candidate.id) {
-        if (session?.payment_status === 'paid') {
-          await confirmSessionOnReturn({ db, sessionId });
+        if (ref === candidate.id) {
+          if (session?.payment_status === 'paid') {
+            await confirmSessionOnReturn({ db, sessionId });
+          }
+
+          Astro.cookies.set(GUEST_COOKIE, candidate.id, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: Astro.url.protocol === 'https:',
+            maxAge: 60 * 60 * 24 * 30,
+          });
+
+          order = (await getOrderByIdOrNumber(db, orderParam)) ?? candidate;
         }
+      } else {
+        // Pago embebido: el PaymentIntent es el permiso del invitado.
+        const intent = await retrievePaymentIntent(paymentIntentId).catch(() => null);
 
-        Astro.cookies.set(GUEST_COOKIE, candidate.id, {
-          path: '/',
-          httpOnly: true,
-          sameSite: 'lax',
-          secure: Astro.url.protocol === 'https:',
-          maxAge: 60 * 60 * 24 * 30,
-        });
+        if (intent?.metadata?.order_id === candidate.id) {
+          if (intent.status === 'succeeded') {
+            await confirmPaymentIntentOnReturn({ db, paymentIntentId });
+          }
 
-        order = (await getOrderByIdOrNumber(db, orderParam)) ?? candidate;
+          Astro.cookies.set(GUEST_COOKIE, candidate.id, {
+            path: '/',
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: Astro.url.protocol === 'https:',
+            maxAge: 60 * 60 * 24 * 30,
+          });
+
+          order = (await getOrderByIdOrNumber(db, orderParam)) ?? candidate;
+        }
       }
     }
   } catch (err: any) {
@@ -98,6 +120,8 @@ if (db && order && order.payment_status !== 'approved') {
   try {
     if (returningSession) {
       await confirmSessionOnReturn({ db, sessionId });
+    } else if (paymentIntentId) {
+      await confirmPaymentIntentOnReturn({ db, paymentIntentId });
     }
 
     const { data: fresh } = await db
@@ -427,15 +451,24 @@ import { localize } from '../../lib/routes';
   <script>
     import { clearCart } from '../../lib/cart';
 
-    // La vuelta de Stripe trae `?stripe=return&session_id=cs_test_…`. El
-    // servidor ya autorizó el pedido, así que el enlace se puede compartir
-    // limpio: se conserva solo el folio.
+    // La vuelta de Stripe trae `?stripe=return&session_id=…` o
+    // `?payment_intent=pi_…`. El servidor ya autorizó el pedido, así que el
+    // enlace se puede compartir limpio: se conserva solo el folio.
     const clean = new URL(window.location.href);
-    if (clean.searchParams.has('session_id') || clean.searchParams.has('stripe')) {
-      clean.searchParams.delete('session_id');
-      clean.searchParams.delete('stripe');
-      history.replaceState(null, '', clean.pathname + clean.search);
+    let dirty = false;
+    for (const key of [
+      'session_id',
+      'stripe',
+      'payment_intent',
+      'payment_intent_client_secret',
+      'redirect_status',
+    ]) {
+      if (clean.searchParams.has(key)) {
+        clean.searchParams.delete(key);
+        dirty = true;
+      }
     }
+    if (dirty) history.replaceState(null, '', clean.pathname + clean.search);
 
     // Pedido pagado: el carrito ya cumplió su función. Se vacía al ver la
     // confirmación, venga de Stripe o de un enlace reabierto después.

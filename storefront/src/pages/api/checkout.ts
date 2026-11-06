@@ -8,7 +8,8 @@
  * El servidor decide:
  *   - quién es el comprador (sesión de Supabase, no el cliente)
  *   - cuánto cuesta cada pieza (`priceItems`, precios de la base de datos)
- *   - crea el pedido en `pending` y devuelve la URL de Stripe Checkout
+ *   - crea el pedido en `pending` y devuelve el `clientSecret` del PaymentIntent
+ *     para montar el Payment Element en la misma página
  *
  * Compra como invitado: sin sesión también se puede pagar. En ese caso la
  * orden se guarda con `user_id = null` y se escribe con el cliente admin
@@ -167,6 +168,7 @@ export const POST: APIRoute = async ({
   return json({
     id: result.orderId,
     orderNumber: result.orderNumber,
-    url: result.url,
+    clientSecret: result.clientSecret,
+    returnPath: result.returnPath,
   });
 };

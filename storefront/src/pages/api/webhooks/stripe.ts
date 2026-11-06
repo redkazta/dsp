@@ -9,6 +9,7 @@
  *   - checkout.session.async_payment_succeeded   → pago asíncrono aprobado
  *   - checkout.session.async_payment_failed      → pago asíncrono rechazado
  *   - checkout.session.expired                   → abandonó el pago
+ *   - payment_intent.succeeded                   → pago embebido aprobado
  *   - payment_intent.payment_failed              → tarjeta rechazada
  *   - charge.refunded                            → reembolso hecho desde Stripe
  *
@@ -217,6 +218,35 @@ async function processEvent(db: SupabaseClient, event: StripeEvent): Promise<str
     case 'checkout.session.expired': {
       if (!orderId) return null;
       await applyFailedStatus({ db, orderId, paymentIntentId: paymentIntent });
+      return orderId;
+    }
+
+    case 'payment_intent.succeeded': {
+      if (!orderId) {
+        console.warn('[webhook] payment_intent sin order_id:', event.id);
+        return null;
+      }
+
+      const amount =
+        typeof object.amount_received === 'number'
+          ? object.amount_received / 100
+          : typeof object.amount === 'number'
+            ? object.amount / 100
+            : 0;
+
+      const wasPaid = await isOrderPaid(db, orderId);
+
+      await applyPaidStatus({
+        db,
+        orderId,
+        paymentIntentId: object.id ?? null,
+        amount,
+      });
+
+      if (!wasPaid) {
+        await sendConfirmation(db, orderId, object?.metadata?.lang === 'en' ? 'en' : 'es');
+      }
+
       return orderId;
     }
 

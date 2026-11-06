@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCopy, type Lang } from '../../lib/i18n';
 import { localize } from '../../lib/routes';
-import { isStripeConfigured } from '../../lib/stripe';
+import { isStripeConfigured, stripePublishableKey } from '../../lib/stripe';
 import { isFedexConfigured } from '../../lib/fedex';
 import { SHIPPING_REGIONS } from '../../lib/us';
 import { getStoreSettings, shippingRulesFrom } from '../../lib/settings';
@@ -35,6 +35,7 @@ const ui = {
   zipLooking: t.checkout.zipLooking,
   zipAutocompleteFilled: t.checkout.zipAutocompleteFilled,
   zipStateUnavailable: t.checkout.zipStateUnavailable,
+  zipNotFound: t.checkout.zipNotFound,
   fixErrors: t.checkout.fixErrors,
   emptyCartError: t.checkout.emptyCartError,
   waitCart: t.checkout.waitCart,
@@ -65,6 +66,14 @@ const ui = {
   shippingDays: t.checkout.shippingDays,
   shippingDay: t.checkout.shippingDay,
   shippingArrives: t.checkout.shippingArrives,
+  continueBtn: t.checkout.continueBtn,
+  backBtn: t.checkout.backBtn,
+  stepProgress: t.checkout.stepProgress,
+  stepOf: t.checkout.stepOf,
+  preparingPayment: t.checkout.preparingPayment,
+  paymentInitFailed: t.checkout.paymentInitFailed,
+  paymentFailed: t.checkout.paymentFailed,
+  stripeKey: paymentAvailable ? stripePublishableKey() : '',
 };
 
 const { firstName, email, phone } = Astro.locals;
@@ -112,12 +121,43 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   </div>
 
   <div id="checkout-content" class="page-container py-8 sm:py-12 lg:py-16">
+    <!-- Indicador de pasos: siempre visible para saber dónde va la compra. -->
+    <nav id="checkout-steps" class="mb-8" aria-label={t.checkout.title}>
+      <ol class="grid grid-cols-3 gap-2 sm:gap-4">
+        <li>
+          <button
+            type="button"
+            class="step-tab"
+            data-step-tab="1"
+            aria-current="step"
+            aria-controls="step-1"
+          >
+            <span class="step-num">1</span>
+            <span class="step-name">{t.checkout.step1}</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="step-tab" data-step-tab="2" aria-controls="step-2">
+            <span class="step-num">2</span>
+            <span class="step-name">{t.checkout.step2}</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="step-tab" data-step-tab="3" aria-controls="step-3">
+            <span class="step-num">3</span>
+            <span class="step-name">{t.checkout.step3}</span>
+          </button>
+        </li>
+      </ol>
+      <p id="step-progress" class="sr-only" role="status" aria-live="polite"></p>
+    </nav>
+
     <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Formulario principal -->
       <div class="lg:col-span-2 order-2 lg:order-1">
         <form id="checkout-form" class="space-y-8" novalidate>
-          <!-- Sección de contacto -->
-          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+          <!-- Paso 1: contacto -->
+          <section id="step-1" data-step="1" class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">1</span>
               {t.checkout.step1}
@@ -158,10 +198,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
             </div>
+            <div class="mt-6 flex justify-end">
+              <button type="button" class="btn-gold" data-next="2">{t.checkout.continueBtn}</button>
+            </div>
           </section>
 
-          <!-- Sección de envío -->
-          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+          <!-- Paso 2: envío -->
+          <section id="step-2" data-step="2" class="hidden bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">2</span>
               {t.checkout.step2}
@@ -304,27 +347,68 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 {t.checkout.shippingEstimateNote}
               </p>
             </div>
+
+            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+              <button type="button" class="btn-outline w-full sm:w-auto" data-back="1">{t.checkout.backBtn}</button>
+              <button type="button" class="btn-gold w-full sm:w-auto" data-next="3">{t.checkout.continueBtn}</button>
+            </div>
           </section>
 
-          <!-- Sección de pago -->
-          <section class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
+          <!-- Paso 3: pago embebido -->
+          <section id="step-3" data-step="3" class="hidden bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
             <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">3</span>
               {t.checkout.step3}
             </h2>
 
-            <div class="border-2 border-oro-brillo/60 bg-negro-carbono p-5 sm:p-6">
-              <div class="flex items-start gap-3">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="2" class="mt-0.5 shrink-0">
-                  <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
-                </svg>
-                <div>
-                  <p class="text-base text-blancoRoto font-semibold">{t.checkout.cardTitle}</p>
-                  <p class="text-sm text-white/80 leading-relaxed mt-1">
-                    {paymentAvailable ? t.checkout.cardText : t.checkout.cardUnavailable}
-                  </p>
+            <div id="payment-unavailable" class={paymentAvailable ? 'hidden' : 'border-2 border-oro-brillo/60 p-5 sm:p-6'}>
+              <p class="text-base text-blancoRoto font-semibold">{t.checkout.cardTitle}</p>
+              <p class="text-sm text-white/80 leading-relaxed mt-1">{t.checkout.cardUnavailable}</p>
+            </div>
+
+            <div id="payment-box" class={paymentAvailable ? '' : 'hidden'}>
+              <p class="field-label">{t.checkout.cardTitle}</p>
+              <p class="text-sm text-white/80 leading-relaxed mb-4">{t.checkout.cardText}</p>
+
+              <!-- El esqueleto reserva el espacio del formulario de Stripe. -->
+              <div class="relative">
+                <div
+                  id="payment-skeleton"
+                  class="hidden absolute inset-0 z-10 bg-negro-carbono"
+                  aria-hidden="true"
+                >
+                  <div class="shimmer h-12 w-full"></div>
+                  <div class="shimmer h-12 w-full mt-3"></div>
+                  <div class="shimmer h-12 w-full mt-3"></div>
                 </div>
+
+                <div id="payment-element" class="min-h-[120px]"></div>
               </div>
+
+              <p
+                id="payment-error"
+                role="alert"
+                class="hidden mt-4 text-sm text-oro-brillo leading-relaxed"
+              ></p>
+            </div>
+
+            <p
+              id="pay-error"
+              role="alert"
+              class="hidden mt-4 text-sm text-oro-brillo text-center leading-relaxed"
+            ></p>
+
+            <div class="mt-6 flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+              <button type="button" class="btn-outline w-full sm:w-auto" data-back="2">{t.checkout.backBtn}</button>
+              <button
+                type="submit"
+                id="pay-btn"
+                class="btn-gold w-full sm:w-auto"
+                disabled={!paymentAvailable}
+                data-available={paymentAvailable ? 'true' : 'false'}
+              >
+                {t.checkout.pay}
+              </button>
             </div>
           </section>
         </form>
@@ -361,24 +445,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
           </div>
 
-          <button
-            type="submit"
-            form="checkout-form"
-            id="pay-btn"
-            class="btn-gold w-full"
-            disabled={!paymentAvailable}
-            data-available={paymentAvailable ? 'true' : 'false'}
-          >
-            {t.checkout.pay}
-          </button>
-
-          <p
-            id="pay-error"
-            role="alert"
-            class="hidden mt-4 text-sm text-red-400 text-center leading-relaxed"
-          ></p>
-
-          <p class="mt-6 text-xs text-white/80 text-center leading-relaxed">
+          <p class="mt-2 text-xs text-white/80 text-center leading-relaxed">
             {t.checkout.terms}
             <a href={localize(lang, 'terms')} class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
             {t.checkout.and} <a href={localize(lang, 'privacy')} class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
@@ -494,6 +561,66 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       background: linear-gradient(to right, transparent, #ffe28a, transparent);
       margin: 0 auto;
     }
+
+    .step-tab {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.7rem 0.75rem;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 0.375rem;
+      text-align: left;
+      transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .step-tab[aria-current='step'] {
+      border-color: #ffe28a;
+      background: rgba(255, 226, 138, 0.08);
+    }
+
+    .step-tab.step-done {
+      border-color: rgba(255, 226, 138, 0.55);
+    }
+
+    .step-tab.step-ahead {
+      opacity: 0.65;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      flex: 0 0 auto;
+      border: 2px solid rgba(255, 255, 255, 0.45);
+      border-radius: 9999px;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.7rem;
+      color: #ffffff;
+    }
+
+    .step-tab[aria-current='step'] .step-num,
+    .step-tab.step-done .step-num {
+      border-color: #ffe28a;
+      color: #ffe28a;
+    }
+
+    .step-name {
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.2;
+    }
+
+    @media (min-width: 640px) {
+      .step-name {
+        font-size: 0.75rem;
+      }
+    }
   </style>
 
   <script>
@@ -513,6 +640,283 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     const summaryError: HTMLElement | null = document.getElementById('checkout-summary-error') as HTMLElement;
     const alertDiv = document.getElementById('checkout-alert') as HTMLElement;
     const paymentAvailable = payBtn?.getAttribute('data-available') !== 'false';
+
+    // ---------------- Pasos del checkout ----------------
+
+    const stepSections = Array.from(
+      form.querySelectorAll<HTMLElement>('[data-step]')
+    );
+    const stepTabs = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-step-tab]')
+    );
+    const stepProgressEl = document.getElementById('step-progress');
+    const reducedMotion = () =>
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+    let currentStep = 1;
+
+    function stepSection(step: number): HTMLElement | null {
+      return stepSections.find((s) => Number(s.dataset.step) === step) ?? null;
+    }
+
+    function showStep(step: number, options: { scroll?: boolean } = {}) {
+      currentStep = step;
+
+      for (const section of stepSections) {
+        section.classList.toggle('hidden', Number(section.dataset.step) !== step);
+      }
+
+      for (const tab of stepTabs) {
+        const value = Number(tab.dataset.stepTab);
+        tab.setAttribute('aria-current', value === step ? 'step' : 'false');
+        tab.classList.toggle('step-done', value < step);
+        tab.classList.toggle('step-ahead', value > step);
+      }
+
+      if (stepProgressEl) {
+        stepProgressEl.textContent = `${uiText('stepProgress')} ${step} ${uiText('stepOf')} ${stepSections.length}`;
+      }
+
+      if (step === 2) {
+        quoteBlock?.classList.remove('hidden');
+        void loadQuotes();
+      }
+
+      if (step === 3) void preparePayment();
+
+      if (options.scroll !== false) {
+        const anchor = document.getElementById('checkout-steps');
+        anchor?.scrollIntoView({
+          behavior: reducedMotion() ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      }
+    }
+
+    // ---------------- Pago embebido (Stripe Payment Element) ----------------
+
+    const stripeKey = uiText('stripeKey');
+    const paymentSkeleton = document.getElementById('payment-skeleton');
+    const paymentElementHost = document.getElementById('payment-element');
+    const paymentErrorEl = document.getElementById('payment-error');
+
+    let stripeInstance: any = null;
+    let stripeElements: any = null;
+    let paymentElement: any = null;
+    let clientSecret: string | null = null;
+    let returnPath = '/confirmacion';
+    let orderNumber: string | null = null;
+    let paymentPrepared = false;
+    let paymentSignature = '';
+    let preparePromise: Promise<boolean> | null = null;
+    let stripeLoader: Promise<any> | null = null;
+    let paymentReady = false;
+
+    function showPaymentError(message: string | null) {
+      if (!paymentErrorEl) return;
+      paymentErrorEl.textContent = message ?? '';
+      paymentErrorEl.classList.toggle('hidden', !message);
+    }
+
+    function showPaymentSkeleton(show: boolean) {
+      // Solo se superpone el esqueleto: el contenedor de Stripe sigue montado.
+      paymentSkeleton?.classList.toggle('hidden', !show);
+    }
+
+    function loadStripeJs(key: string): Promise<any> {
+      const existing = (window as any).Stripe;
+      if (existing) return Promise.resolve(existing(key));
+      if (stripeLoader) return stripeLoader;
+
+      stripeLoader = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://js.stripe.com/v3/';
+        script.async = true;
+        script.onload = () => {
+          const loader = (window as any).Stripe;
+          loader ? resolve(loader(key)) : reject(new Error('stripe_unavailable'));
+        };
+        script.onerror = () => reject(new Error('stripe_unavailable'));
+        document.head.appendChild(script);
+      });
+
+      return stripeLoader;
+    }
+
+    /** Firma del checkout: si cambia, el PaymentIntent anterior ya no sirve. */
+    function checkoutSignature(): string {
+      return JSON.stringify({
+        cart: getCart().map((i) => [i.variantId, i.qty]),
+        quote: selectedQuote?.productCode ?? null,
+        amount: selectedQuote?.amount ?? null,
+        zip: value('postalCode'),
+        state: value('state'),
+      });
+    }
+
+    function resetPayment() {
+      paymentPrepared = false;
+      paymentSignature = '';
+      clientSecret = null;
+      paymentReady = false;
+      try {
+        paymentElement?.unmount?.();
+      } catch {
+        // El nodo ya pudo desaparecer: no hay nada que desmontar.
+      }
+      paymentElement = null;
+      stripeElements = null;
+      if (paymentElementHost) paymentElementHost.innerHTML = '';
+      showPaymentError(null);
+      if (paymentAvailable) payBtn.disabled = true;
+    }
+
+    async function mountPayment(secret: string) {
+      stripeInstance = await loadStripeJs(stripeKey);
+
+      stripeElements = stripeInstance.elements({
+        clientSecret: secret,
+        appearance: {
+          theme: 'night',
+          variables: {
+            colorPrimary: '#ffe28a',
+            colorBackground: '#050505',
+            colorText: '#ffffff',
+            colorDanger: '#ffe28a',
+            borderRadius: '6px',
+          },
+        },
+      });
+
+      paymentElement = stripeElements.create('payment', { layout: 'tabs' });
+      paymentElement.mount('#payment-element');
+
+      paymentElement.on?.('ready', () => {
+        paymentReady = true;
+        showPaymentSkeleton(false);
+        payBtn.disabled = false;
+      });
+    }
+
+    async function doPreparePayment(): Promise<boolean> {
+      if (!paymentAvailable) return false;
+
+      // Un PaymentIntent nuevo invalida el anterior: se desmonta antes de pedir.
+      resetPayment();
+      showPaymentError(null);
+      showPaymentSkeleton(true);
+      payBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: getCart().map((i) => ({ variantId: i.variantId, qty: i.qty })),
+            customer: {
+              firstName: value('firstName'),
+              lastName: value('lastName'),
+              email: value('email'),
+              phone: value('phone'),
+              street: value('street'),
+              colonia: value('colonia'),
+              city: value('city'),
+              state: value('state'),
+              postalCode: value('postalCode'),
+              references: value('references'),
+              notes: value('notes'),
+            },
+            coupon: sessionStorage.getItem('dsp_coupon') || undefined,
+            shipping: selectedQuote
+              ? { productCode: selectedQuote.productCode, amount: selectedQuote.amount }
+              : undefined,
+            acceptShippingChange,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          if (data?.code === 'SHIPPING_CHANGED' && data?.shipping) {
+            showPaymentSkeleton(false);
+            payBtn.disabled = false;
+
+            const next = data.shipping as QuoteOption & { name?: string };
+            const previous = quoteOptions.find((o) => o.productCode === next.productCode);
+            const confirmed = await askConfirm({
+              title: uiText('shippingChangedTitle'),
+              message:
+                `${uiText('shippingChangedMessage')} $${formatMXN(next.amount)} (${next.name ?? next.productName}).`,
+              confirmLabel: uiText('shippingChangeAccept'),
+            });
+
+            if (!confirmed) return false;
+
+            selectedQuote = {
+              productCode: next.productCode,
+              productName: next.name ?? next.productName,
+              amount: next.amount,
+              currency: 'USD',
+              deliveryDate: previous?.deliveryDate ?? null,
+              estimatedDays: previous?.estimatedDays ?? null,
+              estimated: previous?.estimated ?? true,
+            };
+            quoteOptions = quoteOptions.map((o) =>
+              o.productCode === next.productCode ? { ...o, amount: next.amount } : o
+            );
+            renderShippingOptions();
+            renderSummary();
+            acceptShippingChange = true;
+            return doPreparePayment();
+          }
+
+          if (data?.code === 'NO_SESSION') {
+            sessionStorage.setItem('dsp_checkout_error', uiText('noSession'));
+            window.location.href =
+              '/entrar?next=' + encodeURIComponent(window.location.pathname);
+            return false;
+          }
+
+          showPaymentSkeleton(false);
+          payBtn.disabled = false;
+          showError(
+            friendlyError(data?.code, data?.error ?? uiText('openFailed')) +
+              (data?.detail ? ` (Stripe: ${data.detail})` : '')
+          );
+          return false;
+        }
+
+        clientSecret = typeof data?.clientSecret === 'string' ? data.clientSecret : null;
+        returnPath = typeof data?.returnPath === 'string' ? data.returnPath : '/confirmacion';
+        orderNumber = typeof data?.orderNumber === 'string' ? data.orderNumber : null;
+
+        if (!clientSecret) throw new Error('missing_client_secret');
+        if (!stripeKey) throw new Error('missing_publishable_key');
+
+        await mountPayment(clientSecret);
+        paymentPrepared = true;
+        paymentSignature = checkoutSignature();
+        return true;
+      } catch {
+        showPaymentSkeleton(false);
+        payBtn.disabled = false;
+        showPaymentError(uiText('paymentInitFailed'));
+        return false;
+      }
+    }
+
+    /** Idempotente: un solo pedido/PaymentIntent por combinación de carrito. */
+    async function preparePayment(): Promise<boolean> {
+      if (!paymentAvailable) return false;
+      if (paymentPrepared && paymentSignature === checkoutSignature()) return true;
+      if (preparePromise) return preparePromise;
+
+      preparePromise = doPreparePayment().finally(() => {
+        preparePromise = null;
+      });
+
+      return preparePromise;
+    }
 
     // ---------------- Envío (FedEx) ----------------
 
@@ -539,6 +943,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     let quoteLoading = false;
     let quoteSeq = 0;
     let quoteTimer: number | null = null;
+    // Hubo un intento real de cotización (sirve para no pintar "no pudimos"
+    // cuando el destino todavía está incompleto).
+    let quoteAttempted = false;
     // El cliente ya aceptó un cambio de precio en el servidor.
     let acceptShippingChange = false;
 
@@ -626,9 +1033,11 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       quoteOptionsEl.innerHTML =
         quoteOptions.length === 0
-          ? '<p class="text-xs text-oro-brillo leading-snug">' +
-            escapeHtml(uiText('shippingUnavailable')) +
-            '</p>'
+          ? quoteAttempted
+            ? '<p class="text-xs text-oro-brillo leading-snug">' +
+              escapeHtml(uiText('shippingUnavailable')) +
+              '</p>'
+            : ''
           : quoteOptions.map(optionHtml).join('');
 
       // El aviso "estimado" de la cabecera solo aplica si algún plazo es de respaldo.
@@ -665,6 +1074,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         quoteOptions = [];
         selectedQuote = null;
         quoteLoading = false;
+        quoteAttempted = false;
         renderSummary();
         return;
       }
@@ -677,12 +1087,14 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         quoteOptions = [];
         selectedQuote = null;
         quoteLoading = false;
+        quoteAttempted = false;
         renderSummary();
         return;
       }
 
       const seq = ++quoteSeq;
       quoteLoading = true;
+      quoteAttempted = true;
       quoteBlock.classList.remove('hidden');
       quoteHintEl?.classList.add('hidden');
       quoteNoteEl?.classList.add('hidden');
@@ -795,8 +1207,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       return true;
     }
 
-    function validateAllFields(): boolean {
-      const inputs = form.querySelectorAll('input[required], textarea[required]');
+    function validateFields(scope: ParentNode): boolean {
+      const inputs = scope.querySelectorAll('input[required], textarea[required]');
       let isValid = true;
       let firstInvalid: HTMLElement | null = null;
 
@@ -818,6 +1230,24 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       }
 
       return isValid;
+    }
+
+    function validateAllFields(): boolean {
+      return validateFields(form);
+    }
+
+    function validateStep(step: number): boolean {
+      const section = stepSection(step);
+      return section ? validateFields(section) : true;
+    }
+
+    /** Un paso solo avanza si sus campos están completos y no hay cotización viva. */
+    function canAdvance(step: number): boolean {
+      if (step === 2 && quoteLoading) {
+        showError(uiText('shippingCalculating'));
+        return false;
+      }
+      return validateStep(step);
     }
 
     function renderSummary() {
@@ -915,6 +1345,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       e.preventDefault();
       errorEl.classList.add('hidden');
       alertDiv.classList.add('hidden');
+      showPaymentError(null);
 
       if (!paymentAvailable) {
         showError(uiText('unavailable'));
@@ -932,6 +1363,12 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         return;
       }
 
+      if (currentStep !== 3) {
+        // Enter en un campo avanza un paso, validando primero.
+        if (canAdvance(currentStep)) showStep(Math.min(currentStep + 1, 3));
+        return;
+      }
+
       if (!validateAllFields()) {
         showError(uiText('fixErrors'));
         return;
@@ -942,106 +1379,91 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         return;
       }
 
-      // `busy` pone spinner y bloquea el botón mientras se abre Stripe.
+      // El PaymentIntent se crea al entrar al paso 3; si algo cambió, se rehace.
+      if (!paymentPrepared || paymentSignature !== checkoutSignature()) {
+        const ready = await preparePayment();
+        if (!ready) return;
+      }
+
+      if (!stripeInstance || !stripeElements || !clientSecret) {
+        showPaymentError(uiText('paymentInitFailed'));
+        return;
+      }
+
+      if (!paymentReady) {
+        // Stripe todavía monta el formulario: el botón sigue bloqueado.
+        showPaymentError(uiText('preparingPayment'));
+        return;
+      }
+
+      showPaymentError(null);
+
+      // `busy` bloquea el botón mientras Stripe confirma la tarjeta.
       restorePay = busy(payBtn, uiText('opening'));
       showRedirect();
 
+      const returnUrl = new URL(returnPath, window.location.origin);
+      if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
+
       try {
-        const res = await fetch('/api/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: items.map((i) => ({ variantId: i.variantId, qty: i.qty })),
-            customer: {
-              firstName: value('firstName'),
-              lastName: value('lastName'),
-              email: value('email'),
-              phone: value('phone'),
-              street: value('street'),
-              colonia: value('colonia'),
-              city: value('city'),
-              state: value('state'),
-              postalCode: value('postalCode'),
-              references: value('references'),
-              notes: value('notes'),
-            },
-            coupon: sessionStorage.getItem('dsp_coupon') || undefined,
-            shipping: selectedQuote
-              ? { productCode: selectedQuote.productCode, amount: selectedQuote.amount }
-              : undefined,
-            acceptShippingChange,
-          }),
+        const result = await stripeInstance.confirmPayment({
+          elements: stripeElements,
+          confirmParams: { return_url: returnUrl.toString() },
+          redirect: 'if_required',
         });
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          if (data?.code === 'SHIPPING_CHANGED' && data?.shipping) {
-            hideRedirect();
-            restoreButton();
-
-            const next = data.shipping as QuoteOption & { name?: string };
-            const previous = quoteOptions.find((o) => o.productCode === next.productCode);
-            const confirmed = await askConfirm({
-              title: uiText('shippingChangedTitle'),
-              message:
-                `${uiText('shippingChangedMessage')} $${formatMXN(next.amount)} (${next.name ?? next.productName}).`,
-              confirmLabel: uiText('shippingChangeAccept'),
-            });
-
-            if (!confirmed) return;
-
-            selectedQuote = {
-              productCode: next.productCode,
-              productName: next.name ?? next.productName,
-              amount: next.amount,
-              currency: 'USD',
-              // El servidor solo confirma precio y servicio: el ETA se conserva
-              // del selector ya cotizado en el navegador.
-              deliveryDate: previous?.deliveryDate ?? null,
-              estimatedDays: previous?.estimatedDays ?? null,
-              estimated: previous?.estimated ?? true,
-            };
-            quoteOptions = quoteOptions.map((o) =>
-              o.productCode === next.productCode ? { ...o, amount: next.amount } : o
-            );
-            renderShippingOptions();
-            renderSummary();
-            acceptShippingChange = true;
-            form.requestSubmit();
-            return;
-          }
-
-          if (data?.code === 'NO_SESSION') {
-            sessionStorage.setItem('dsp_checkout_error', uiText('noSession'));
-            window.location.href =
-              '/entrar?next=' + encodeURIComponent(window.location.pathname);
-            return;
-          }
-
+        if (result?.error) {
           hideRedirect();
-          showError(
-            friendlyError(data?.code, data?.error ?? uiText('openFailed')) +
-              (data?.detail ? ` (Stripe: ${data.detail})` : '')
-          );
           restoreButton();
+          showPaymentError(result.error.message ?? uiText('paymentFailed'));
           return;
         }
 
-        // El carrito se vacía al volver del pago (solo si Stripe lo aprobó).
-        if (data?.url) {
-          window.location.href = data.url;
+        const intent = result?.paymentIntent;
+        if (intent) {
+          // El total ya se cobró en el servidor: solo se muestra la confirmación.
+          const next = new URL(returnUrl.toString());
+          next.searchParams.set('payment_intent', intent.id);
+          next.searchParams.set('redirect_status', intent.status ?? 'succeeded');
+          window.location.href = next.toString();
           return;
         }
 
-        showError(uiText('openFailed'));
-        hideRedirect();
-        restoreButton();
+        // Sin redirect: Stripe está resolviendo el pago; el overlay se queda.
       } catch {
         showError(uiText('connection'));
         hideRedirect();
         restoreButton();
       }
+    });
+
+    // ---------------- Navegación entre pasos ----------------
+
+    const goToStep = (target: number) => {
+      if (target === currentStep) return;
+
+      if (target < currentStep) {
+        showStep(target);
+        return;
+      }
+
+      for (let step = currentStep; step < target; step += 1) {
+        if (!canAdvance(step)) return;
+      }
+
+      showStep(target);
+    };
+
+    document.querySelectorAll<HTMLElement>('[data-next]').forEach((button) => {
+      button.addEventListener('click', () => goToStep(Number(button.dataset.next)));
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-back]').forEach((button) => {
+      button.addEventListener('click', () => goToStep(Number(button.dataset.back)));
+    });
+
+    stepTabs.forEach((tab) => {
+      tab.addEventListener('click', () => goToStep(Number(tab.dataset.stepTab)));
     });
 
     // Desmarcar el error de cada campo al corregirlo
@@ -1082,6 +1504,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       },
       onStateUnavailable() {
         showZipNote(uiText('zipStateUnavailable'));
+      },
+      onNotFound() {
+        showZipNote(uiText('zipNotFound'));
       },
     });
 
@@ -1128,13 +1553,17 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       });
 
     renderSummary();
+    showStep(1, { scroll: false });
 
     // Otra pestaña cambió el carrito: el resumen se repinta antes de pagar
     // (nunca se cobra un carrito que ya no es el que se ve).
     startCartSync();
     window.addEventListener('cart:updated', () => {
       renderSummary();
+      // El monto cambió: el PaymentIntent montado ya no sirve.
+      resetPayment();
       void loadQuotes();
+      if (currentStep === 3) void preparePayment();
     });
 
     if (!paymentAvailable) {

@@ -3,19 +3,20 @@
  *
  * Flujo:
  *   1. `/api/checkout`  → valida carrito, crea el pedido en `pending` y abre
- *      la Checkout Session de Stripe. Devuelve la URL para pagar.
- *   2. Stripe cobra en su propio dominio (nosotros nunca vemos la tarjeta).
+ *      un PaymentIntent de Stripe. Devuelve el `client_secret` para montar el
+ *      Payment Element dentro de la misma página.
+ *   2. Stripe cobra en su iframe seguro (nosotros nunca vemos la tarjeta).
  *   3. `/api/webhooks/stripe` → con el pago confirmado, marca el pedido como
  *      pagado, escribe `order_items` y registra el pago.
  *
  * Regla de oro: **ningún pedido se marca pagado sin un evento verificado de
- * Stripe** (o la consulta server-side de la sesión al volver del Checkout).
+ * Stripe** (o la consulta server-side del PaymentIntent al volver).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CHECKOUT_NOTES_MARKER, CURRENCY, TENANT_ID } from './constants';
 import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './pricing';
-import { createCheckoutSession, createStripeCoupon, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
+import { createPaymentIntent, retrievePaymentIntent, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
 import { sendOrderConfirmation } from './resend';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, isUsShippingRegion, usStateCode, isUsPostalCode } from './us';
@@ -456,7 +457,15 @@ export interface StartCheckoutInput {
 }
 
 export type StartCheckoutResult =
-  | { ok: true; orderId: string; orderNumber: string | null; url: string }
+  | {
+      ok: true;
+      orderId: string;
+      orderNumber: string | null;
+      /** Para `stripe.confirmPayment` del Payment Element. */
+      clientSecret: string;
+      /** Ruta a la que Stripe devuelve al cliente tras pagar. */
+      returnPath: string;
+    }
   | {
       ok: false;
       code: string;
@@ -476,9 +485,7 @@ export async function startStripeCheckout({
   userId,
   customer,
   requestedItems,
-  origin,
   returnPath,
-  checkoutPath = '/checkout',
   defaultReturnPath = '/confirmacion',
   lang = 'es',
   couponCode,
@@ -607,41 +614,31 @@ export async function startStripeCheckout({
   });
 
   try {
-    // Stripe no admite importes negativos: el descuento viaja como cupón de
-    // un solo uso con el monto exacto calculado arriba.
-    const stripeCoupon =
-      discount > 0
-        ? await createStripeCoupon({ amountOff: discount, name: appliedCoupon ?? 'Descuento' }).catch(
-            (err: any) => {
-              console.error('[checkout] cupón stripe', err?.message);
-              return null;
-            }
-          )
-        : null;
-
-    const session = await createCheckoutSession({
+    // El descuento ya viene aplicado en `finalAmount`: un PaymentIntent cobra
+    // el total exacto, sin líneas ni cupones de Stripe que reconciliar.
+    const intent = await createPaymentIntent({
       orderId: order.id,
       orderNumber: order.order_number,
       currency: CURRENCY,
-      lines: items.map((i) => ({
-        name: i.variantName ? `${i.name} — ${i.variantName}` : i.name,
-        amount: i.price,
-        qty: i.qty,
-        image: i.image,
-      })),
-      shipping,
-      stripeCouponId: stripeCoupon?.id ?? null,
+      amount: finalAmount,
       lang,
-      shippingLabel: resolvedShipping?.name ?? (lang === 'en' ? 'Standard shipping' : 'Envío estándar'),
-      clientReference: order.id,
       customerEmail: customer.email,
-      successUrl: `${origin}${safeReturn}?order=${encodeURIComponent(order.order_number ?? order.id)}&stripe=return&session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${origin}${checkoutPath}?canceled=1`,
+      description: resolvedShipping
+        ? `Pedido ${order.order_number ?? order.id} · ${resolvedShipping.name}`
+        : `Pedido ${order.order_number ?? order.id}`,
     });
 
-    if (!session.url) throw new StripeError('Stripe no devolvió la URL de pago.');
+    if (!intent.client_secret) {
+      throw new StripeError('Stripe no devolvió el client_secret del pago.');
+    }
 
-    return { ok: true, orderId: order.id, orderNumber: order.order_number, url: session.url };
+    return {
+      ok: true,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      clientSecret: intent.client_secret,
+      returnPath: safeReturn,
+    };
   } catch (err: any) {
     // Sin pago no debe quedar un pedido vivo.
     await db.from('order_items').delete().eq('order_id', order.id);
@@ -715,7 +712,66 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
   return orderId;
 }
 
-// ------------------------------------------------------- Acceso al pedido
+/**
+ * Pago embebido: al volver con `?payment_intent=pi_…` se consulta el estado
+ * real en Stripe y se aplica de inmediato (el webhook puede tardar segundos).
+ *
+ * El importe cobrado lo confirma Stripe (`amount_received`), nunca el navegador.
+ */
+export async function confirmPaymentIntentOnReturn({ db, paymentIntentId }: {
+  db: SupabaseClient;
+  paymentIntentId: string;
+}) {
+  if (!paymentIntentId) return null;
+
+  const intent = await retrievePaymentIntent(paymentIntentId);
+  const orderId = intent.metadata?.order_id;
+
+  if (!orderId || intent.status !== 'succeeded') return null;
+
+  const intentLang = intent.metadata?.lang === 'en' ? 'en' : 'es';
+
+  const { data: before } = await db
+    .from('orders')
+    .select('payment_status')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  const wasPaid = before?.payment_status === 'approved';
+  const amount =
+    typeof intent.amount_received === 'number'
+      ? intent.amount_received / 100
+      : typeof intent.amount === 'number'
+        ? intent.amount / 100
+        : 0;
+
+  await applyPaidStatus({
+    db,
+    orderId,
+    paymentIntentId: intent.id,
+    amount,
+  });
+
+  if (!wasPaid) {
+    const { data: order } = await db
+      .from('orders')
+      .select('contact_email, contact_name, order_number, total_amount')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (order?.contact_email) {
+      sendOrderConfirmation({
+        to: order.contact_email,
+        orderNumber: order.order_number ?? orderId,
+        customerName: order.contact_name ?? 'Cliente',
+        total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
+        lang: intentLang,
+      }).catch(() => {});
+    }
+  }
+
+  return orderId;
+}
 
 /**
  * `/confirmacion` puede leer el pedido recién creado (aún sin pago) para

@@ -123,6 +123,74 @@ describe('autocompletado ZIP → ciudad/estado', () => {
     expect(state.value).toBe('');
   });
 
+  it('al pasar de un ZIP válido a uno desconocido limpia lo autocompletado', async () => {
+    const { form, zip, city, state } = mountForm();
+    stubLookup((zipCode) =>
+      zipCode === '76104'
+        ? json({ city: 'Fort Worth', state: 'TX' })
+        : json({ city: null, state: null })
+    );
+
+    const onNotFound = vi.fn();
+    wireZipAutocomplete(form, { onNotFound });
+
+    type(zip, '76104');
+    await vi.waitFor(() => expect(city.value).toBe('Fort Worth'));
+    expect(state.value).toBe('TX');
+
+    const stateEvents: string[] = [];
+    state.addEventListener('change', () => stateEvents.push(state.value));
+
+    type(zip, '00000');
+    await vi.waitFor(() => expect(city.value).toBe(''));
+
+    expect(state.value).toBe('');
+    expect(onNotFound).toHaveBeenCalledWith('00000');
+    // El evento permite que el checkout reevalúe el destino y no cotice.
+    expect(stateEvents).toContain('');
+  });
+
+  it('no borra ciudad/estado que el cliente escribió a mano', async () => {
+    const { form, zip, city, state } = mountForm();
+    stubLookup(() => json({ city: null, state: null }));
+
+    wireZipAutocomplete(form);
+
+    city.value = 'Mi ciudad';
+    city.dispatchEvent(new Event('input', { bubbles: true }));
+    state.value = 'CA';
+    state.dispatchEvent(new Event('change', { bubbles: true }));
+
+    type(zip, '00000');
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+
+    expect(city.value).toBe('Mi ciudad');
+    expect(state.value).toBe('CA');
+  });
+
+  it('si el cliente corrige lo autocompletado, un ZIP desconocido lo respeta', async () => {
+    const { form, zip, city, state } = mountForm();
+    stubLookup((zipCode) =>
+      zipCode === '76104'
+        ? json({ city: 'Fort Worth', state: 'TX' })
+        : json({ city: null, state: null })
+    );
+
+    wireZipAutocomplete(form);
+    type(zip, '76104');
+    await vi.waitFor(() => expect(city.value).toBe('Fort Worth'));
+
+    city.value = 'Fort Worth Centro';
+    city.dispatchEvent(new Event('input', { bubbles: true }));
+
+    type(zip, '00000');
+    await vi.waitFor(() => expect(state.value).toBe(''));
+
+    expect(city.value).toBe('Fort Worth Centro');
+    // El estado no se corrigió a mano: sí se limpia.
+    expect(state.value).toBe('');
+  });
+
   it('no preselecciona un estado fuera del catálogo y avisa', async () => {
     const { form, zip, city, state } = mountForm();
     stubLookup(() => json({ city: 'San Juan', state: 'PR' }));

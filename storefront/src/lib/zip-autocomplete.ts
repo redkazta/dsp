@@ -23,6 +23,8 @@ export interface ZipAutocompleteCallbacks {
   onLoading?: (loading: boolean) => void;
   /** El ZIP apunta a un estado que no se ofrece en el checkout. */
   onStateUnavailable?: (state: string) => void;
+  /** El ZIP no existe (o el endpoint falló) y se limpiaron los campos automáticos. */
+  onNotFound?: (zip: string) => void;
   /** El ZIP se encontró y se rellenaron los campos. */
   onFilled?: (result: ZipLookupResult) => void;
 }
@@ -78,12 +80,40 @@ export function wireZipAutocomplete(
   let seq = 0;
   let lastZip = '';
   let loading = false;
+  // Marca lo que rellenó el lookup para no borrar lo que el cliente escribió.
+  let cityFromZip = false;
+  let stateFromZip = false;
+  // Evita que nuestros propios eventos marquen los campos como "manuales".
+  let writing = false;
 
   const setLoading = (next: boolean) => {
     if (loading === next) return;
     loading = next;
     callbacks.onLoading?.(next);
   };
+
+  const notify = (target: HTMLElement | null, event: 'input' | 'change') => {
+    target?.dispatchEvent(new Event(event, { bubbles: true }));
+  };
+
+  /** Deshace solo lo autocompletado; lo escrito a mano se respeta. */
+  function clearAutoFilled() {
+    writing = true;
+    try {
+      if (cityFromZip && cityInput && cityInput.value) {
+        cityInput.value = '';
+        notify(cityInput, 'input');
+      }
+      if (stateFromZip && stateSelect && stateSelect.value) {
+        stateSelect.value = '';
+        notify(stateSelect, 'change');
+      }
+    } finally {
+      writing = false;
+    }
+    cityFromZip = false;
+    stateFromZip = false;
+  }
 
   async function run(zip: string) {
     if (!/^\d{5}$/.test(zip) || zip === lastZip) return;
@@ -98,31 +128,54 @@ export function wireZipAutocomplete(
     if (current !== seq) return;
     setLoading(false);
 
-    // ZIP desconocido o endpoint caído: no se toca nada y no se bloquea.
-    if (!result || !result.city || !result.state) return;
-
-    if (cityInput) {
-      cityInput.value = result.city;
-      cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // ZIP desconocido o endpoint caído: se limpia lo autocompletado para no
+    // cotizar con un destino que ya no corresponde. Nunca se bloquea.
+    if (!result || !result.city || !result.state) {
+      clearAutoFilled();
+      callbacks.onNotFound?.(zip);
+      return;
     }
 
-    if (stateSelect && states.size > 0) {
-      if (states.has(result.state)) {
-        stateSelect.value = result.state;
-        stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      } else {
-        callbacks.onStateUnavailable?.(result.state);
+    writing = true;
+    try {
+      if (cityInput) {
+        cityInput.value = result.city;
+        notify(cityInput, 'input');
+        cityFromZip = true;
       }
+
+      if (stateSelect && states.size > 0) {
+        if (states.has(result.state)) {
+          stateSelect.value = result.state;
+          notify(stateSelect, 'change');
+          stateFromZip = true;
+        } else {
+          callbacks.onStateUnavailable?.(result.state);
+        }
+      }
+    } finally {
+      writing = false;
     }
 
     callbacks.onFilled?.(result);
   }
 
+  // Si el cliente corrige ciudad/estado a mano, dejan de ser "del ZIP".
+  const onCityEdit = () => {
+    if (!writing) cityFromZip = false;
+  };
+  const onStateEdit = () => {
+    if (!writing) stateFromZip = false;
+  };
+  cityInput?.addEventListener('input', onCityEdit);
+  stateSelect?.addEventListener('change', onStateEdit);
+
   const onInput = () => {
     const raw = zipInput.value.trim();
     if (!raw) {
-      // Al borrar el ZIP se permite volver a consultarlo.
+      // Al borrar el ZIP se permite volver a consultarlo y se limpia lo auto.
       lastZip = '';
+      clearAutoFilled();
       return;
     }
     if (/^\d{5}$/.test(raw)) void run(raw);
@@ -139,5 +192,7 @@ export function wireZipAutocomplete(
   return () => {
     zipInput.removeEventListener('input', onInput);
     zipInput.removeEventListener('blur', onBlur);
+    cityInput?.removeEventListener('input', onCityEdit);
+    stateSelect?.removeEventListener('change', onStateEdit);
   };
 }

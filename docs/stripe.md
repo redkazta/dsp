@@ -1,7 +1,8 @@
-# Pago con Stripe (Checkout alojado)
+# Pago con Stripe (Payment Element embebido)
 
-La tarjeta **nunca** pasa por la tienda: el formulario del checkout recoge solo
-datos de contacto/envío y el cobro se captura en el dominio de Stripe (PCI SAQ A).
+La tarjeta **nunca** pasa por la tienda: el Payment Element se monta dentro del
+checkout y el formulario de la tarjeta vive en un iframe de Stripe (PCI SAQ A).
+No hay redirección a `checkout.stripe.com` ni ventana emergente.
 
 ## Flujo
 
@@ -15,15 +16,15 @@ sequenceDiagram
     C->>A: POST /api/checkout {items, customer}
     A->>D: priceItems() precios de la BD
     A->>D: orders INSERT (pending) + order_items
-    A->>S: checkout.sessions.create
-    S-->>A: url
-    A-->>C: {url}
-    C->>S: paga en checkout.stripe.com
-    S-->>C: redirect /confirmacion?order=…&session_id=…
+    A->>S: payment_intents.create
+    S-->>A: {id, client_secret}
+    A-->>C: {clientSecret, orderNumber, returnPath}
+    C->>S: Payment Element + confirmPayment()
+    S-->>C: redirect /confirmacion?order=…&payment_intent=pi_…
     C->>A: GET /confirmacion
-    A->>S: sessions.retrieve (si sigue pendiente)
+    A->>S: payment_intents.retrieve (si sigue pendiente)
     A->>D: applyPaidStatus (paid → confirmed)
-    S->>A: webhook checkout.session.completed
+    S->>A: webhook payment_intent.succeeded
     A->>D: applyPaidStatus (idempotente) + payments
 ```
 
@@ -31,17 +32,19 @@ sequenceDiagram
 
 | Ruta | Qué hace |
 |---|---|
-| `POST /api/checkout` | Valida carrito, crea pedido en `pending` y devuelve la URL de Stripe. |
+| `POST /api/checkout` | Valida carrito, crea pedido en `pending` y devuelve `clientSecret` del PaymentIntent. |
 | `POST /api/webhooks/stripe` | Valida la firma `Stripe-Signature` y aplica el pago. |
 
 Eventos a suscribir en Stripe → Developers → Webhooks:
 
-- `checkout.session.completed`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `checkout.session.completed` (compatibilidad con pagos antiguos)
 - `checkout.session.async_payment_succeeded`
 - `checkout.session.async_payment_failed`
 - `checkout.session.expired`
-- `payment_intent.payment_failed`
 - `charge.refunded`
+- `refund.created` / `refund.updated`
 
 URL local de pruebas:
 

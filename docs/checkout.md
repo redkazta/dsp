@@ -31,13 +31,20 @@ porque el flujo lo pide ahí y `/api/checkout` lo exige junto con la dirección.
   espera visible usa shimmer) junto al campo.
 - Si el ZIP existe, se rellenan ciudad y estado y se avisa con un texto no
   bloqueante.
-- Si el ZIP no existe o la llamada falla, no se bloquea nada: ciudad y estado
-  quedan como estaban para que el cliente los escriba a mano.
+- Si el ZIP no existe o la llamada falla, no se bloquea nada: se **limpian
+  solo los valores que había puesto el autocompletado** (marcados internamente
+  con un flag) y el cliente escribe ciudad y estado a mano. Lo que el cliente
+  escribió a mano **no se borra**. Así nunca se cotiza con el destino de un ZIP
+  anterior.
 - El estado solo se preselecciona si existe en el `select`. Si el ZIP apunta a
   una región apagada (`enabled_for_shipping = false`) o fuera de `us_regions`,
   se muestra una advertencia no bloqueante y el cliente elige manualmente.
 - Cambiar el ZIP vuelve a consultar y actualiza ciudad/estado. El cliente puede
-  editar ambos campos después del autocompletado.
+  editar ambos campos después del autocompletado; al hacerlo, esos campos dejan
+  de considerarse “del ZIP” y no se limpiarán en la próxima consulta.
+- El checkout **no muestra** el aviso de “no pudimos cotizar” cuando el destino
+  está incompleto: solo cuando hubo una cotización real y FedEx no devolvió
+  tarifas.
 
 La lógica vive en `src/lib/zip-autocomplete.ts` y se prueba en
 `tests/zip-autocomplete.test.ts`.
@@ -83,7 +90,49 @@ node scripts/build-us-zipcodes.mjs ruta/al/zipcodes.csv
 Después del cambio: commit del JSON, build y redeploy. No hay migración de base
 de datos ni variable de entorno nueva.
 
-## 3. Envío y pago
+## 3. Checkout por pasos
+
+El formulario deja de ser una página larga: arriba se muestra el indicador de
+pasos y solo se ve un contenedor a la vez.
+
+| Paso | Contenido | Botones |
+|---|---|---|
+| 1 | Contacto (`firstName`, `lastName`, `email`) | Continuar |
+| 2 | Dirección (ZIP, ciudad, estado, calle, `colonia`, teléfono, referencias, notas) y selector de tarifas FedEx | Volver · Continuar |
+| 3 | Pago embebido (Stripe Payment Element) | Volver · Pagar |
+
+- Los pasos se navegan con los botones o con las pestañas superiores. Hacia
+  adelante se valida el paso actual con `validateFields(sección)`; hacia atrás
+  no se valida nada.
+- Los contenedores ocultos **no se desmontan**: conservan sus valores para que
+  volver atrás no pierda datos.
+- El paso 2 no permite continuar mientras hay una cotización en vuelo.
+- El indicador usa `aria-current="step"` y anuncia el paso actual con
+  `aria-live`. Toda espera usa `.shimmer` (incluido el esqueleto del pago).
+
+## 4. Pago in-page (Stripe Payment Element)
+
+- Al entrar al paso 3, el navegador llama a `POST /api/checkout`, que valida el
+  carrito, re-cotiza el envío, crea el pedido `pending` y abre un
+  **PaymentIntent**. La respuesta incluye `clientSecret`, `orderNumber` y
+  `returnPath` (nunca una URL de redirección).
+- El checkout carga `https://js.stripe.com/v3/` y monta el **Payment Element**
+  dentro de `#payment-element` con la apariencia de la marca. La tarjeta se
+  captura en el iframe de Stripe: el PAN nunca pasa por nuestro servidor.
+- `confirmPayment` usa `redirect: 'if_required'` (3DS se resuelve en Stripe).
+  Al terminar, el cliente vuelve a `/confirmacion` o `/invitado/confirmacion`
+  con `?order=…&payment_intent=pi_…`.
+- El monto se fija en servidor: el `amount` del PaymentIntent sale del total
+  recalculado (`priceItems` + envío re-cotizado), no del navegador. Si el envío
+  cambió, `/api/checkout` responde `409 SHIPPING_CHANGED` y el cliente confirma
+  el nuevo precio antes de crear el pago.
+- Si el carrito cambia en otra pestaña, el Payment Element se desmonta y, si el
+  cliente sigue en el paso 3, se pide un PaymentIntent nuevo.
+- Al volver, `confirmPaymentIntentOnReturn` consulta el PaymentIntent con la
+  llave secreta y aplica el pago si `status = succeeded`; el webhook
+  `payment_intent.succeeded` hace lo mismo por si el cliente no vuelve.
+
+## 5. Envío y pago (reglas)
 
 - Con FedEx configurado, el checkout cotiza en `/api/shipping/quote` y
   `/api/checkout` re-cotiza en servidor. Detalle en
@@ -92,4 +141,5 @@ de datos ni variable de entorno nueva.
   compromiso (sandbox), se usan días de respaldo y la opción se marca
   “estimado”.
 - Sin FedEx, se aplica la tarifa plana de `store_settings`.
-- El pago se abre en Stripe; el pedido se crea antes de redirigir.
+- El pago se captura in-page con Stripe; el pedido se crea antes de confirmar
+  el pago y solo se marca pagado con el evento o la consulta server-side.
