@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cardStockState } from '../src/lib/product-variants';
+import { cardStockState, liveVariants } from '../src/lib/product-variants';
 
 /**
  * Regresión del badge "Agotado" falso.
@@ -61,6 +61,23 @@ describe('cardStockState', () => {
   });
 });
 
+describe('liveVariants', () => {
+  it('descarta las variantes borradas', () => {
+    const list = liveVariants([
+      { id: 'a', stock: 10 },
+      { id: 'b', stock: 50, is_deleted: true },
+      { id: 'c', stock: 0, is_deleted: false },
+    ]);
+    expect(list.map((v: any) => v.id)).toEqual(['a', 'c']);
+  });
+
+  it('no rompe con valores que no son arreglos', () => {
+    for (const raw of [null, undefined, {}, 'x', 0]) {
+      expect(liveVariants(raw)).toEqual([]);
+    }
+  });
+});
+
 describe('consultas de sugerencias', () => {
   const read = (p: string) => readFileSync(new URL(`../src/pages/${p}`, import.meta.url), 'utf8');
 
@@ -74,5 +91,10 @@ describe('consultas de sugerencias', () => {
     const src = read('favoritos.astro');
     expect(src).toContain('product_variants(id, name, size, color, price, stock)');
     expect(src).not.toContain('product_variants(price)');
+  });
+
+  it('la ficha ignora las variantes borradas', () => {
+    const src = readFileSync(new URL('../src/pages/producto/[slug].astro', import.meta.url), 'utf8');
+    expect(src).toContain('liveVariants(product?.product_variants)');
   });
 });

@@ -30,6 +30,17 @@ export function sanitizeVariants(raw: unknown): VariantOption[] {
     }));
 }
 
+/**
+ * Variantes vivas: las borradas no se listan, no se ofrecen ni cuentan para
+ * el stock en ninguna vista. El servidor trae ``*``, así que el filtro tiene
+ * que aplicar aquí, no en la consulta.
+ */
+export function liveVariants(raw: unknown): any[] {
+  return (Array.isArray(raw) ? raw : []).filter(
+    (v: any) => v && typeof v === 'object' && v.is_deleted !== true
+  );
+}
+
 export interface CardStockState {
   /** La consulta trajo la columna `stock` en al menos una variante. */
   stockKnown: boolean;
@@ -49,9 +60,7 @@ export interface CardStockState {
  * Agotado en toda la fila.
  */
 export function cardStockState(raw: unknown): CardStockState {
-  const list = (Array.isArray(raw) ? raw : []).filter(
-    (v: any) => v && typeof v === 'object' && v.is_deleted !== true
-  );
+  const list = liveVariants(raw);
 
   const stockOf = (v: any) => (Number.isFinite(Number(v.stock)) && v.stock !== null ? Number(v.stock) : 0);
 

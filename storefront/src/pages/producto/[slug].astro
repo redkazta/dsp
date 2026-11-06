@@ -14,6 +14,7 @@ import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 import ReflectBadge from '../../components/product/ReflectBadge.astro';
 import { productName, productDescription } from '../../lib/product-texts';
 import { demoPrice } from '../../lib/demo';
+import { liveVariants } from '../../lib/product-variants';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -73,7 +74,8 @@ function viewLabel(url: string) {
   return t.product.front;
 }
 
-const variants = (product?.product_variants ?? []).map((v: any) => ({
+// Las variantes borradas no se listan, no se ofrecen ni cuentan para el stock.
+const variants = liveVariants(product?.product_variants).map((v: any) => ({
   ...v,
   price: demoPrice(v.price),
 }));
