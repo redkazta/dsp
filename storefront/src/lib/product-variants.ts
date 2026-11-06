@@ -29,3 +29,35 @@ export function sanitizeVariants(raw: unknown): VariantOption[] {
       stock: Number(v.stock) || 0,
     }));
 }
+
+export interface CardStockState {
+  /** La consulta trajo la columna `stock` en al menos una variante. */
+  stockKnown: boolean;
+  totalStock: number;
+  soldOut: boolean;
+  /** Variantes comprables: con stock y no borradas. */
+  available: any[];
+}
+
+/**
+ * Estado de stock de una tarjeta de producto.
+ *
+ * Importante: **no** reutiliza `sanitizeVariants` porque esa función convierte
+ * un `stock` ausente en 0, y aquí justo necesitamos distinguir "0" de "no 
+ * preguntamos por el stock". Varios listados (carrito, favoritos) piden
+ * `product_variants(price)` sin `stock`; asumir 0 pintaba un badge falso de
+ * Agotado en toda la fila.
+ */
+export function cardStockState(raw: unknown): CardStockState {
+  const list = (Array.isArray(raw) ? raw : []).filter(
+    (v: any) => v && typeof v === 'object' && v.is_deleted !== true
+  );
+
+  const stockOf = (v: any) => (Number.isFinite(Number(v.stock)) && v.stock !== null ? Number(v.stock) : 0);
+
+  const stockKnown = list.some((v: any) => typeof v.stock === 'number' && Number.isFinite(v.stock));
+  const totalStock = list.reduce((sum: number, v: any) => sum + stockOf(v), 0);
+  const available = list.filter((v: any) => stockOf(v) > 0);
+
+  return { stockKnown, totalStock, soldOut: stockKnown && totalStock === 0, available };
+}

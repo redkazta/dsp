@@ -37,7 +37,7 @@ const checkoutHref = Astro.locals.user ? '/checkout' : '/invitado/checkout';
 
 const featured = await supabase
   .from('products')
-  .select('id, name, name_en, slug, base_price, is_reflective, categories(name, slug), product_variants(price), product_images(url, position)')
+  .select('id, name, name_en, slug, base_price, is_reflective, categories(name, slug), product_variants(id, name, size, color, price, stock), product_images(url, position)')
   .eq('is_active', true)
   .eq('is_deleted', false)
   .order('created_at', { ascending: false })

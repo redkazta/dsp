@@ -11,6 +11,7 @@ import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 import { productName } from '../../lib/product-texts';
 import { localize } from '../../lib/routes';
 import { demoPrice } from '../../lib/demo';
+import { cardStockState } from '../../lib/product-variants';
 import ReflectBadge from './ReflectBadge.astro';
 
 export interface Props {
@@ -20,7 +21,16 @@ export interface Props {
     name: string;
     base_price: number;
     is_reflective?: boolean | null;
-    product_variants?: Array<{ id: string; name: string; price: number; stock: number }> | null;
+    product_variants?: Array<{
+      id: string;
+      name: string;
+      size?: string | null;
+      color?: string | null;
+      price: number;
+      /** Opcional: hay listados que no piden la columna `stock`. */
+      stock?: number | null;
+      is_deleted?: boolean | null;
+    }> | null;
     product_images?: Array<{ url: string; alt_text?: string; position?: number }> | null;
   };
 }
@@ -58,13 +68,6 @@ const images = reflectPlan.animatable
 const reflect = reflectPlan.animatable;
 const reflectFlash = reflectPlan.flashIndex;
 
-const totalStock =
-  product.product_variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
-const isSoldOut = product.product_variants != null && product.product_variants.length > 0 && totalStock === 0;
-
-const trackId = `card-carousel-${product.id}`;
-void trackId;
-
 /** Variantes con stock: lo que se puede añadir desde la tarjeta. */
 type CardVariant = {
   id: string;
@@ -72,15 +75,24 @@ type CardVariant = {
   size?: string | null;
   color?: string | null;
   price: number;
-  stock: number;
+  stock?: number | null;
+  is_deleted?: boolean | null;
 };
 
-const available = ((product.product_variants ?? []) as CardVariant[]).filter(
-  (v) => (v.stock ?? 0) > 0
-);
+/**
+ * Solo se puede afirmar "agotado" cuando la consulta trajo `stock`.
+ * Hay listados que piden `product_variants(price)` sin stock: ahí el dato
+ * falta, y asumir 0 pintaba un badge falso de Agotado en toda la fila.
+ * Las variantes borradas no cuentan ni se ofrecen.
+ */
+const { soldOut: isSoldOut, available } = cardStockState(product.product_variants);
+const cardVariants = available as CardVariant[];
 
-const canQuickAdd = !isSoldOut && available.length > 0;
-const singleVariant = available.length === 1 ? available[0] : null;
+const trackId = `card-carousel-${product.id}`;
+void trackId;
+
+const canQuickAdd = !isSoldOut && cardVariants.length > 0;
+const singleVariant = cardVariants.length === 1 ? cardVariants[0] : null;
 const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
 ---
 
@@ -214,7 +226,7 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
         <div class="quick-panel" data-quick-panel hidden>
           <p class="quick-title">{t.product.selectSize}</p>
           <div class="quick-sizes">
-            {available.map((v) => (
+            {cardVariants.map((v) => (
               <button
                 type="button"
                 class="quick-size"

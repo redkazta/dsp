@@ -149,7 +149,7 @@ let suggestions: any[] = [];
     const { data } = await supabase
       .from('products')
       .select(
-        'id, name, name_en, slug, base_price, is_reflective, categories(id, name, slug), product_variants(price), product_images(url, alt_text, position)'
+        'id, name, name_en, slug, base_price, is_reflective, categories(id, name, slug), product_variants(id, name, size, color, price, stock), product_images(url, alt_text, position)'
       )
       .eq('tenant_id', TENANT_ID)
       .eq('is_active', true)
