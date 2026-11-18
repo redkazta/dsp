@@ -3,99 +3,227 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroCarousel from '../components/hero/HeroCarousel.astro';
+import ProductList from '../components/product/ProductList.astro';
 import { getHomeSlides } from '../lib/home-products';
-import { getCopy, type Lang } from '../lib/i18n';
+import { getCategories, getProducts, TENANT_SLUG } from '../lib/supabase';
+import { categoryName, getCopy, type Lang } from '../lib/i18n';
+import { localize } from '../lib/routes';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
 
 // Playera, jean, playera, jean…: el intercalado se hace en servidor.
 const slides = await getHomeSlides({ perCategory: 8, max: 12, lang });
-import { localize } from '../lib/routes';
+
+// El grid y los tiles salen del mismo catálogo, ya con variantes para que
+// la tarjeta pueda añadir al carrito sin abrir la ficha.
+const [{ data: catalog }, { data: categories }] = await Promise.all([
+  getProducts(TENANT_SLUG, { limit: 12, sort: 'newest' }),
+  getCategories(TENANT_SLUG),
+]);
+
+const products = catalog ?? [];
+
+/** Una pieza por categoría, para los tiles de "compra por categoría". */
+const tiles = (categories ?? [])
+  .map((cat: any) => {
+    const hit = products.find((p: any) => (p.categories?.id ?? p.category_id) === cat.id);
+    const image = [...(hit?.product_images ?? [])].sort(
+      (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)
+    )[0]?.url;
+
+    return { id: cat.id, name: categoryName(lang, cat), image: image ?? null };
+  })
+  .filter((cat) => Boolean(cat.image))
+  .slice(0, 2);
 ---
 
-<BaseLayout homeScreen>
-  <!--
-    HOME A PANTALLA COMPLETA (sin scroll).
-    El carrusel ocupa el alto sobrante del viewport y cada pieza enlaza a su
-    detalle. El botón queda al pie.
-  -->
-  <div class="home-screen">
-    <section class="hero-section relative overflow-hidden bg-negro-profundo">
-      <HeroCarousel slides={slides} t={t} currency="USD" />
+<BaseLayout title={t.meta.home.title} description={t.meta.home.description}>
+  <!-- ============ HERO ============ -->
+  <section class="border-b-2 border-white/25 bg-noise">
+    <div class="page-container pt-7 sm:pt-12">
+      <p class="section-label mb-2.5 sm:mb-3">{t.home.heroLabel}</p>
+      <h1 class="font-titulos text-[2.1rem] leading-[0.95] sm:text-5xl lg:text-6xl text-blancoRoto">
+        {t.brand}
+      </h1>
+      <p class="mt-3 text-sm sm:text-base text-white/80 leading-relaxed max-w-md">
+        {t.home.heroText}
+      </p>
+    </div>
 
-      <div class="hero-actions">
-        <a href={localize(lang, 'shop')} class="btn-drop">{t.hero.cta}</a>
+    <!-- El carrusel es absoluto: necesita un escenario con alto propio. -->
+    <div class="home-stage">
+      <HeroCarousel slides={slides} t={t} currency="USD" />
+    </div>
+
+    <div class="page-container pb-7 sm:pb-10 flex flex-col sm:flex-row gap-3">
+      <a href={localize(lang, 'shop')} class="btn-gold w-full sm:w-auto">
+        {t.home.heroPrimary}
+      </a>
+      <a href={localize(lang, 'about')} class="btn-outline w-full sm:w-auto">
+        {t.home.heroSecondary}
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ GARANTÍAS ============ -->
+  <section class="border-b-2 border-white/25 bg-negro-carbono">
+    <ul class="page-container py-4 sm:py-6 grid grid-cols-3 gap-2 sm:gap-8">
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
+          <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
+          <circle cx="7" cy="18" r="1.6" />
+          <circle cx="17.5" cy="18" r="1.6" />
+        </svg>
+        <span>
+          <span class="block font-acentos text-[10px] sm:text-xs uppercase tracking-[0.14em] text-blancoRoto">{t.trust.shippingTitle}</span>
+          <span class="hidden sm:block text-xs text-white/70 mt-0.5">{t.trust.shippingText}</span>
+        </span>
+      </li>
+
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
+          <rect x="2.5" y="5.5" width="19" height="13" rx="2" />
+          <path d="M2.5 10h19M6 15h4" />
+        </svg>
+        <span>
+          <span class="block font-acentos text-[10px] sm:text-xs uppercase tracking-[0.14em] text-blancoRoto">{t.trust.secureTitle}</span>
+          <span class="hidden sm:block text-xs text-white/70 mt-0.5">{t.trust.secureText}</span>
+        </span>
+      </li>
+
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
+          <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
+        </svg>
+        <span>
+          <span class="block font-acentos text-[10px] sm:text-xs uppercase tracking-[0.14em] text-blancoRoto">{t.trust.returnsTitle}</span>
+          <span class="hidden sm:block text-xs text-white/70 mt-0.5">{t.trust.returnsText}</span>
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ EL DROP ============ -->
+  <section class="page-container py-9 sm:py-16">
+    <div class="flex items-end justify-between gap-4 mb-5 sm:mb-8">
+      <div class="min-w-0">
+        <p class="section-label mb-2">{t.home.dropLabel}</p>
+        <h2 class="font-titulos text-2xl sm:text-4xl text-blancoRoto leading-none">
+          {t.home.dropTitle}
+        </h2>
+        <p class="mt-2 text-sm sm:text-base text-white/70">{t.home.dropText}</p>
       </div>
-    </section>
-  </div>
+
+      <a
+        href={localize(lang, 'shop')}
+        class="hidden sm:inline-flex btn-outline !min-h-[44px] !px-5 !py-2 !text-xs shrink-0"
+      >
+        {t.shop.seeAll}
+      </a>
+    </div>
+
+    <ProductList products={products} />
+
+    <a href={localize(lang, 'shop')} class="btn-outline w-full mt-6 sm:hidden">
+      {t.shop.seeAll}
+    </a>
+  </section>
+
+  <!-- ============ CATEGORÍAS ============ -->
+  {
+    tiles.length > 0 && (
+      <section class="page-container pb-9 sm:pb-16">
+        <p class="section-label mb-3">{t.home.categoriesLabel}</p>
+        <div class="grid grid-cols-2 gap-3 sm:gap-5">
+          {tiles.map((tile) => (
+            <a href={`${localize(lang, 'shop')}?category=${tile.id}`} class="cat-tile">
+              <img src={tile.image} alt="" loading="lazy" decoding="async" />
+              <span class="cat-tile-name">{tile.name}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ============ HECHO A MANO ============ -->
+  <section class="border-y-2 border-white/25 bg-noise">
+    <div class="page-container py-10 sm:py-16">
+      <p class="section-label mb-3">{t.home.craftLabel}</p>
+      <h2 class="font-titulos text-2xl sm:text-4xl text-blancoRoto leading-tight max-w-2xl">
+        {t.home.craftTitle}
+      </h2>
+      <p class="mt-3 sm:mt-4 text-sm sm:text-base text-white/80 leading-relaxed max-w-xl">
+        {t.home.craftText}
+      </p>
+      <a href={localize(lang, 'about')} class="btn-outline w-full sm:w-auto mt-6">
+        {t.home.craftCta}
+      </a>
+    </div>
+  </section>
 </BaseLayout>
 
 <style>
-  /* Alto exacto de una pantalla: 100dvh descuenta la barra del navegador en
-     móvil. Restamos la barra de anuncios (2.25rem) y el header (5rem / 6rem +
-     borde de 2px). */
-  .home-screen {
-    height: calc(100dvh - 2.25rem - 5rem - 2px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  /* Alto del escenario del hero: en móvil manda el ancho, no el viewport. */
+  .home-stage {
+    position: relative;
+    height: clamp(290px, 50vh, 460px);
+    margin-top: 1rem;
   }
 
   @media (min-width: 640px) {
-    .home-screen {
-      height: calc(100dvh - 2.25rem - 6rem - 2px);
+    .home-stage {
+      height: clamp(360px, 56vh, 540px);
+      margin-top: 1.5rem;
     }
   }
 
-  .hero-section {
+  /* El carrusel reservaba 4.25rem abajo para el CTA flotante de la portada
+     anterior. Ahora el CTA vive debajo del escenario: ese hueco sobra. */
+  .home-stage :global(.hero-link) {
+    padding-bottom: 0.5rem;
+  }
+
+  .cat-tile {
     position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    transition: border-color 0.3s ease;
   }
 
-  /* Botón pegada al borde inferior del hero. El carrusel reserva ese espacio
-     abajo (padding del slide) para que el botón no tape el nombre ni el precio. */
-  .hero-actions {
+  .cat-tile:hover {
+    border-color: #ffe28a;
+  }
+
+  .cat-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 10%;
+    transition: transform 0.5s ease;
+  }
+
+  .cat-tile:hover img {
+    transform: scale(1.04);
+  }
+
+  .cat-tile-name {
     position: absolute;
-    left: 50%;
+    left: 0;
+    right: 0;
     bottom: 0;
-    z-index: 20;
-    transform: translateX(-50%);
-    padding: 0 1rem 0.6rem;
-  }
-
-  .btn-drop {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 46px;
-    padding: 0.75rem 2.5rem;
-    background: #ffe28a;
-    color: #000000;
+    padding: 1.75rem 0.75rem 0.75rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0));
     font-family: 'Space Grotesk', Inter, sans-serif;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.8125rem;
-    line-height: 1;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    border-radius: 0.375rem;
-    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .btn-drop:hover {
-    background: #ffed9f;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px rgba(255, 226, 138, 0.45);
-  }
-
-  @media (max-width: 640px) {
-    .btn-drop {
-      min-height: 42px;
-      padding: 0.65rem 2rem;
-    }
-    .hero-actions {
-      padding-bottom: 0.5rem;
-    }
+    text-align: center;
+    color: #ffffff;
   }
 </style>

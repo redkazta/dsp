@@ -114,6 +114,22 @@ export const copy = {
       ctaFull: 'Ver el drop',
       reveal: 'Reflex',
     },
+    home: {
+      heroLabel: 'Nuevo drop',
+      heroText:
+        'Piezas reflectivas prensadas a mano. Ediciones cortas, hechas en México.',
+      heroPrimary: 'Ver el drop',
+      heroSecondary: 'Conoce la marca',
+      dropLabel: 'La colección',
+      dropTitle: 'Piezas que reflejan',
+      dropText: 'Camisas y jeans con acabados que cambian con la luz.',
+      categoriesLabel: 'Compra por categoría',
+      craftLabel: 'Hecho a mano',
+      craftTitle: 'Prensado a mano, una por una',
+      craftText:
+        'No producimos en masa. Cada prenda se personaliza individualmente, así que no hay dos piezas iguales.',
+      craftCta: 'Nuestra historia',
+    },
     search: {
       placeholder: 'Buscar piezas…',
       hint: 'Escribe al menos 2 letras.',
@@ -928,6 +944,21 @@ export const copy = {
       cta: 'Shop the drop',
       ctaFull: 'Shop the drop',
       reveal: 'Reflex',
+    },
+    home: {
+      heroLabel: 'New drop',
+      heroText: 'Hand-pressed reflective pieces. Short runs, made in Mexico.',
+      heroPrimary: 'Shop the drop',
+      heroSecondary: 'Meet the brand',
+      dropLabel: 'The collection',
+      dropTitle: 'Pieces that reflect',
+      dropText: 'Shirts and jeans with finishes that shift with the light.',
+      categoriesLabel: 'Shop by category',
+      craftLabel: 'Handmade',
+      craftTitle: 'Hand-pressed, one at a time',
+      craftText:
+        'We do not mass produce. Every piece is finished individually, so no two are the same.',
+      craftCta: 'Our story',
     },
     search: {
       placeholder: 'Search pieces…',
