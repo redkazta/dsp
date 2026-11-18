@@ -595,6 +595,7 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
   import '../../lib/reflect-anim';
   import { currentWishlist, hasSession, toggleWishlist } from '../../lib/wishlist';
   import { addToCart } from '../../lib/cart';
+  import { variantLabel } from '../../lib/variant-texts';
   type WishWindow = Window & { __dspWishBound?: boolean; __dspQuickBound?: boolean };
 
   function initWishCards() {
@@ -658,6 +659,8 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
   // ---------- Añadir al carrito desde la tarjeta ----------
   // La tarjeta entera es un enlace: todo lo que sea botón corta la navegación.
   function initQuickAdd() {
+    const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
+
     const addPiece = (
       card: HTMLElement,
       variantId: string,
@@ -671,7 +674,9 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
         productId: card.dataset.cardId!,
         slug: card.dataset.cardSlug || null,
         name: card.dataset.cardName!,
-        variantName: [size, color].filter(Boolean).join(' · ') || variantName || 'Unitalla',
+        variantName:
+          variantLabel({ name: variantName, size, color }, pageLang) ||
+          variantLabel(null, pageLang),
         price: Number(price) || 0,
         qty: 1,
         image: card.dataset.cardImage || undefined,

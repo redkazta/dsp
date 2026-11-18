@@ -14,6 +14,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '../../lib/supabase-server';
 import { TENANT_ID } from '../../lib/constants';
 import { demoPrice } from '../../lib/demo';
+import { productName } from '../../lib/product-texts';
+import type { Lang } from '../../lib/i18n';
 
 export const prerender = false;
 
@@ -88,10 +90,14 @@ async function listItems(supabase: SupabaseClient, userId: string) {
 }
 
 /** Lee de catálogo lo mínimo para guardar un favorito confiable. */
-async function productSnapshot(supabase: SupabaseClient, productId: string) {
+async function productSnapshot(
+  supabase: SupabaseClient,
+  productId: string,
+  lang: Lang = 'es'
+) {
   const { data } = await supabase
     .from('products')
-    .select('id, name, slug, base_price, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
+    .select('id, name, name_en, slug, base_price, is_active, is_deleted, tenant_id, product_variants(price), product_images(url, position)')
     .eq('id', productId)
     .maybeSingle();
 
@@ -105,7 +111,7 @@ async function productSnapshot(supabase: SupabaseClient, productId: string) {
   return {
     product_id: data.id,
     product_slug: data.slug ?? null,
-    product_name: data.name,
+    product_name: productName(data, lang),
     price: Number(variants[0]?.price ?? data.base_price ?? 0),
     image_url: (images[0] as any)?.url ?? null,
   };
@@ -134,7 +140,8 @@ export const GET: APIRoute = async ({ request, cookies }) => {
   return json({ items: await listItems(supabase, user.id) });
 };
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  const lang: Lang = locals?.lang === 'en' ? 'en' : 'es';
   const { supabase, user } = await resolveUser(request, cookies);
   if (!user) return json({ error: 'Inicia sesión para guardar favoritos.', guest: true }, 401);
 
@@ -156,7 +163,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     ].slice(0, 50);
 
     for (const id of ids) {
-      const snapshot = await productSnapshot(supabase, id);
+      const snapshot = await productSnapshot(supabase, id, lang);
       if (snapshot) {
         await supabase
           .from('wishlist_items')
@@ -183,7 +190,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     return json({ items: await listItems(supabase, user.id), active: false });
   }
 
-  const snapshot = await productSnapshot(supabase, productId);
+  const snapshot = await productSnapshot(supabase, productId, lang);
   if (!snapshot) return json({ error: 'Producto no disponible' }, 404);
 
   const { error } = await supabase.from('wishlist_items').insert({ user_id: user.id, ...snapshot });

@@ -839,4 +839,14 @@ img.is-flash-photo {
   body:has(.mobile-bar) {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
+
+  /* Con el aviso de cookies visible, la barra de acción sube encima para no
+     quedar tapada (el aviso mide 64px y va en z-95). */
+  body.has-cookie-bar .mobile-bar {
+    bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  body.has-cookie-bar:has(.mobile-bar) {
+    padding-bottom: calc(136px + env(safe-area-inset-bottom));
+  }
 }
