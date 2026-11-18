@@ -60,7 +60,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
             type="button"
             data-carousel-prev={trackId}
             class="carousel-arrow"
-            aria-label={`${title}: anteriores`}
+            aria-label={`${title}: ${t.product.previousPhoto}`}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="m15 18-6-6 6-6" />
@@ -70,7 +70,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
             type="button"
             data-carousel-next={trackId}
             class="carousel-arrow"
-            aria-label={`${title}: siguientes`}
+            aria-label={`${title}: ${t.product.nextPhoto}`}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="m9 18 6-6-6-6" />
@@ -88,7 +88,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
           id={trackId}
           class={`carousel-track${perView === 3 ? ' carousel-track--three' : ''}${compact ? ' carousel-track--compact' : ''}`}
           role="list"
-          aria-label={`${title}: piezas`}
+          aria-label={`${title}: ${t.checkout.pieceMany}`}
         >
           {uniqueProducts.map((product) => (
             <div class="carousel-item" role="listitem">

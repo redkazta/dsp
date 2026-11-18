@@ -37,7 +37,7 @@ import { localize } from '../lib/routes';
           <input
             type="email"
             name="email"
-            placeholder="tu@correo.com"
+            placeholder={lang === 'en' ? 'you@email.com' : 'tu@correo.com'}
             required
             class="input-dark"
             autocomplete="email"
