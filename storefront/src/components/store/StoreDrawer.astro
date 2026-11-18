@@ -1238,8 +1238,10 @@ import { localize } from '../../lib/routes';
 
   function open(tab: Tab = 'cart') {
     lastFocus = document.activeElement as HTMLElement;
-    // Cierra el menú móvil: el panel se abre encima del header
-    document.getElementById('mobile-menu')?.classList.add('hidden');
+    // Cierra el menú móvil: el panel se abre encima del header.
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenu?.classList.remove('is-open');
+    mobileMenu?.classList.add('hidden');
     drawer.hidden = false;
     switchTab(tab);
 
