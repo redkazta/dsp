@@ -134,9 +134,10 @@ import { localize } from '../lib/routes';
         <div id="cart-items" class="divide-y divide-white/15 border-y border-white/15"></div>
       </div>
 
-      <!-- Resumen: primero en móvil, al lado en desktop -->
-      <aside class="order-first lg:order-last">
-        <div class="lg:sticky lg:top-24 border-2 border-white/25 p-5 sm:p-6 bg-negro-carbono">
+      <!-- Resumen: debajo de las piezas en móvil (la barra fija lleva el
+           total y el CTA), al lado en desktop -->
+      <aside class="order-last">
+        <div class="lg:sticky lg:top-24 border-2 border-white/25 p-4 sm:p-6 bg-negro-carbono">
           <h2 class="font-titulos text-lg text-blancoRoto mb-4">{t.cart.summary}</h2>
 
           <div class="space-y-2.5 pb-4 border-b border-white/20">
@@ -228,6 +229,21 @@ import { localize } from '../lib/routes';
     }
   </div>
 
+  <!-- Barra fija de móvil: el total y el paso a pago, siempre a un pulgar. -->
+  <div id="cart-mobile-bar" class="mobile-bar hidden">
+    <div class="mobile-bar-inner">
+      <div class="min-w-0">
+        <p class="font-acentos text-[9px] uppercase tracking-[0.18em] text-white/70 leading-none mb-1">
+          {t.cart.total}
+        </p>
+        <p id="bar-total" class="font-acentos text-xl text-oro-brillo leading-none">$0.00</p>
+      </div>
+      <a href={checkoutHref} class="btn-gold flex-1 max-w-[220px] !min-h-[46px] !py-2.5 !px-4 !text-xs">
+        {t.cart.checkout}
+      </a>
+    </div>
+  </div>
+
   <script>
     import {
       getCart,
@@ -259,6 +275,8 @@ import { localize } from '../lib/routes';
     const list = document.getElementById('cart-items')!;
     const notices = document.getElementById('cart-notices')!;
     const summaryText = document.getElementById('cart-summary-text')!;
+    const mobBar = document.getElementById('cart-mobile-bar');
+    const mobBarTotal = document.getElementById('bar-total');
 
     function render() {
       const items = getCart();
@@ -273,6 +291,7 @@ import { localize } from '../lib/routes';
         // Inline: `hidden` no puede ganarle al `grid` de la clase.
         content.style.display = 'none';
         summaryText.textContent = `0 ${uiText('many')}`;
+        mobBar?.classList.add('hidden');
         return;
       }
 
@@ -285,34 +304,36 @@ import { localize } from '../lib/routes';
         .map((i) => {
           const img = safeUrl(i.image);
           return `
-        <div class="cart-row flex items-center gap-4 py-3.5 sm:py-4" data-row="${escapeHtml(i.variantId)}">
-          <div class="w-16 h-16 sm:w-[72px] sm:h-[72px] bg-white border border-white/25 overflow-hidden shrink-0">
+        <div class="cart-row grid grid-cols-[64px_minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 py-4 sm:flex sm:items-center sm:gap-4" data-row="${escapeHtml(i.variantId)}">
+          <div class="col-start-1 row-start-1 row-span-2 sm:row-span-1 w-16 h-16 sm:w-[72px] sm:h-[72px] bg-white border border-white/25 overflow-hidden shrink-0">
             ${img ? `<img src="${img}" alt="${escapeHtml(i.name)}" class="w-full h-full object-contain">` : ''}
           </div>
 
-          <div class="flex-1 min-w-0">
+          <div class="col-start-2 row-start-1 min-w-0 sm:flex-1">
             <h3 class="font-acentos text-sm sm:text-[15px] text-blancoRoto truncate">${escapeHtml(i.name)}</h3>
             <p class="text-xs text-white/65 truncate mt-0.5">${escapeHtml(i.variantName)}</p>
           </div>
 
-          <div class="flex items-center border border-white/30 shrink-0">
-            <button data-dec="${escapeHtml(i.variantId)}" aria-label="${uiText('removeOne')}"
-              class="w-8 h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-sm leading-none">−</button>
-            <span class="w-8 text-center text-sm text-blancoRoto tabular-nums">${i.qty}</span>
-            <button data-inc="${escapeHtml(i.variantId)}" aria-label="${uiText('addOne')}"
-              class="w-8 h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-sm leading-none">+</button>
-          </div>
-
-          <p class="font-acentos text-sm sm:text-base text-oro-brillo whitespace-nowrap w-[76px] text-right shrink-0 tabular-nums">$${formatMXN(i.price * i.qty)}</p>
-
           <button data-remove="${escapeHtml(i.variantId)}"
             aria-label="${uiText('remove')}: ${escapeHtml(i.name)}"
             title="${uiText('remove')}"
-            class="remove-btn w-9 h-9 shrink-0 inline-flex items-center justify-center border border-white/25 text-white/60 hover:border-red-400 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+            class="col-start-3 row-start-1 justify-self-end remove-btn w-9 h-9 shrink-0 inline-flex items-center justify-center border border-white/25 text-white/60 hover:border-red-400 hover:text-red-400 hover:bg-red-400/10 transition-colors sm:order-last">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
               <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" />
             </svg>
           </button>
+
+          <div class="col-start-2 col-end-4 row-start-2 flex items-center justify-between gap-3 sm:col-auto sm:row-auto sm:flex-1 sm:justify-end">
+            <div class="flex items-center border border-white/30 shrink-0">
+              <button data-dec="${escapeHtml(i.variantId)}" aria-label="${uiText('removeOne')}"
+                class="w-10 h-10 sm:w-8 sm:h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-base sm:text-sm leading-none">−</button>
+              <span class="w-8 text-center text-sm text-blancoRoto tabular-nums">${i.qty}</span>
+              <button data-inc="${escapeHtml(i.variantId)}" aria-label="${uiText('addOne')}"
+                class="w-10 h-10 sm:w-8 sm:h-8 text-blancoRoto hover:text-oro-brillo hover:bg-white/5 transition-colors text-base sm:text-sm leading-none">+</button>
+            </div>
+
+            <p class="font-acentos text-sm sm:text-base text-oro-brillo whitespace-nowrap text-right shrink-0 tabular-nums sm:w-[76px]">$${formatMXN(i.price * i.qty)}</p>
+          </div>
         </div>`;
         })
         .join('');
@@ -324,6 +345,9 @@ import { localize } from '../lib/routes';
       document.getElementById('sum-total')!.textContent = `$${formatMXN(subtotal + shipping)}`;
       document.getElementById('sum-shipping')!.textContent =
         subtotal === 0 ? '—' : shipping === 0 ? uiText('free') : `$${formatMXN(shipCost)}`;
+
+      if (mobBarTotal) mobBarTotal.textContent = `$${formatMXN(subtotal + shipping)}`;
+      mobBar?.classList.remove('hidden');
 
       const progress = document.getElementById('free-shipping-progress')!;
       const bar = document.getElementById('free-shipping-bar')!;

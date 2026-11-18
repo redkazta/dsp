@@ -28,6 +28,12 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /* Los enlaces con ancla (#pedidos, #carrito...) no deben quedar debajo
+     del header fijo al navegar en móvil. */
+  [id] {
+    scroll-margin-top: 6.5rem;
+  }
+
   body {
     @apply bg-negro-profundo text-blancoRoto font-cuerpo;
     overflow-x: hidden;
@@ -131,6 +137,23 @@
   /* Contenedor de página consistente */
   .page-container {
     @apply max-w-[1400px] mx-auto px-5 sm:px-6 lg:px-10;
+  }
+
+  /* ============================================
+     Barra de acción fija (solo móvil)
+
+     En el teléfono la acción principal vive al alcance del pulgar:
+     total a la izquierda, botón a la derecha. La página reserva el alto
+     con `:has()` para que la barra no tape el último bloque.
+     ============================================ */
+  .mobile-bar {
+    @apply lg:hidden fixed bottom-0 left-0 right-0 z-40
+      bg-negro-profundo/95 backdrop-blur-xl border-t-2 border-white/25;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-bar-inner {
+    @apply max-w-[1400px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3;
   }
 
   /* Card oscura con borde visible (detalle dorado claro del tenant) */
@@ -803,5 +826,17 @@ img.is-flash-photo {
 @media (prefers-reduced-motion: reduce) {
   .dsp-dialog {
     animation: none;
+  }
+}
+
+/* ============================================
+   Reserva de espacio para las barras fijas de móvil
+   ============================================
+   Sin esto, la barra inferior tapa el último bloque de la página (el pie
+   o el botón de continuar). `:has()` evita tener que tocar el body desde
+   cada vista: si la página montó una barra, el documento se aparta. */
+@media (max-width: 1023px) {
+  body:has(.mobile-bar) {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
 }

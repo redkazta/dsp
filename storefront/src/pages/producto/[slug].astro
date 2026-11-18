@@ -409,6 +409,30 @@ import { localize } from '../../lib/routes';
             </div>
           </div>
         </div>
+
+        <!-- Barra fija de móvil: precio + añadir sin subir a buscar el CTA.
+             Se esconde sola cuando el botón real ya está en pantalla. -->
+        {!isSoldOut && (
+          <div id="pdp-mobile-bar" class="mobile-bar pdp-mobile-bar">
+            <div class="mobile-bar-inner">
+              <div class="min-w-0">
+                <p class="font-acentos text-[9px] uppercase tracking-[0.18em] text-white/70 leading-none mb-1">
+                  USD
+                </p>
+                <p class="font-acentos text-xl text-oro-brillo leading-none">
+                  ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <button
+                type="button"
+                data-mobile-add
+                class="btn-gold flex-1 max-w-[220px] !min-h-[46px] !py-2.5 !px-4 !text-xs"
+              >
+                {t.product.addToCart}
+              </button>
+            </div>
+          </div>
+        )}
       </>
     )
   }
@@ -835,6 +859,21 @@ import { localize } from '../../lib/routes';
       border-color: #ffe28a;
       color: #ffe28a;
     }
+
+    /* Barra fija de la ficha en móvil */
+    .pdp-mobile-bar {
+      transition: transform 0.25s ease;
+    }
+
+    .pdp-mobile-bar.is-hidden {
+      transform: translateY(110%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pdp-mobile-bar {
+        transition: none;
+      }
+    }
   </style>
 
   <script>
@@ -874,6 +913,35 @@ import { localize } from '../../lib/routes';
 
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !lightbox.hidden) closeZoom();
+      });
+    }
+
+    // Barra fija de móvil: si falta talla/color, lleva al selector; si no,
+    // dispara el mismo botón de siempre (una sola ruta de compra).
+    const mobileBar = document.getElementById('pdp-mobile-bar');
+    const realCta = document.getElementById('add-to-cart') as HTMLButtonElement | null;
+
+    if (mobileBar && realCta) {
+      const hideBar = (hidden: boolean) => mobileBar.classList.toggle('is-hidden', hidden);
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => hideBar(entries[0]?.isIntersecting ?? false),
+          { threshold: 0.4 }
+        );
+        observer.observe(realCta);
+      }
+
+      mobileBar.querySelector<HTMLElement>('[data-mobile-add]')?.addEventListener('click', () => {
+        const chooser = document.getElementById('size-options');
+        const chosen = document.querySelector('.size-btn.border-oro-brillo');
+
+        if (chooser && !chosen) {
+          chooser.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        realCta.click();
       });
     }
   </script>

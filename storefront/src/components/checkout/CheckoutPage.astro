@@ -84,16 +84,16 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 <BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription}>
   <script type="application/json" id="checkout-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/25 bg-noise">
-    <div class="page-container py-10 sm:py-12">
-      <nav class="mb-6">
-        <ol class="flex items-center gap-2 font-acentos text-xs uppercase tracking-[0.2em] text-white/80">
+    <div class="page-container py-6 sm:py-12">
+      <nav class="mb-4 sm:mb-6">
+        <ol class="flex items-center gap-2 font-acentos text-[10px] sm:text-xs uppercase tracking-[0.2em] text-white/80">
           <li><a href={localize(lang, 'cart')} class="hover:text-oro-brillo transition-colors">{t.cart.title}</a></li>
           <li>/</li>
           <li class="text-oro-brillo">{t.checkout.title}</li>
         </ol>
       </nav>
-      <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto">{t.checkout.title}</h1>
-      <p class="mt-3 text-base text-white/80">{t.checkout.subtitle}</p>
+      <h1 class="font-titulos text-2xl sm:text-4xl lg:text-5xl text-blancoRoto leading-tight">{t.checkout.title}</h1>
+      <p class="mt-2 sm:mt-3 text-sm sm:text-base text-white/80">{t.checkout.subtitle}</p>
       {guest && (
         <p class="mt-2 text-sm text-white/70">
           {t.checkout.guestNote}{' '}
@@ -120,9 +120,9 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     <a href={localize(lang, 'shop')} class="btn-gold inline-flex">{t.checkout.goShop}</a>
   </div>
 
-  <div id="checkout-content" class="page-container py-8 sm:py-12 lg:py-16">
+  <div id="checkout-content" class="page-container py-6 sm:py-12 lg:py-16">
     <!-- Indicador de pasos: siempre visible para saber dónde va la compra. -->
-    <nav id="checkout-steps" class="mb-8" aria-label={t.checkout.title}>
+    <nav id="checkout-steps" class="mb-6 sm:mb-8" aria-label={t.checkout.title}>
       <ol class="grid grid-cols-3 gap-2 sm:gap-4">
         <li>
           <button
@@ -157,8 +157,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       <div class="lg:col-span-2 order-2 lg:order-1">
         <form id="checkout-form" class="space-y-8" novalidate>
           <!-- Paso 1: contacto -->
-          <section id="step-1" data-step="1" class="bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
-            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+          <section id="step-1" data-step="1" class="bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+            <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">1</span>
               {t.checkout.step1}
             </h2>
@@ -204,8 +204,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           </section>
 
           <!-- Paso 2: envío -->
-          <section id="step-2" data-step="2" class="hidden bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
-            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+          <section id="step-2" data-step="2" class="hidden bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+            <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">2</span>
               {t.checkout.step2}
             </h2>
@@ -355,8 +355,8 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           </section>
 
           <!-- Paso 3: pago embebido -->
-          <section id="step-3" data-step="3" class="hidden bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
-            <h2 class="font-titulos text-2xl text-blancoRoto mb-6 flex items-center gap-3">
+          <section id="step-3" data-step="3" class="hidden bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+            <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">3</span>
               {t.checkout.step3}
             </h2>
@@ -414,45 +414,93 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         </form>
       </div>
 
-      <!-- Resumen del pedido -->
+      <!-- Resumen del pedido. En móvil arranca plegado: una línea con
+           piezas + total, para que el formulario quede arriba y la compra
+           no empiece con dos pantallas de resumen. -->
       <aside class="lg:col-span-1 order-1 lg:order-2">
-        <div class="lg:sticky lg:top-28 bg-negro-carbono border-2 border-white/25 p-6 sm:p-8">
-          <h2 class="font-titulos text-2xl text-blancoRoto mb-6">{t.checkout.orderTitle}</h2>
-          <div id="checkout-items" class="divide-y-2 divide-white/15 mb-6">
-            <!-- Los items se renderizan aquí -->
-          </div>
+        <details
+          id="co-summary"
+          class="lg:sticky lg:top-28 bg-negro-carbono border-2 border-white/25"
+        >
+          <summary class="lg:hidden flex items-center justify-between gap-3 p-4 cursor-pointer list-none">
+            <span class="flex items-baseline gap-2 min-w-0">
+              <span class="font-acentos text-xs uppercase tracking-[0.18em] text-blancoRoto truncate">
+                {t.checkout.orderTitle}
+              </span>
+              <span id="co-summary-count" class="text-[11px] text-white/70 whitespace-nowrap"></span>
+            </span>
+            <span class="flex items-center gap-2 shrink-0">
+              <span id="co-summary-total" class="font-acentos text-lg text-oro-brillo leading-none">$0.00</span>
+              <svg
+                class="co-summary-chevron text-oro-brillo"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+          </summary>
 
-          <p
-            id="checkout-summary-error"
-            role="status"
-            class="hidden mb-4 text-sm text-oro-brillo leading-relaxed border-2 border-oro-brillo/50 px-3 py-2"
-          ></p>
+          <div class="p-4 sm:p-6 lg:p-8">
+            <h2 class="hidden lg:block font-titulos text-2xl text-blancoRoto mb-6">{t.checkout.orderTitle}</h2>
 
-          <div class="space-y-3 pb-4 border-b-2 border-white/25 text-base">
-            <div class="flex justify-between">
-              <span class="text-white/80">{t.cart.subtotal}</span>
-              <span id="co-subtotal" class="text-blancoRoto">$0.00</span>
+            <div id="checkout-items" class="divide-y-2 divide-white/15 mb-4 sm:mb-6">
+              <!-- Los items se renderizan aquí -->
             </div>
-            <div class="flex justify-between">
-              <span class="text-white/80">{t.cart.shipping}</span>
-              <span id="co-shipping" class="text-blancoRoto">—</span>
+
+            <p
+              id="checkout-summary-error"
+              role="status"
+              class="hidden mb-4 text-sm text-oro-brillo leading-relaxed border-2 border-oro-brillo/50 px-3 py-2"
+            ></p>
+
+            <div class="space-y-3 pb-4 border-b-2 border-white/25 text-sm sm:text-base">
+              <div class="flex justify-between">
+                <span class="text-white/80">{t.cart.subtotal}</span>
+                <span id="co-subtotal" class="text-blancoRoto">$0.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-white/80">{t.cart.shipping}</span>
+                <span id="co-shipping" class="text-blancoRoto">—</span>
+              </div>
+              <p id="co-shipping-note" class="hidden text-[11px] text-white/60 leading-snug text-right"></p>
             </div>
-            <p id="co-shipping-note" class="hidden text-[11px] text-white/60 leading-snug text-right"></p>
-          </div>
 
-          <div class="flex justify-between items-center py-5">
-            <span class="font-acentos text-base uppercase tracking-[0.18em] text-blancoRoto">{t.checkout.total}</span>
-            <span id="co-total" class="font-acentos text-3xl text-oro-brillo font-medium">$0.00</span>
-          </div>
+            <div class="flex justify-between items-baseline py-4 sm:py-5">
+              <span class="font-acentos text-sm sm:text-base uppercase tracking-[0.18em] text-blancoRoto">{t.checkout.total}</span>
+              <span id="co-total" class="font-acentos text-2xl sm:text-3xl text-oro-brillo font-medium">$0.00</span>
+            </div>
 
-          <p class="mt-2 text-xs text-white/80 text-center leading-relaxed">
-            {t.checkout.terms}
-            <a href={localize(lang, 'terms')} class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
-            {t.checkout.and} <a href={localize(lang, 'privacy')} class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
-            {t.checkout.and} <a href={localize(lang, 'returns')} class="text-oro-brillo underline underline-offset-2">{t.checkout.returnsLink}</a>.
-          </p>
-        </div>
+            <p class="hidden sm:block mt-2 text-xs text-white/80 text-center leading-relaxed">
+              {t.checkout.terms}
+              <a href={localize(lang, 'terms')} class="text-oro-brillo underline underline-offset-2">{t.checkout.termsLink}</a>,
+              {t.checkout.and} <a href={localize(lang, 'privacy')} class="text-oro-brillo underline underline-offset-2">{t.checkout.privacyLink}</a>
+              {t.checkout.and} <a href={localize(lang, 'returns')} class="text-oro-brillo underline underline-offset-2">{t.checkout.returnsLink}</a>.
+            </p>
+          </div>
+        </details>
       </aside>
+    </div>
+  </div>
+
+  <!-- Barra fija de móvil: total vivo + acción del paso actual.
+       Evita bajar hasta el final del formulario para continuar o pagar. -->
+  <div id="checkout-mobile-bar" class="mobile-bar hidden">
+    <div class="mobile-bar-inner">
+      <div class="min-w-0">
+        <p class="font-acentos text-[9px] uppercase tracking-[0.18em] text-white/70 leading-none mb-1">
+          {t.checkout.total}
+        </p>
+        <p id="bar-total" class="font-acentos text-xl text-oro-brillo leading-none">$0.00</p>
+      </div>
+      <button type="button" id="bar-cta" class="btn-gold flex-1 max-w-[220px] !min-h-[46px] !py-2.5 !px-4 !text-xs">
+        {t.checkout.continueBtn}
+      </button>
     </div>
   </div>
 
@@ -621,13 +669,30 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
         font-size: 0.75rem;
       }
     }
+
+    /* Resumen plegable de móvil */
+    #co-summary > summary {
+      list-style: none;
+    }
+
+    #co-summary > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .co-summary-chevron {
+      transition: transform 0.2s ease;
+    }
+
+    #co-summary[open] .co-summary-chevron {
+      transform: rotate(180deg);
+    }
   </style>
 
   <script>
     import { getCart, refreshCartPrices, formatMXN, startCartSync } from '../../lib/cart';
     import { nudge, busy } from '../../lib/ux';
     import { shippingCostFor } from '../../lib/pricing';
-    import { escapeHtml, friendlyError } from '../../lib/html';
+    import { escapeHtml, friendlyError, safeUrl } from '../../lib/html';
     import { askConfirm } from '../../lib/dialog';
     import { wireZipAutocomplete } from '../../lib/zip-autocomplete';
 
@@ -640,6 +705,19 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     const summaryError: HTMLElement | null = document.getElementById('checkout-summary-error') as HTMLElement;
     const alertDiv = document.getElementById('checkout-alert') as HTMLElement;
     const paymentAvailable = payBtn?.getAttribute('data-available') !== 'false';
+
+    // Resumen plegable y barra fija de móvil.
+    const summaryBox = document.getElementById('co-summary') as HTMLDetailsElement | null;
+    const summaryTotal = document.getElementById('co-summary-total');
+    const summaryCount = document.getElementById('co-summary-count');
+    const mobileBar = document.getElementById('checkout-mobile-bar');
+    const mobileBarTotal = document.getElementById('bar-total');
+    const mobileBarCta = document.getElementById('bar-cta') as HTMLButtonElement | null;
+
+    // En escritorio el resumen se ve completo; en móvil arranca plegado.
+    if (summaryBox && window.matchMedia?.('(min-width: 1024px)').matches) {
+      summaryBox.open = true;
+    }
 
     // ---------------- Pasos del checkout ----------------
 
@@ -675,6 +753,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       if (stepProgressEl) {
         stepProgressEl.textContent = `${uiText('stepProgress')} ${step} ${uiText('stepOf')} ${stepSections.length}`;
+      }
+
+      if (mobileBarCta) {
+        mobileBarCta.textContent = step >= 3 ? uiText('pay') : uiText('continueBtn');
       }
 
       if (step === 2) {
@@ -1258,24 +1340,35 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       if (items.length === 0) {
         empty.classList.remove('hidden');
         main.classList.add('hidden');
+        mobileBar?.classList.add('hidden');
         return;
       }
 
       empty.classList.add('hidden');
       main.classList.remove('hidden');
+      mobileBar?.classList.remove('hidden');
 
       document.getElementById('checkout-items')!.innerHTML = items
-        .map(
-          (i) => `
-        <div class="flex justify-between items-center gap-3 py-3">
-          <div class="min-w-0">
-            <p class="text-base text-blancoRoto">${escapeHtml(i.name)}</p>
-            <p class="text-sm text-white/80">${escapeHtml(i.variantName)} × ${i.qty}</p>
+        .map((i) => {
+          const img = safeUrl(i.image);
+          return `
+        <div class="flex items-center gap-3 py-3">
+          <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-white border border-white/25 overflow-hidden">
+            ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain" loading="lazy" decoding="async">` : ''}
           </div>
-          <span class="text-base font-acentos text-oro-brillo whitespace-nowrap">$${formatMXN(i.price * i.qty)}</span>
-        </div>`
-        )
+          <div class="min-w-0 flex-1">
+            <p class="text-sm sm:text-base text-blancoRoto leading-snug">${escapeHtml(i.name)}</p>
+            <p class="text-xs sm:text-sm text-white/80 mt-0.5">${escapeHtml(i.variantName)} × ${i.qty}</p>
+          </div>
+          <span class="text-sm sm:text-base font-acentos text-oro-brillo whitespace-nowrap">$${formatMXN(i.price * i.qty)}</span>
+        </div>`;
+        })
         .join('');
+
+      const pieces = items.reduce((sum, i) => sum + i.qty, 0);
+      if (summaryCount) {
+        summaryCount.textContent = `${pieces} ${pieces === 1 ? uiText('pieceOne') : uiText('pieceMany')}`;
+      }
 
       const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
       const flat = flatShipping(subtotal);
@@ -1290,9 +1383,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       if (pending) {
         shippingEl.textContent = '—';
         totalEl.textContent = '—';
+        if (summaryTotal) summaryTotal.textContent = '—';
+        if (mobileBarTotal) mobileBarTotal.textContent = '—';
       } else {
         shippingEl.textContent = shipping === 0 ? uiText('free') : `$${formatMXN(shipping)}`;
         totalEl.textContent = `$${formatMXN(subtotal + shipping)}`;
+        if (summaryTotal) summaryTotal.textContent = `$${formatMXN(subtotal + shipping)}`;
+        if (mobileBarTotal) mobileBarTotal.textContent = `$${formatMXN(subtotal + shipping)}`;
       }
 
       if (shippingNoteEl) {
@@ -1460,6 +1557,15 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     document.querySelectorAll<HTMLElement>('[data-back]').forEach((button) => {
       button.addEventListener('click', () => goToStep(Number(button.dataset.back)));
+    });
+
+    // Barra fija de móvil: hace lo mismo que el botón del paso visible.
+    mobileBarCta?.addEventListener('click', () => {
+      if (currentStep >= 3) {
+        form?.requestSubmit();
+        return;
+      }
+      goToStep(currentStep + 1);
     });
 
     stepTabs.forEach((tab) => {
