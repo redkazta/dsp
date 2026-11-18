@@ -428,6 +428,39 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
     transform: scaleX(1);
   }
 
+  /* El badge del reflejo, en píldora horizontal dentro de la tarjeta: el
+     bloque alto se comía media foto en un grid de dos columnas. */
+  .product-card-wrap :global(.reflect-badge) {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 0;
+    padding: 4px 7px;
+    border-width: 1px;
+    top: 8px;
+    left: 8px;
+  }
+
+  .product-card-wrap :global(.reflect-badge-label) {
+    font-size: 6.5px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .product-card-wrap :global(.reflect-badge-count) {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .product-card-wrap :global(.reflect-badge-dot) {
+    width: 4px;
+    height: 4px;
+    flex-basis: 4px;
+  }
+
   .product-cta {
     transform: translateY(0);
   }

@@ -86,6 +86,7 @@
       hover:bg-[#FFF3C4] hover:border-[#FFF3C4] hover:shadow-[0_0_36px_-8px_rgba(255,226,138,0.7)]
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-brillo focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
       disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: 14px;
   }
 
   /* Botón outline con contraste alto */
@@ -97,6 +98,7 @@
       hover:border-oro-brillo hover:text-oro-brillo
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oro-brillo focus-visible:ring-offset-2 focus-visible:ring-offset-negro-profundo
       disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: 14px;
   }
 
   /* Línea decorativa dorada (más gruesa) */
@@ -125,6 +127,14 @@
       outline-none transition-colors duration-300
       focus:border-oro-brillo
       focus-visible:ring-2 focus-visible:ring-oro-brillo/45;
+    background: #0a0a0a;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+  }
+
+  .input-dark:focus {
+    border-color: #ffe28a;
   }
 
   /* Selector de fecha legible sobre fondo oscuro */
@@ -149,6 +159,8 @@
   .mobile-bar {
     @apply lg:hidden fixed bottom-0 left-0 right-0 z-40
       bg-negro-profundo/95 backdrop-blur-xl border-t-2 border-white/25;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -20px 44px -28px rgba(0, 0, 0, 0.95);
     padding-bottom: env(safe-area-inset-bottom);
   }
 
@@ -159,6 +171,10 @@
   /* Card oscura con borde visible (detalle dorado claro del tenant) */
   .card {
     @apply bg-negro-carbono border-2 border-oro-claro/25;
+    background: #070707;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
   }
 
   /* ============================================
@@ -177,6 +193,7 @@
     width: 100%;
     overflow: hidden;
     background: #ffffff;
+    border-radius: 16px;
   }
 
   .product-frame img,

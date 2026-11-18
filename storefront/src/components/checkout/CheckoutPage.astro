@@ -81,7 +81,7 @@ const { firstName, email, phone } = Astro.locals;
 const canceled = Astro.url.searchParams.get('canceled') === '1';
 ---
 
-<BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription}>
+<BaseLayout title={t.checkout.metaTitle} description={t.checkout.metaDescription} hideFooter>
   <script type="application/json" id="checkout-ui" set:html={JSON.stringify(ui)} />
   <section class="border-b-2 border-white/25 bg-noise">
     <div class="page-container py-6 sm:py-12">
@@ -121,9 +121,12 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   </div>
 
   <div id="checkout-content" class="page-container py-6 sm:py-12 lg:py-16">
-    <!-- Indicador de pasos: siempre visible para saber dónde va la compra. -->
-    <nav id="checkout-steps" class="mb-6 sm:mb-8" aria-label={t.checkout.title}>
-      <ol class="grid grid-cols-3 gap-2 sm:gap-4">
+    <!-- Indicador de pasos: barra de progreso + nombres, pegada bajo el header. -->
+    <nav id="checkout-steps" class="mb-5 sm:mb-8" aria-label={t.checkout.title}>
+      <div class="co-steps-track" aria-hidden="true">
+        <span id="co-steps-fill" class="co-steps-fill"></span>
+      </div>
+      <ol class="co-steps-labels">
         <li>
           <button
             type="button"
@@ -132,19 +135,16 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
             aria-current="step"
             aria-controls="step-1"
           >
-            <span class="step-num">1</span>
             <span class="step-name">{t.checkout.step1}</span>
           </button>
         </li>
         <li>
           <button type="button" class="step-tab" data-step-tab="2" aria-controls="step-2">
-            <span class="step-num">2</span>
             <span class="step-name">{t.checkout.step2}</span>
           </button>
         </li>
         <li>
           <button type="button" class="step-tab" data-step-tab="3" aria-controls="step-3">
-            <span class="step-num">3</span>
             <span class="step-name">{t.checkout.step3}</span>
           </button>
         </li>
@@ -157,7 +157,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       <div class="lg:col-span-2 order-2 lg:order-1">
         <form id="checkout-form" class="space-y-8" novalidate>
           <!-- Paso 1: contacto -->
-          <section id="step-1" data-step="1" class="bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+          <section id="step-1" data-step="1" class="co-card">
             <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">1</span>
               {t.checkout.step1}
@@ -198,13 +198,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
                 />
               </div>
             </div>
-            <div class="mt-6 flex justify-end">
-              <button type="button" class="btn-gold" data-next="2">{t.checkout.continueBtn}</button>
+            <div class="mt-6 flex">
+              <button type="button" class="btn-gold w-full sm:ml-auto sm:w-auto" data-next="2">{t.checkout.continueBtn}</button>
             </div>
           </section>
 
           <!-- Paso 2: envío -->
-          <section id="step-2" data-step="2" class="hidden bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+          <section id="step-2" data-step="2" class="hidden co-card">
             <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">2</span>
               {t.checkout.step2}
@@ -355,7 +355,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           </section>
 
           <!-- Paso 3: pago embebido -->
-          <section id="step-3" data-step="3" class="hidden bg-negro-carbono border-2 border-white/25 p-4 sm:p-8">
+          <section id="step-3" data-step="3" class="hidden co-card">
             <h2 class="font-titulos text-xl sm:text-2xl text-blancoRoto mb-5 sm:mb-6 flex items-center gap-3">
               <span class="w-8 h-8 border-2 border-oro-brillo text-oro-brillo flex items-center justify-center font-acentos text-sm">3</span>
               {t.checkout.step3}
@@ -420,7 +420,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       <aside class="lg:col-span-1 order-1 lg:order-2">
         <details
           id="co-summary"
-          class="lg:sticky lg:top-28 bg-negro-carbono border-2 border-white/25"
+          class="co-summary lg:sticky lg:top-28"
         >
           <summary class="lg:hidden flex items-center justify-between gap-3 p-4 cursor-pointer list-none">
             <span class="flex items-baseline gap-2 min-w-0">
@@ -540,30 +540,31 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     .field-label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.45rem;
       font-family: 'Space Grotesk', Inter, sans-serif;
-      font-size: 0.75rem;
+      font-size: 0.6875rem;
       font-weight: 600;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #ffe28a;
+      color: rgba(255, 255, 255, 0.62);
     }
 
     .input-dark {
       width: 100%;
-      background: #050505;
-      border: 2px solid rgba(247, 223, 165, 0.28);
-      border-radius: 0.375rem;
-      padding: 0.75rem 1rem;
+      min-height: 52px;
+      background: #0a0a0a;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
       color: #ffffff;
       font-size: 1rem;
-      transition: all 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .input-dark:focus {
       outline: none;
       border-color: #ffe28a;
-      box-shadow: 0 0 0 3px rgba(255, 226, 138, 0.1);
+      box-shadow: 0 0 0 3px rgba(255, 226, 138, 0.12);
     }
 
     .input-dark::placeholder {
@@ -584,7 +585,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       letter-spacing: 0.18em;
       text-transform: uppercase;
       padding: 1rem 1.5rem;
-      border-radius: 0.375rem;
+      border-radius: 14px;
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
@@ -610,63 +611,113 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       margin: 0 auto;
     }
 
-    .step-tab {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      width: 100%;
-      padding: 0.7rem 0.75rem;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 0.375rem;
-      text-align: left;
-      transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+    /* ---------- Tarjetas del flujo ---------- */
+    .co-card {
+      background: #070707;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 1rem;
     }
 
-    .step-tab[aria-current='step'] {
-      border-color: #ffe28a;
-      background: rgba(255, 226, 138, 0.08);
-    }
-
-    .step-tab.step-done {
-      border-color: rgba(255, 226, 138, 0.55);
-    }
-
-    .step-tab.step-ahead {
-      opacity: 0.65;
-    }
-
-    .step-num {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.6rem;
-      height: 1.6rem;
-      flex: 0 0 auto;
-      border: 2px solid rgba(255, 255, 255, 0.45);
-      border-radius: 9999px;
-      font-family: 'Space Grotesk', Inter, sans-serif;
-      font-size: 0.7rem;
-      color: #ffffff;
-    }
-
-    .step-tab[aria-current='step'] .step-num,
-    .step-tab.step-done .step-num {
-      border-color: #ffe28a;
-      color: #ffe28a;
-    }
-
-    .step-name {
-      font-family: 'Space Grotesk', Inter, sans-serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.85);
-      line-height: 1.2;
+    .co-summary {
+      background: #070707;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      overflow: hidden;
     }
 
     @media (min-width: 640px) {
+      .co-card {
+        padding: 2rem;
+        border-radius: 22px;
+      }
+    }
+
+    /* ---------- Progreso de pasos ---------- */
+    #checkout-steps {
+      position: sticky;
+      top: 5rem;
+      z-index: 30;
+      margin-inline: -1.25rem;
+      padding: 0.65rem 1.25rem 0.75rem;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .co-steps-track {
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      overflow: hidden;
+    }
+
+    .co-steps-fill {
+      display: block;
+      width: 33.3333%;
+      height: 100%;
+      border-radius: 999px;
+      background: #ffe28a;
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .co-steps-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.55rem;
+    }
+
+    .co-steps-labels li {
+      min-width: 0;
+    }
+
+    .step-tab {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      text-align: left;
+    }
+
+    .step-name {
+      display: block;
+      font-family: 'Space Grotesk', Inter, sans-serif;
+      font-size: 0.5625rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.42);
+      transition: color 0.2s ease;
+    }
+
+    .step-tab[aria-current='step'] .step-name {
+      color: #ffe28a;
+    }
+
+    .step-tab.step-done .step-name {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .step-tab.step-ahead .step-name {
+      color: rgba(255, 255, 255, 0.38);
+    }
+
+    @media (min-width: 640px) {
+      #checkout-steps {
+        top: 6rem;
+        margin-inline: 0;
+        padding-inline: 0;
+        background: transparent;
+        backdrop-filter: none;
+        border-bottom: 0;
+      }
+
       .step-name {
-        font-size: 0.75rem;
+        font-size: 0.6875rem;
+        letter-spacing: 0.16em;
       }
     }
 
@@ -685,6 +736,13 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     #co-summary[open] .co-summary-chevron {
       transform: rotate(180deg);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .co-steps-fill,
+      .co-summary-chevron {
+        transition: none;
+      }
     }
   </style>
 
@@ -729,6 +787,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       document.querySelectorAll<HTMLElement>('[data-step-tab]')
     );
     const stepProgressEl = document.getElementById('step-progress');
+    const stepsFill = document.getElementById('co-steps-fill');
     const reducedMotion = () =>
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
@@ -754,6 +813,10 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
       if (stepProgressEl) {
         stepProgressEl.textContent = `${uiText('stepProgress')} ${step} ${uiText('stepOf')} ${stepSections.length}`;
+      }
+
+      if (stepsFill) {
+        stepsFill.style.width = `${(step / stepSections.length) * 100}%`;
       }
 
       if (mobileBarCta) {
@@ -1354,7 +1417,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           const img = safeUrl(i.image);
           return `
         <div class="flex items-center gap-3 py-3">
-          <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-white border border-white/25 overflow-hidden">
+          <div class="w-14 h-14 sm:w-16 sm:h-16 shrink-0 bg-white border border-white/25 rounded-xl overflow-hidden">
             ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain" loading="lazy" decoding="async">` : ''}
           </div>
           <div class="min-w-0 flex-1">

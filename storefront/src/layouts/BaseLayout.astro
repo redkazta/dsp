@@ -17,6 +17,8 @@ export interface Props {
   image?: string;
   /** Home: una sola pantalla, sin footer ni badges para no generar scroll. */
   homeScreen?: boolean;
+  /** Flujo enfocado (checkout): sin footer para que la compra no se disperse. */
+  hideFooter?: boolean;
 }
 
 // Idioma resuelto en el middleware (cookie dsp_lang o Accept-Language).
@@ -28,6 +30,7 @@ const {
   description = t.meta.home.description,
   image = '/img/camisas/camisa-dsp-2-01-frente.jpg',
   homeScreen = false,
+  hideFooter = false,
 } = Astro.props;
 
 // La URL que ve el visitante manda para el canonical: en `/contact` no debe
@@ -985,7 +988,8 @@ const jsonLd = {
     </style>
 
     <!-- Footer -->
-    <footer class="site-footer border-t-2 border-white/25 bg-negro-profundo">
+    {!hideFooter && (
+      <footer class="site-footer border-t-2 border-white/25 bg-negro-profundo">
       <div class="page-container py-12 sm:py-16 lg:py-20">
         <div class="grid gap-10 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <!-- Marca -->
@@ -1077,6 +1081,7 @@ const jsonLd = {
         </div>
       </div>
     </footer>
+    )}
 
     <script>
       import { escapeHtml, safeUrl } from '../lib/html';

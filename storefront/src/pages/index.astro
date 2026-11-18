@@ -192,11 +192,16 @@ const tiles = (categories ?? [])
     padding-bottom: 0.5rem;
   }
 
+  .home-stage :global(.hero-media) {
+    border-radius: 20px;
+  }
+
   .cat-tile {
     display: block;
     overflow: hidden;
     background: #050505;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
     transition: border-color 0.3s ease;
   }
 
