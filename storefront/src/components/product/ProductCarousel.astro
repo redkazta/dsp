@@ -45,7 +45,7 @@ const uniqueProducts = [...new Map<string, any>(products.map((p) => [String(p.id
   <div class="page-container">
     <div class={`flex flex-wrap items-end justify-between gap-4 ${compact ? 'mb-3' : 'mb-8 sm:mb-10'}`}>
       <div>
-        <p class={`section-label ${compact ? 'mb-1' : 'mb-3'}`}>{subtitle ?? 'Colección'}</p>
+        <p class={`section-label ${compact ? 'mb-1' : 'mb-3'}`}>{subtitle ?? t.shop.collection}</p>
         <h2
           class={`font-titulos ${compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-4xl lg:text-5xl'} text-blancoRoto leading-none`}
         >

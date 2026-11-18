@@ -234,6 +234,7 @@ import { localize } from '../lib/routes';
     import { showFlashToast } from '../lib/flash-toast';
     import { nudge } from '../lib/ux';
     import { localize } from '../lib/routes';
+    import { colorLabel, sizeLabel, variantLabel } from '../lib/variant-texts';
 
     /** Textos resueltos en servidor. */
     const ui = JSON.parse(document.getElementById('wish-ui')?.textContent || '{}') as Record<string, string>;
@@ -375,7 +376,7 @@ import { localize } from '../lib/routes';
       if (!accept || !cancel || !addBtn) return;
 
       const allVariants = variantsById.get(item.productId) ?? [];
-      const sizeKey = (v: WishVariant) => v.size || v.name || '—';
+      const sizeKey = (v: WishVariant) => v.size || 'unitalla';
       const colorKey = (v: WishVariant) => v.color || v.name || '—';
       const sizes = [...new Set(allVariants.map(sizeKey))];
 
@@ -448,7 +449,7 @@ import { localize } from '../lib/routes';
             const out = stockOfSize(size) <= 0;
             const active = selectedSize === size;
             return `<button type="button" data-size="${escapeHtml(size)}" ${out ? 'disabled' : ''}
-              class="${chipClass(active, out)}">${escapeHtml(size)}</button>`;
+              class="${chipClass(active, out)}">${escapeHtml(sizeLabel(size, pageLang))}</button>`;
           })
           .join('');
 
@@ -492,7 +493,7 @@ import { localize } from '../lib/routes';
             const out = v.stock <= 0;
             const active = selected?.id === v.id;
             return `<button type="button" data-color="${escapeHtml(v.id)}" ${out ? 'disabled' : ''}
-              class="${chipClass(active, out)}">${escapeHtml(colorKey(v))}</button>`;
+              class="${chipClass(active, out)}">${escapeHtml(colorLabel(colorKey(v), pageLang))}</button>`;
           })
           .join('');
 
@@ -521,8 +522,7 @@ import { localize } from '../lib/routes';
           productId: item.productId,
           slug: item.slug ?? null,
           name: item.name,
-          variantName:
-            [selected.size, selected.color].filter(Boolean).join(' · ') || selected.name,
+          variantName: variantLabel(selected, pageLang),
           price: selected.price || item.price,
           qty,
           image: item.image ?? undefined,

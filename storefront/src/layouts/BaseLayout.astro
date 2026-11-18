@@ -873,6 +873,11 @@ const jsonLd = {
     <!-- Buscador global (⌘K / Ctrl+K) -->
     <div id="search-dialog" class="search-dialog hidden" role="dialog" aria-modal="true" aria-label={t.header.search}
       data-empty={t.common.noResults}
+      data-hint={t.search.hint}
+      data-searching={t.search.searching}
+      data-error={t.search.error}
+      data-see-results={t.search.seeResults}
+      data-piece={t.common.piece}
       data-product-base={lang === 'en' ? '/product' : '/producto'}
       data-shop-base={localize(lang, 'shop')}>
       <button type="button" id="search-backdrop" class="search-backdrop" aria-label={t.header.close}></button>
@@ -1277,6 +1282,11 @@ const jsonLd = {
       // El script va compilado: los textos y la base de la URL vienen del
       // marcado (donde sí hay idioma), no de variables de frontmatter.
       const searchEmptyLabel = searchDialog?.dataset.empty ?? '';
+      const searchHintLabel = searchDialog?.dataset.hint ?? '';
+      const searchSearchingLabel = searchDialog?.dataset.searching ?? '';
+      const searchErrorLabel = searchDialog?.dataset.error ?? '';
+      const searchSeeResultsLabel = searchDialog?.dataset.seeResults ?? '{n}';
+      const searchPieceLabel = searchDialog?.dataset.piece ?? '';
       const productBase = searchDialog?.dataset.productBase ?? '/producto';
       const shopBase = searchDialog?.dataset.shopBase ?? '/tienda';
 
@@ -1318,7 +1328,7 @@ const jsonLd = {
             <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy" decoding="async">` : ''}</span>
             <span class="min-w-0 flex-1">
               <span class="search-item-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-              <span class="search-item-cat">${escapeHtml(p.category ?? 'Pieza')}</span>
+              <span class="search-item-cat">${escapeHtml(p.category ?? searchPieceLabel)}</span>
             </span>
             <span class="search-item-price">$${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </a>`;
@@ -1326,7 +1336,7 @@ const jsonLd = {
             .join('') +
           (rest > 0
             ? `<a href="${shopBase}?q=${encodeURIComponent(query)}" class="search-more">
-                 Ver ${items.length} resultados
+                 ${escapeHtml(searchSeeResultsLabel.replace('{n}', String(items.length)))}
                </a>`
             : '');
       }
@@ -1335,17 +1345,17 @@ const jsonLd = {
         if (!searchHint || !searchResults) return;
         if (q.trim().length < 2) {
           searchResults.innerHTML = '';
-          searchHint.textContent = 'Escribe al menos 2 letras.';
+          searchHint.textContent = searchHintLabel;
           return;
         }
 
-        searchHint.textContent = 'Buscando…';
+        searchHint.textContent = searchSearchingLabel;
 
         try {
           const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
           renderSearchResults(await res.json(), q.trim());
         } catch {
-          searchHint.textContent = 'No pudimos buscar. Intenta de nuevo.';
+          searchHint.textContent = searchErrorLabel;
         }
       }
 
@@ -1366,7 +1376,7 @@ const jsonLd = {
         if (e.key === 'Enter') {
           e.preventDefault();
           const q = searchInput.value.trim();
-          if (q) window.location.href = `/tienda?q=${encodeURIComponent(q)}`;
+          if (q) window.location.href = `${shopBase}?q=${encodeURIComponent(q)}`;
         }
       });
 

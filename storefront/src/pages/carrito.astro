@@ -28,6 +28,8 @@ const ui = {
   freeShippingMissing: t.cart.freeShippingMissing,
   forFree: t.cart.forFree,
   unavailableRemoved: t.cart.unavailableRemoved,
+  couponInvalid: t.cart.couponInvalid,
+  couponError: t.cart.couponError,
 };
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies);
@@ -167,13 +169,13 @@ import { localize } from '../lib/routes';
           <div class="mb-3">
             <div class="flex gap-2">
               <label class="flex-1 min-w-0">
-                <span class="sr-only">Código de descuento</span>
+                <span class="sr-only">{t.cart.couponPlaceholder}</span>
                 <input
                   id="coupon-code"
                   type="text"
                   inputmode="text"
                   autocomplete="off"
-                  placeholder="Código de descuento"
+                  placeholder={t.cart.couponPlaceholder}
                   class="input-dark !min-h-[42px] !py-2 text-sm w-full uppercase tracking-wider"
                 />
               </label>
@@ -182,7 +184,7 @@ import { localize } from '../lib/routes';
                 id="coupon-apply"
                 class="btn-outline !min-h-[42px] !px-4 !py-2 !text-[11px] shrink-0"
               >
-                Aplicar
+                {t.cart.couponApply}
               </button>
             </div>
             <p id="coupon-msg" class="hidden text-xs mt-2" role="status" aria-live="polite"></p>
@@ -481,10 +483,10 @@ import { localize } from '../lib/routes';
           paintCoupon(`−$${formatMXN(Number(data.discount) || 0)}`, 'success');
         } else {
           sessionStorage.removeItem('dsp_coupon');
-          paintCoupon(String(data?.message ?? 'Ese cupón no existe.'), 'error');
+          paintCoupon(String(data?.message ?? uiText('couponInvalid')), 'error');
         }
       } catch {
-        paintCoupon('No se pudo validar el cupón. Intenta otra vez.', 'error');
+        paintCoupon(uiText('couponError'), 'error');
       } finally {
         couponBtn.disabled = false;
         couponBtn.textContent = 'Aplicar';

@@ -13,6 +13,7 @@ import {
   type OrderStatus,
 } from '../lib/orders';
 import { getCopy, type Lang } from '../lib/i18n';
+import { variantLabel } from '../lib/variant-texts';
 
 const lang = (Astro.locals.lang ?? 'es') as Lang;
 const t = getCopy(lang);
@@ -187,7 +188,9 @@ import { localize } from '../lib/routes';
                               </div>
                               <span class="text-white/80 min-w-0 flex-1 leading-snug">
                                 {i.quantity} × {i.product_name ?? t.common.piece}
-                                {i.size || i.color ? ` (${[i.size, i.color].filter(Boolean).join(' · ')})` : ''}
+                                {variantLabel({ name: i.variant_name, size: i.size, color: i.color }, lang)
+                                  ? ` (${variantLabel({ name: i.variant_name, size: i.size, color: i.color }, lang)})`
+                                  : ''}
                               </span>
                               <span class="text-blancoRoto whitespace-nowrap">
                                 {formatOrderMoney(Number(i.unit_price) * Number(i.quantity))}
@@ -222,13 +225,13 @@ import { localize } from '../lib/routes';
           <div id="addresses-list" class="space-y-3">
             {
               addresses.length === 0 ? (
-                <p class="text-sm text-muted">Sin direcciones guardadas.</p>
+                <p class="text-sm text-muted">{t.account.noAddresses}</p>
               ) : (
                 addresses.map((a: any) => (
                   <div class="card p-4">
                     <p class="text-sm text-blancoRoto mb-1">
                       {a.label}
-                      {a.is_default ? ' · Principal' : ''}
+                      {a.is_default ? ` · ${t.account.defaultAddress}` : ''}
                     </p>
                     <p class="text-sm text-muted leading-relaxed">
                       {a.street}
@@ -248,7 +251,7 @@ import { localize } from '../lib/routes';
           <h2 class="section-label mb-6">{t.account.profileSection}</h2>
           <form id="profile-form" class="card p-5 sm:p-6 space-y-4">
             <label class="block">
-              <span class="field-label">Nombre *</span>
+              <span class="field-label">{t.account.name} *</span>
               <input
                 name="first_name"
                 class="input-dark"
@@ -259,7 +262,7 @@ import { localize } from '../lib/routes';
             </label>
 
             <label class="block">
-              <span class="field-label">Apellidos</span>
+              <span class="field-label">{t.account.lastName}</span>
               <input
                 name="last_name"
                 class="input-dark"
@@ -269,11 +272,11 @@ import { localize } from '../lib/routes';
             </label>
 
             <label class="block">
-              <span class="field-label">Teléfono</span>
+              <span class="field-label">{t.account.phone}</span>
               <input
                 name="phone"
                 class="input-dark"
-                placeholder="10 dígitos"
+                placeholder={t.checkout.phonePlaceholder}
                 inputmode="tel"
                 autocomplete="tel"
                 value={profile?.phone ?? ''}
@@ -281,7 +284,7 @@ import { localize } from '../lib/routes';
             </label>
 
             <label class="block">
-              <span class="field-label">Fecha de nacimiento</span>
+              <span class="field-label">{t.account.birthDate}</span>
               <input
                 name="birthdate"
                 type="date"
@@ -298,7 +301,7 @@ import { localize } from '../lib/routes';
                 checked={Boolean(profile?.marketing_opt_in)}
               />
               <span class="text-sm text-muted leading-relaxed">
-                Recibir novedades y drops exclusivos por correo.
+                {t.account.marketing}
               </span>
             </label>
 

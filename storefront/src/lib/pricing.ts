@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, TENANT_ID } from './constants';
 import { demoPrice, isDemoMode } from './demo';
 import { productName } from './product-texts';
+import { variantLabel } from './variant-texts';
 import type { Lang } from './i18n';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, CURRENCY } from './constants';
@@ -69,6 +70,32 @@ export interface RawRequestedItem {
 
 export class PricingError extends Error {}
 
+/** Mensajes de validación del carrito en el idioma de la compra. */
+const pricingCopy = {
+  es: {
+    empty: 'El carrito está vacío.',
+    qty: 'Cantidad inválida.',
+    max: 'Máximo 99 piezas por artículo.',
+    check: 'No pudimos validar tu carrito. Intenta de nuevo.',
+    removed: (n: number) =>
+      `Retiramos ${n} ${n === 1 ? 'pieza' : 'piezas'} que ya no están disponibles.`,
+    unavailable: 'Una pieza de tu carrito ya no está disponible.',
+    gone: (name: string) => `"${name}" ya no está disponible.`,
+    piece: 'Una pieza',
+  },
+  en: {
+    empty: 'Your cart is empty.',
+    qty: 'Invalid quantity.',
+    max: 'Maximum 99 pieces per item.',
+    check: "We couldn't validate your cart. Try again.",
+    removed: (n: number) =>
+      `We removed ${n} ${n === 1 ? 'item' : 'items'} that are no longer available.`,
+    unavailable: 'An item in your cart is no longer available.',
+    gone: (name: string) => `"${name}" is no longer available.`,
+    piece: 'An item',
+  },
+};
+
 /**
  * Recalcula los items del pedido a partir de la base de datos.
  * Nunca confía en precios, nombres ni imágenes enviados por el cliente.
@@ -78,8 +105,10 @@ export async function priceItems(
   requested: RawRequestedItem[],
   lang: Lang = 'es'
 ): Promise<PricedItem[]> {
+  const copy = pricingCopy[lang === 'en' ? 'en' : 'es'];
+
   if (!Array.isArray(requested) || requested.length === 0) {
-    throw new PricingError('El carrito está vacío.');
+    throw new PricingError(copy.empty);
   }
 
   // Une duplicados y descarta cantidades inválidas
@@ -88,15 +117,15 @@ export async function priceItems(
     const variantId = typeof raw?.variantId === 'string' ? raw.variantId.trim() : '';
     const qty = Math.floor(Number(raw?.qty));
     if (!variantId) continue;
-    if (!Number.isFinite(qty) || qty <= 0) throw new PricingError('Cantidad inválida.');
-    if (qty > 99) throw new PricingError('Máximo 99 piezas por artículo.');
+    if (!Number.isFinite(qty) || qty <= 0) throw new PricingError(copy.qty);
+    if (qty > 99) throw new PricingError(copy.max);
 
     const next = (quantities.get(variantId) ?? 0) + qty;
-    if (next > 99) throw new PricingError('Máximo 99 piezas por artículo.');
+    if (next > 99) throw new PricingError(copy.max);
     quantities.set(variantId, next);
   }
 
-  if (quantities.size === 0) throw new PricingError('El carrito está vacío.');
+  if (quantities.size === 0) throw new PricingError(copy.empty);
 
   const { data, error } = await supabase
     .from('product_variants')
@@ -105,7 +134,7 @@ export async function priceItems(
     )
     .in('id', [...quantities.keys()]);
 
-  if (error) throw new PricingError('No pudimos validar tu carrito. Intenta de nuevo.');
+  if (error) throw new PricingError(copy.check);
 
   const rows = data ?? [];
   if (rows.length !== quantities.size) {
@@ -123,21 +152,23 @@ export async function priceItems(
     }
     
     if (filteredRequests.length === 0) {
-      throw new PricingError(`Retiramos ${removed.length} ${removed.length === 1 ? 'pieza' : 'piezas'} que ya no están disponibles.`);
+      throw new PricingError(copy.removed(removed.length));
     }
 
     if (rows.length !== filteredRequests.length) {
-      throw new PricingError('Una pieza de tu carrito ya no está disponible.');
+      throw new PricingError(copy.unavailable);
     }
   }
 
   return rows.map((row: any) => {
     const product = Array.isArray(row.products) ? row.products[0] : row.products;
     if (!product || product.is_deleted || !product.is_active || product.tenant_id !== TENANT_ID) {
-      throw new PricingError(`"${product?.name ?? 'Una pieza'}" ya no está disponible.`);
+      throw new PricingError(
+        copy.gone(product ? productName(product, lang) : copy.piece)
+      );
     }
     if (row.is_deleted) {
-      throw new PricingError(`"${product.name}" ya no está disponible.`);
+      throw new PricingError(copy.gone(productName(product, lang)));
     }
 
     const images = [...(product.product_images ?? [])].sort(
@@ -150,7 +181,10 @@ export async function priceItems(
       productSlug: product.slug ?? null,
       // El pedido guarda el nombre en el idioma en que compró el cliente.
       name: productName(product, lang),
-      variantName: row.name ?? [row.size, row.color].filter(Boolean).join(' · '),
+      variantName: variantLabel(
+        { name: row.name, size: row.size, color: row.color },
+        lang
+      ),
       price: demoPrice(row.price),
       qty: quantities.get(row.id)!,
       image: images[0]?.url ?? null,

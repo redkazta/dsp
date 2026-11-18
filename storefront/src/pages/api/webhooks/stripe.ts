@@ -140,7 +140,7 @@ async function sendConfirmation(db: SupabaseClient, orderId: string, lang: 'es' 
     await sendOrderConfirmation({
       to: order.contact_email,
       orderNumber: order.order_number ?? orderId,
-      customerName: order.contact_name ?? 'Valoración',
+      customerName: order.contact_name ?? (lang === 'en' ? 'Customer' : 'Cliente'),
       total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
       lang,
     });

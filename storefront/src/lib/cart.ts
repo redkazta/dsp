@@ -28,6 +28,7 @@ export { formatMXN } from './pricing';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from './pricing';
 import { demoPrice } from './demo';
 import { productName } from './product-texts';
+import { variantLabel } from './variant-texts';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor };
 
@@ -246,7 +247,7 @@ export async function refreshCartPrices(): Promise<{
         ...item,
         name: productName(product, pageLang()),
         slug: product.slug ?? item.slug ?? null,
-        variantName: row.name ?? item.variantName,
+        variantName: variantLabel(row, pageLang()),
         price: demoPrice(row.price),
         size: row.size ?? item.size ?? null,
         color: row.color ?? item.color ?? null,

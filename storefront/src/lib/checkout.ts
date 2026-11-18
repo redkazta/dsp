@@ -496,7 +496,10 @@ export async function startStripeCheckout({
     return {
       ok: false,
       code: 'PAYMENT_UNAVAILABLE',
-      message: 'El pago con tarjeta no está disponible en este momento.',
+      message:
+        lang === 'en'
+          ? 'Card payment is not available right now.'
+          : 'El pago con tarjeta no está disponible en este momento.',
       status: 503,
     };
   }
@@ -516,7 +519,12 @@ export async function startStripeCheckout({
     if (err instanceof PricingError) {
       return { ok: false, code: 'UNAVAILABLE', message: err.message, status: 409 };
     }
-    return { ok: false, code: 'SERVER', message: 'No pudimos validar tu carrito.', status: 500 };
+    return {
+      ok: false,
+      code: 'SERVER',
+      message: lang === 'en' ? "We couldn't validate your cart." : 'No pudimos validar tu carrito.',
+      status: 500,
+    };
   }
 
   // Reglas de envío configurables desde el panel (con respaldo en constantes).
@@ -624,8 +632,8 @@ export async function startStripeCheckout({
       lang,
       customerEmail: customer.email,
       description: resolvedShipping
-        ? `Pedido ${order.order_number ?? order.id} · ${resolvedShipping.name}`
-        : `Pedido ${order.order_number ?? order.id}`,
+        ? `${lang === 'en' ? 'Order' : 'Pedido'} ${order.order_number ?? order.id} · ${resolvedShipping.name}`
+        : `${lang === 'en' ? 'Order' : 'Pedido'} ${order.order_number ?? order.id}`,
     });
 
     if (!intent.client_secret) {
@@ -647,7 +655,10 @@ export async function startStripeCheckout({
     return {
       ok: false,
       code: 'PAYMENT_ERROR',
-      message: 'No pudimos iniciar el pago. Intenta de nuevo en un momento.',
+      message:
+        lang === 'en'
+          ? "We couldn't start the payment. Try again in a moment."
+          : 'No pudimos iniciar el pago. Intenta de nuevo en un momento.',
       status: 502,
       // Con el modo demo activo el único que compra es el dueño: se devuelve
       // el motivo real de Stripe en vez de un mensaje ciego.
@@ -702,7 +713,7 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
       sendOrderConfirmation({
         to: order.contact_email,
         orderNumber: order.order_number ?? orderId,
-        customerName: order.contact_name ?? 'Cliente',
+        customerName: order.contact_name ?? (sessionLang === 'en' ? 'Customer' : 'Cliente'),
         total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
         lang: sessionLang,
       }).catch(() => {});
@@ -763,7 +774,7 @@ export async function confirmPaymentIntentOnReturn({ db, paymentIntentId }: {
       sendOrderConfirmation({
         to: order.contact_email,
         orderNumber: order.order_number ?? orderId,
-        customerName: order.contact_name ?? 'Cliente',
+        customerName: order.contact_name ?? (intentLang === 'en' ? 'Customer' : 'Cliente'),
         total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
         lang: intentLang,
       }).catch(() => {});

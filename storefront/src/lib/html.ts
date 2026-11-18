@@ -31,7 +31,34 @@ export function safeUrl(value: unknown): string {
 }
 
 /** Mensajes de error legibles para el visitante (nunca detalles de Postgres). */
-export function friendlyError(code: string | null | undefined, fallback: string) {
+export function friendlyError(
+  code: string | null | undefined,
+  fallback: string,
+  lang: 'es' | 'en' = 'es'
+) {
+  if (lang === 'en') {
+    switch (code) {
+      case 'NO_SESSION':
+        return 'Sign in or create an account to complete the order.';
+      case 'BAD_REQUEST':
+        return 'Check your contact and shipping details.';
+      case 'AUTH_UNAVAILABLE':
+        return "We couldn't validate your session. Try again in a moment.";
+      case 'CARD_DECLINED':
+        return 'The card was declined. Try another one.';
+      case 'PAYMENT_UNAVAILABLE':
+        return 'Card payment is not available right now.';
+      case 'PAYMENT_ERROR':
+        return "We couldn't start the payment. Try again in a moment.";
+      case 'UNAVAILABLE':
+        return 'An item in your cart is no longer available.';
+      case 'STORAGE':
+        return "We couldn't save your cart. Try again.";
+      default:
+        return fallback;
+    }
+  }
+
   switch (code) {
     case 'NO_SESSION':
       return 'Inicia sesión o crea tu cuenta para completar el pedido.';

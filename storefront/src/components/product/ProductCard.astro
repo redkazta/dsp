@@ -12,6 +12,7 @@ import { productName } from '../../lib/product-texts';
 import { localize } from '../../lib/routes';
 import { demoPrice } from '../../lib/demo';
 import { cardStockState } from '../../lib/product-variants';
+import { sizeLabel, variantLabel } from '../../lib/variant-texts';
 import ReflectBadge from './ReflectBadge.astro';
 
 export interface Props {
@@ -231,12 +232,12 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
                 type="button"
                 class="quick-size"
                 data-add-variant={v.id}
-                data-v-name={v.name ?? ''}
+                data-v-name={variantLabel(v, lang)}
                 data-v-size={v.size ?? ''}
                 data-v-color={v.color ?? ''}
                 data-v-price={demoPrice(v.price)}
               >
-                {v.size || v.name}
+                {sizeLabel(v.size, lang) || variantLabel(v, lang)}
               </button>
             ))}
           </div>
@@ -275,7 +276,7 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
             class="quick-add"
             data-quick-add
             data-single-variant={singleVariant?.id ?? ''}
-            data-single-name={singleVariant?.name ?? ''}
+            data-single-name={variantLabel(singleVariant, lang)}
             data-single-size={singleVariant?.size ?? ''}
             data-single-color={singleVariant?.color ?? ''}
             data-single-price={demoPrice(singleVariant?.price ?? price)}

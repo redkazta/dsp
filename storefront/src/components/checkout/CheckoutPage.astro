@@ -698,6 +698,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     const ui = JSON.parse(document.getElementById('checkout-ui')?.textContent || '{}') as Record<string, string>;
     const uiText = (key: string) => ui[key] ?? '';
+    const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
 
     const form = document.getElementById('checkout-form') as HTMLFormElement;
     const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
@@ -962,7 +963,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
           showPaymentSkeleton(false);
           payBtn.disabled = false;
           showError(
-            friendlyError(data?.code, data?.error ?? uiText('openFailed')) +
+            friendlyError(data?.code, data?.error ?? uiText('openFailed'), pageLang) +
               (data?.detail ? ` (Stripe: ${data.detail})` : '')
           );
           return false;

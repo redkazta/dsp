@@ -13,6 +13,7 @@ import {
   type OrderStatus,
 } from '../../lib/orders';
 import { getCopy, type Lang } from '../../lib/i18n';
+import { variantLabel } from '../../lib/variant-texts';
 
 interface Props {
   /** true = confirmación de una compra hecha como invitado. */
@@ -374,7 +375,11 @@ import { localize } from '../../lib/routes';
                     <div class="flex-1 min-w-0">
                       <p class="font-acentos text-base text-blancoRoto">{i.product_name ?? t.common.piece}</p>
                       <p class="text-sm text-white/80">
-                        {[i.size, i.color].filter(Boolean).join(' · ') || i.variant_name || ''} · {t.order.quantity} {i.quantity}
+                        {variantLabel(
+                          { name: i.variant_name, size: i.size, color: i.color },
+                          lang
+                        )}{' '}
+                        · {t.order.quantity} {i.quantity}
                       </p>
                     </div>
                     <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">

@@ -1025,6 +1025,7 @@ import { localize } from '../../lib/routes';
   import { showFlashToast } from '../../lib/flash-toast';
   import { localize, route } from '../../lib/routes';
   import { nudge } from '../../lib/ux';
+  import { variantLabel } from '../../lib/variant-texts';
 
   /** Idioma activo (el middleware lo deja en `<html data-lang>`). */
   const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
@@ -1615,7 +1616,10 @@ import { localize } from '../../lib/routes';
         variantId: variant.id,
         productId: item.productId,
         name: item.name,
-        variantName: [variant.size, variant.color].filter(Boolean).join(' · ') || variant.name,
+        variantName: variantLabel(
+          { name: variant.name, size: variant.size, color: variant.color },
+          pageLang
+        ),
         price: variant.price || item.price,
         qty: 1,
         image: item.image ?? undefined,
@@ -1662,7 +1666,7 @@ import { localize } from '../../lib/routes';
   let specOnlyId: string | null = null;
 
   const specLabel = (v: SpecVariant) =>
-    [v.size, v.color].filter(Boolean).join(' · ') || v.name || '—';
+    variantLabel({ name: v.name, size: v.size, color: v.color }, pageLang);
 
   /** Tallas de las piezas visibles, en una sola petición y con caché. */
   async function ensureSpecVariants(ids: string[]) {

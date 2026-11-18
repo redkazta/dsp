@@ -13,6 +13,7 @@ import { getCopy, categoryName, type Lang } from '../../lib/i18n';
 import { planReflectImages, isFlashUrl } from '../../lib/reflective';
 import ReflectBadge from '../../components/product/ReflectBadge.astro';
 import { productName, productDescription } from '../../lib/product-texts';
+import { colorLabel, sizeLabel, variantLabel } from '../../lib/variant-texts';
 import { demoPrice } from '../../lib/demo';
 import { liveVariants } from '../../lib/product-variants';
 
@@ -320,7 +321,7 @@ import { localize } from '../../lib/routes';
                         data-size={size}
                         class="size-btn min-w-[3.25rem] min-h-[52px] px-4 py-3 border-2 border-white/40 text-base text-blancoRoto hover:border-oro-brillo transition-all duration-300 font-acentos"
                       >
-                        {size}
+                        {sizeLabel(size, lang)}
                       </button>
                     ))}
                   </div>
@@ -340,7 +341,7 @@ import { localize } from '../../lib/routes';
                         data-color={color}
                         class="color-btn min-h-[52px] px-5 py-3 border-2 border-white/40 text-base text-blancoRoto hover:border-oro-brillo transition-all duration-300 font-acentos"
                       >
-                        {color}
+                        {colorLabel(color, lang)}
                       </button>
                     ))}
                   </div>
@@ -593,6 +594,7 @@ import { localize } from '../../lib/routes';
     import '../../lib/reflect-anim';
     import { addToCart } from '../../lib/cart';
     import { sanitizeVariants } from '../../lib/product-variants';
+    import { variantLabel } from '../../lib/variant-texts';
     import { toggleWishlist, currentWishlist, hasSession, SESSION_ENDED_EVENT } from '../../lib/wishlist';
     import { alert, busy, confirm, nudge, nudgeGroup } from '../../lib/ux';
 
@@ -629,6 +631,8 @@ import { localize } from '../../lib/routes';
       },
       { passive: true }
     );
+
+    const pageLang = document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
 
     const btn = document.getElementById('add-to-cart') as HTMLButtonElement | null;
     if (btn) {
@@ -709,7 +713,7 @@ import { localize } from '../../lib/routes';
           productId: btn.dataset.productId!,
           slug: btn.dataset.productSlug || null,
           name: btn.dataset.productName!,
-          variantName: [variant.size, variant.color].filter(Boolean).join(' · '),
+          variantName: variantLabel(variant, pageLang),
           price: Number(variant.price),
           qty: 1,
           image: currentImage || btn.dataset.image || undefined,
