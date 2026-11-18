@@ -200,6 +200,7 @@ export const copy = {
     product: {
       selectSize: 'Elige talla',
       selectColor: 'Elige color',
+      price: 'Precio',
       quantity: 'Cantidad',
       addToCart: 'Agregar al carrito',
       adding: 'Agregando…',
@@ -1039,6 +1040,7 @@ export const copy = {
     product: {
       selectSize: 'Choose size',
       selectColor: 'Choose colour',
+      price: 'Price',
       quantity: 'Quantity',
       addToCart: 'Add to cart',
       adding: 'Adding…',
