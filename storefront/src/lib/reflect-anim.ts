@@ -275,6 +275,30 @@ import { onTick, sync } from './reflect-clock';
     });
   }
 
+  // ---------- Guardia de navegación ----------
+  //
+  // Los puntos del carrusel viven DENTRO del <a> de la tarjeta. El ciclo los
+  // pulsa para cambiar de foto, y si `lib/carousel.ts` todavía no se cargó
+  // (en la portada el hero importa este módulo antes que la tarjeta), nadie
+  // cancela el clic y el navegador sigue el enlace: la home saltaba sola a
+  // una ficha de producto. Se corta la navegación del clic automático aquí,
+  // que es el módulo que lo dispara, y el carrusel sigue escuchándolo.
+  document.addEventListener(
+    'click',
+    (e) => {
+      const target = e.target as (HTMLElement & { __reflectAuto?: boolean }) | null;
+      if (!target?.__reflectAuto) return;
+
+      e.preventDefault();
+      // El flag es para distinguir el clic del ciclo del clic del usuario:
+      // se limpia en cuanto termina este evento.
+      window.setTimeout(() => {
+        target.__reflectAuto = false;
+      }, 0);
+    },
+    true
+  );
+
   // La página se repinta (filtros, favoritos): se registran las piezas nuevas.
   document.addEventListener('reflect:refresh', init);
 
