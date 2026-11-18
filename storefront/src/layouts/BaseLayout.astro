@@ -1550,6 +1550,28 @@ const jsonLd = {
     align-self: center;
   }
 
+  /* En el teléfono la píldora completa no cabe: hamburger + logo + buscador
+     + carrito + idioma ya llenan el header. El avatar solo abre el menú. */
+  @media (max-width: 639px) {
+    .profile-pill {
+      min-height: 44px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .profile-pill .profile-text {
+      display: none;
+    }
+
+    .profile-avatar {
+      width: 44px;
+      height: 44px;
+      flex-basis: 44px;
+      font-size: 1.05rem;
+    }
+  }
+
   /* Etiquetas pequeñas reutilizables (logo, badge de perfil). */
   .header-label {
     font-family: 'Space Grotesk', Inter, sans-serif;
