@@ -214,4 +214,25 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
   .shop-grid--compact :global(.quick-cancel) {
     font-size: 8px;
   }
+
+  /* En el teléfono el botón de la tarjeta compacta sigue siendo objetivo
+     táctil: 28px se falla con el pulgar. Va al final para ganarle a las
+     reglas base de arriba. */
+  @media (max-width: 639px) {
+    .shop-grid--compact :global(.quick-add) {
+      width: 36px;
+      height: 36px;
+      flex-basis: 36px;
+    }
+
+    .shop-grid--compact :global(.quick-add svg) {
+      width: 15px;
+      height: 15px;
+    }
+
+    .shop-grid--compact :global(.wish-btn) {
+      width: 34px;
+      height: 34px;
+    }
+  }
 </style>
