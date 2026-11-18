@@ -401,25 +401,25 @@ img.is-flash-photo {
   .reflect-badge {
     top: 8px;
     left: 8px;
-    min-width: 74px;
-    min-height: 52px;
-    padding: 5px 8px 4px;
+    min-width: 64px;
+    min-height: 46px;
+    padding: 4px 7px 3px;
     gap: 2px;
   }
 
   .reflect-badge-label {
-    font-size: 8px;
-    letter-spacing: 0.06em;
+    font-size: 7px;
+    letter-spacing: 0.05em;
   }
 
   .reflect-badge-dot {
-    width: 5px;
-    height: 5px;
-    flex-basis: 5px;
+    width: 4px;
+    height: 4px;
+    flex-basis: 4px;
   }
 
   .reflect-badge-count {
-    font-size: 20px;
+    font-size: 18px;
   }
 }
 

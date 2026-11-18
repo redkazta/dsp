@@ -138,8 +138,15 @@ const tiles = (categories ?? [])
         <div class="grid grid-cols-2 gap-3 sm:gap-5">
           {tiles.map((tile) => (
             <a href={`${localize(lang, 'shop')}?category=${tile.id}`} class="cat-tile">
-              <img src={tile.image} alt="" loading="lazy" decoding="async" />
-              <span class="cat-tile-name">{tile.name}</span>
+              <span class="cat-tile-media">
+                <img src={tile.image} alt="" loading="lazy" decoding="async" />
+              </span>
+              <span class="cat-tile-name">
+                {tile.name}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
+              </span>
             </a>
           ))}
         </div>
@@ -186,11 +193,9 @@ const tiles = (categories ?? [])
   }
 
   .cat-tile {
-    position: relative;
     display: block;
-    aspect-ratio: 4 / 5;
     overflow: hidden;
-    background: #ffffff;
+    background: #050505;
     border: 2px solid rgba(255, 255, 255, 0.25);
     transition: border-color 0.3s ease;
   }
@@ -199,7 +204,16 @@ const tiles = (categories ?? [])
     border-color: #ffe28a;
   }
 
-  .cat-tile img {
+  /* La foto va sobre blanco (como en las tarjetas); el nombre vive en una
+     franja negra, sin degradados grises que rompan la paleta. */
+  .cat-tile-media {
+    display: block;
+    aspect-ratio: 1 / 1;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .cat-tile-media img {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -207,23 +221,27 @@ const tiles = (categories ?? [])
     transition: transform 0.5s ease;
   }
 
-  .cat-tile:hover img {
+  .cat-tile:hover .cat-tile-media img {
     transform: scale(1.04);
   }
 
   .cat-tile-name {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 1.75rem 0.75rem 0.75rem;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.7rem 0.8rem;
+    border-top: 2px solid rgba(255, 226, 138, 0.35);
     font-family: 'Space Grotesk', Inter, sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    text-align: center;
     color: #ffffff;
+  }
+
+  .cat-tile-name svg {
+    flex: 0 0 auto;
+    color: #ffe28a;
   }
 </style>

@@ -431,6 +431,15 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
     transform: translateY(0);
   }
 
+  /* En el teléfono la tarjeta entera ya es un enlace y se cambia de foto con
+     el dedo: la barra "Ver producto" y las flechas solo tapaban la prenda. */
+  @media (max-width: 639px) {
+    .product-cta,
+    .card-arrow {
+      display: none;
+    }
+  }
+
   @media (min-width: 1024px) {
     .product-cta {
       transform: translateY(100%);
