@@ -117,7 +117,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
             <div class="flex-1 min-w-0">
-              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors truncate block">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors line-clamp-2 leading-snug" title="${escapeHtml(p.name)}">
                 ${escapeHtml(p.name)}
               </a>
               <p class="text-xs text-white/80">

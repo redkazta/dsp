@@ -107,7 +107,12 @@ export async function getProducts(
       .eq('is_deleted', false);
 
     if (categoryId) query = query.eq('category_id', categoryId);
-    if (search) query = query.ilike('name', `%${search}%`);
+    if (search) {
+      // Busca en los dos idiomas: quien escribe en inglés debe encontrar
+      // `name_en`, no solo el nombre canónico en español.
+      const term = search.replace(/[%_,()]/g, ' ').trim();
+      if (term) query = query.or(`name.ilike.%${term}%,name_en.ilike.%${term}%`);
+    }
     if (minPrice != null) query = query.gte('base_price', minPrice);
     if (maxPrice != null) query = query.lte('base_price', maxPrice);
 

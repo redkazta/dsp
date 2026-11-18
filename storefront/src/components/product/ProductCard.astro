@@ -253,15 +253,18 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
       <div class="absolute inset-0 ring-2 ring-inset ring-transparent transition-all duration-500 pointer-events-none"></div>
     </div>
 
-    <!-- Info -->
-    <div class="pt-4 flex items-start justify-between gap-3">
-      <div class="min-w-0 flex-1">
-        <h3 class="font-acentos text-base sm:text-lg text-blancoRoto transition-colors duration-300 leading-snug">
-          {title}
-        </h3>
-      </div>
+    <!-- Info: en móvil el nombre usa todo el ancho y el precio + acción bajan
+         a su propia fila. Antes el nombre quedaba en una columna estrecha y
+         se partía palabra por palabra. -->
+    <div class="pt-3 sm:pt-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      <h3
+        class="font-acentos text-sm sm:text-base lg:text-lg text-blancoRoto transition-colors duration-300 leading-snug line-clamp-2 min-w-0 sm:flex-1 min-h-[2.5em] sm:min-h-0"
+        title={title}
+      >
+        {title}
+      </h3>
 
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center justify-between gap-2 sm:shrink-0 sm:justify-end">
         <p class="font-acentos text-base sm:text-lg text-oro-brillo whitespace-nowrap leading-none">
           ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
@@ -323,6 +326,15 @@ const cancelLabel = lang === 'es' ? 'Cancelar' : 'Cancel';
   .quick-add:hover {
     background: #ffe28a;
     color: #0a0a0a;
+  }
+
+  /* En el teléfono el botón es objetivo táctil, no adorno. */
+  @media (max-width: 640px) {
+    .quick-add {
+      width: 40px;
+      height: 40px;
+      flex-basis: 40px;
+    }
   }
 
   .quick-panel {

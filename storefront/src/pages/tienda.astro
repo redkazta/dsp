@@ -107,7 +107,7 @@ import { localize } from '../lib/routes';
     <div class="relative page-container py-3 sm:py-3.5">
       <div class="flex items-end justify-between gap-4">
         <div class="min-w-0">
-          <h1 class="font-titulos text-2xl sm:text-3xl lg:text-4xl text-blancoRoto leading-none truncate">
+          <h1 class="font-titulos text-xl sm:text-3xl lg:text-4xl text-blancoRoto leading-tight break-words">
             {categoryId ? categoryName(lang, categories.find((c: any) => c.id === categoryId)) ?? t.shop.allPieces : t.shop.allPieces}
           </h1>
           <p class="mt-1.5 text-sm text-white/70">
@@ -160,9 +160,11 @@ import { localize } from '../lib/routes';
 
         <div class="flex-1"></div>
 
-        <!-- Buscar + precio + ordenar -->
-        <div class="flex flex-col sm:flex-row gap-2 lg:shrink-0">
-          <form method="get" class="flex" data-search>
+        <!-- Buscar + precio + ordenar: en móvil la búsqueda ocupa la fila
+             completa y los dos filtros van lado a lado, así la barra pegada
+             no se come media pantalla. -->
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-row lg:shrink-0">
+          <form method="get" class="col-span-2 flex sm:col-auto" data-search>
             <input
               type="search"
               name="q"

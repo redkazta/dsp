@@ -511,7 +511,7 @@ export async function startStripeCheckout({
 
   let items: PricedItem[];
   try {
-    items = await priceItems(db, Array.isArray(requestedItems) ? requestedItems : []);
+    items = await priceItems(db, Array.isArray(requestedItems) ? requestedItems : [], lang);
   } catch (err: any) {
     if (err instanceof PricingError) {
       return { ok: false, code: 'UNAVAILABLE', message: err.message, status: 409 };

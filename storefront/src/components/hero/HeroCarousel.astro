@@ -282,12 +282,19 @@ const plans = list.map((item) =>
   .hero-name {
     font-family: 'Space Grotesk', Inter, sans-serif;
     font-size: 0.75rem;
+    line-height: 1.25;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.9);
-    white-space: nowrap;
+    /* Dos líneas y elipsis: un nombre largo se lee completo antes de
+       recortarse; antes se cortaba en la primera línea. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 30ch;
+    margin-inline: auto;
   }
 
   /* ---------- Flechas ---------- */

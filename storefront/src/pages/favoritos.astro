@@ -310,8 +310,8 @@ import { localize } from '../lib/routes';
               <span class="reflect-badge${animated ? '' : ' is-plain'}" ${animated ? `data-reflect-badge data-label="${escapeHtml(reflectiveLabel)}"` : ''}><span class="reflect-badge-label">${escapeHtml(animated ? reflectiveLabel : uiText('notReflective'))}</span><span class="reflect-badge-dot"></span></span>
               ${img ? `<img src="${img}" alt="" loading="lazy">` : ''}
             </div>
-            <div class="pt-4 flex items-start justify-between gap-3">
-              <h3 class="font-acentos text-base text-blancoRoto leading-snug">${escapeHtml(item.name)}</h3>
+            <div class="pt-3 sm:pt-4 flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+              <h3 class="font-acentos text-sm sm:text-base text-blancoRoto leading-snug line-clamp-2 min-h-[2.5em] sm:min-h-0 min-w-0 sm:flex-1" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
               <p class="font-acentos text-base text-oro-brillo whitespace-nowrap">${money(item.price)}</p>
             </div>
           </a>

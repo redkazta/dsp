@@ -8,6 +8,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, TENANT_ID } from './constants';
 import { demoPrice, isDemoMode } from './demo';
+import { productName } from './product-texts';
+import type { Lang } from './i18n';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, CURRENCY } from './constants';
 
@@ -73,7 +75,8 @@ export class PricingError extends Error {}
  */
 export async function priceItems(
   supabase: SupabaseClient,
-  requested: RawRequestedItem[]
+  requested: RawRequestedItem[],
+  lang: Lang = 'es'
 ): Promise<PricedItem[]> {
   if (!Array.isArray(requested) || requested.length === 0) {
     throw new PricingError('El carrito está vacío.');
@@ -98,7 +101,7 @@ export async function priceItems(
   const { data, error } = await supabase
     .from('product_variants')
     .select(
-      'id, product_id, name, size, color, price, is_deleted, products!inner(id, name, slug, tenant_id, is_active, is_deleted, product_images(url, position))'
+      'id, product_id, name, size, color, price, is_deleted, products!inner(id, name, name_en, slug, tenant_id, is_active, is_deleted, product_images(url, position))'
     )
     .in('id', [...quantities.keys()]);
 
@@ -145,7 +148,8 @@ export async function priceItems(
       variantId: row.id,
       productId: row.product_id,
       productSlug: product.slug ?? null,
-      name: product.name,
+      // El pedido guarda el nombre en el idioma en que compró el cliente.
+      name: productName(product, lang),
       variantName: row.name ?? [row.size, row.color].filter(Boolean).join(' · '),
       price: demoPrice(row.price),
       qty: quantities.get(row.id)!,

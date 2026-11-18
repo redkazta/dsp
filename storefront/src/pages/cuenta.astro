@@ -415,8 +415,8 @@ import { localize } from '../lib/routes';
             ${safeUrl(i.image) ? `<img src="${safeUrl(i.image)}" alt="" class="w-full h-full object-contain">` : ''}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="font-acentos text-base text-blancoRoto truncate">${escapeHtml(i.name)}</p>
-            <p class="text-sm text-oro-brillo">$${Number(i.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p class="font-acentos text-sm sm:text-base text-blancoRoto leading-snug line-clamp-2" title="${escapeHtml(i.name)}" data-wish-name="${escapeHtml(i.name)}">${escapeHtml(i.name)}</p>
+            <p class="text-sm text-oro-brillo mt-0.5">$${Number(i.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 shrink-0">
             <a href="${localize(pageLang, 'products', i.slug ?? i.productId)}" class="btn-outline !min-h-[40px] !px-3 !py-2 !text-xs">${escapeHtml(labels.view)}</a>
@@ -432,7 +432,8 @@ import { localize } from '../lib/routes';
       wishList.querySelectorAll<HTMLElement>('[data-wish-remove]').forEach((b) =>
         b.addEventListener('click', async () => {
           const box = b.closest('[data-wish-row]') as HTMLElement | null;
-          const name = box?.querySelector('h3')?.textContent?.trim() ?? '';
+          const name =
+            box?.querySelector<HTMLElement>('[data-wish-name]')?.dataset.wishName?.trim() ?? '';
           box?.style.setProperty('opacity', '0.4');
           b.setAttribute('disabled', 'true');
           await removeFromWishlist(b.dataset.wishRemove!, name);

@@ -27,6 +27,7 @@ export interface CartItem {
 export { formatMXN } from './pricing';
 import { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor } from './pricing';
 import { demoPrice } from './demo';
+import { productName } from './product-texts';
 
 export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING, shippingCostFor };
 
@@ -198,6 +199,12 @@ export function cartSubtotal(): number {
   return getCart().reduce((n, i) => n + i.price * i.qty, 0);
 }
 
+/** Idioma activo de la página (el documento lo publica en `data-lang`). */
+function pageLang(): 'es' | 'en' {
+  if (typeof document === 'undefined') return 'es';
+  return document.documentElement.dataset.lang === 'en' ? 'en' : 'es';
+}
+
 /**
  * Refresca precio y nombre de cada pieza contra `product_variants`.
  * Devuelve los artículos del carrito que ya no existen (huérfanos).
@@ -213,7 +220,7 @@ export async function refreshCartPrices(): Promise<{
   const { supabase } = await import('./supabase');
   const { data, error } = await supabase
     .from('product_variants')
-    .select('id, name, size, color, price, is_deleted, products(id, name, slug, is_active, is_deleted, product_images(url, position))')
+    .select('id, name, size, color, price, is_deleted, products(id, name, name_en, slug, is_active, is_deleted, product_images(url, position))')
     .in('id', cart.map((i) => i.variantId));
 
   if (error) return { cart, removed: [] };
@@ -237,7 +244,7 @@ export async function refreshCartPrices(): Promise<{
 
       return {
         ...item,
-        name: product.name,
+        name: productName(product, pageLang()),
         slug: product.slug ?? item.slug ?? null,
         variantName: row.name ?? item.variantName,
         price: demoPrice(row.price),

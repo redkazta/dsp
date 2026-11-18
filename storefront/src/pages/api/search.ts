@@ -31,8 +31,11 @@ export const GET: APIRoute = async ({
   const q = (new URL(request.url).searchParams.get('q') ?? '').trim().slice(0, 60);
   if (q.length < 2) return json({ results: [] });
 
-  // Escapa comodines de LIKE para que el término sea literal
-  const term = q.replace(/[%_,]/g, (ch) => `\\${ch}`);
+  // Escapa comodines de LIKE y separadores del `or` de PostgREST para que
+  // el término sea literal en ambos idiomas: "violet shirt" también encuentra
+  // la pieza por `name_en`.
+  const term = q.replace(/[%_,()]/g, ' ').trim();
+  if (!term) return json({ results: [] });
 
   const supabase = createSupabaseServerClient(request, cookies);
 
@@ -42,7 +45,7 @@ export const GET: APIRoute = async ({
     .eq('tenant_id', TENANT_ID)
     .eq('is_active', true)
     .eq('is_deleted', false)
-    .ilike('name', `%${term}%`)
+    .or(`name.ilike.%${term}%,name_en.ilike.%${term}%`)
     .order('created_at', { ascending: false })
     .limit(6);
 

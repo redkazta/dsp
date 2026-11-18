@@ -479,14 +479,16 @@ const jsonLd = {
       }
 
       .search-item-name {
-        display: block;
+        display: -webkit-box;
         font-family: 'Space Grotesk', Inter, sans-serif;
         font-size: 0.8125rem;
-        line-height: 1.2;
+        line-height: 1.25;
         color: #ffffff;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
 
       .search-item-cat {
@@ -789,7 +791,7 @@ const jsonLd = {
           <a href="${productBase}/${encodeURIComponent(p.slug ?? p.id)}" role="option" class="search-item">
             <span class="search-thumb">${img ? `<img src="${img}" alt="" loading="lazy" decoding="async">` : ''}</span>
             <span class="min-w-0 flex-1">
-              <span class="search-item-name">${escapeHtml(p.name)}</span>
+              <span class="search-item-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
               <span class="search-item-cat">${escapeHtml(p.category ?? 'Pieza')}</span>
             </span>
             <span class="search-item-price">$${Number(p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
