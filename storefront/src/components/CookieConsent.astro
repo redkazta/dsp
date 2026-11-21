@@ -95,26 +95,19 @@ const copy =
     padding-bottom: 64px;
   }
 
-  /* En escritorio, tarjeta flotante: una barra a todo lo ancho tapaba los
-     CTA que caen al pie del primer pantallazo. */
+  /* En escritorio, barra de una sola línea a todo lo ancho. Sustituye a la
+     tarjeta flotante: aquella caía justo sobre el botón de la ficha y sobre
+     el resumen del checkout. Así solo ocupa el borde inferior y el documento
+     reserva su alto (`body.has-cookie-bar`). */
   @media (min-width: 1024px) {
-    #cookie-consent {
-      left: auto;
-      right: 1.25rem;
-      bottom: 1.25rem;
-      max-width: 430px;
-      border: 1px solid rgba(255, 226, 138, 0.55);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.95);
-    }
-
     #cookie-consent .page-container {
-      padding: 0.85rem 1rem;
+      padding-top: 0.55rem;
+      padding-bottom: 0.55rem;
+      gap: 1.5rem;
     }
 
-    body.has-cookie-bar {
-      padding-bottom: 0;
+    #cookie-consent p {
+      white-space: nowrap;
     }
   }
 </style>

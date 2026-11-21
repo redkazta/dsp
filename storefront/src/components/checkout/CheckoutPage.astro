@@ -126,7 +126,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
       <div class="lg:col-span-2 order-2 lg:order-1">
         <!-- Indicador de pasos: dentro de la columna del formulario, para
              que en escritorio no cruce toda la pantalla. -->
-        <nav id="checkout-steps" class="mb-5 sm:mb-8 lg:max-w-[560px]" aria-label={t.checkout.title}>
+        <nav id="checkout-steps" class="mb-5 sm:mb-8" aria-label={t.checkout.title}>
           <div class="co-steps-track" aria-hidden="true">
             <span id="co-steps-fill" class="co-steps-fill"></span>
           </div>
@@ -637,7 +637,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
     /* ---------- Progreso de pasos ---------- */
     #checkout-steps {
       position: sticky;
-      top: 5rem;
+      top: var(--header-h);
       z-index: 30;
       margin-inline: -1.25rem;
       padding: 0.65rem 1.25rem 0.75rem;
@@ -708,7 +708,7 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
 
     @media (min-width: 640px) {
       #checkout-steps {
-        top: 6rem;
+        top: var(--header-h);
         margin-inline: 0;
         padding-inline: 0;
         background: transparent;

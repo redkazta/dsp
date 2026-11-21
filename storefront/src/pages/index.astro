@@ -186,6 +186,23 @@ const tiles = (categories ?? [])
     }
   }
 
+  /* Escritorio: el carrusel se alinea con el resto de la página (mismo aire
+     que `.page-container`) en vez de ir a sangre y cortar las fichas contra
+     el borde de la ventana. */
+  @media (min-width: 768px) {
+    .home-stage {
+      margin-inline: max(1.5rem, calc((100% - 1400px) / 2 + 2.5rem));
+    }
+  }
+
+  /* Portátiles de 768–940px de alto: el hero dejaba los CTA justo debajo del
+     pliegue. Se acorta para que la portada se lea completa. */
+  @media (min-width: 768px) and (max-height: 940px) {
+    .home-stage {
+      height: clamp(300px, 42vh, 430px);
+    }
+  }
+
   /* El carrusel reservaba 4.25rem abajo para el CTA flotante de la portada
      anterior. Ahora el CTA vive debajo del escenario: ese hueco sobra. */
   .home-stage :global(.hero-link) {

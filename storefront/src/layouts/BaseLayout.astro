@@ -175,11 +175,14 @@ const jsonLd = {
   <body class="min-h-screen flex flex-col bg-negro-profundo" data-home={homeScreen ? '1' : '0'}>
     <!-- Barra de anuncios rotativa -->
     <div class="bg-oro-brillo text-negro-profundo overflow-hidden" id="announcement-bar">
-      <div class="relative h-9 flex items-center justify-center">
+      <div class="relative h-9 flex items-center justify-center overflow-hidden">
         {
           announcements.map((text, i) => (
             <p
-              class="announcement-slide absolute inset-0 flex items-center justify-center px-4 font-acentos text-[10px] sm:text-[11px] uppercase tracking-[0.14em] sm:tracking-[0.28em] text-center font-semibold transition-opacity duration-700"
+              class:list={[
+                'announcement-slide absolute inset-0 flex items-center justify-center px-4 font-acentos text-[10px] sm:text-[11px] uppercase tracking-[0.14em] sm:tracking-[0.28em] text-center font-semibold',
+                { 'is-active': i === 0 },
+              ]}
               data-index={i}
             >
               {text}
@@ -192,11 +195,11 @@ const jsonLd = {
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-negro-profundo/95 backdrop-blur-xl border-b-2 border-white/25">
       <div class="page-container">
-        <!-- Grid de 3 columnas iguales: logo a la izquierda, menú al centro exacto,
-             acciones a la derecha. Así el menú queda centrado sin importar si hay
-             sesión (la píldora de perfil es ancha). -->
-        <div class="grid grid-cols-[auto_1fr_auto] lg:grid-cols-3 items-center h-20 sm:h-24">
-          <div class="flex items-center gap-1">
+        <!-- Logo a la izquierda, menú centrado de forma absoluta (así no
+             depende del ancho de la píldora de perfil) y acciones a la
+             derecha. -->
+        <div class="site-header-row relative flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1 min-w-0">
             <!-- Mobile menu -->
             <button
               id="menu-toggle"
@@ -226,12 +229,12 @@ const jsonLd = {
           </div>
 
           <!-- Nav desktop (Tienda / Nosotros), centrado -->
-          <nav class="hidden lg:flex items-center justify-center gap-8 xl:gap-10">
+          <nav class="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8 xl:gap-10 pointer-events-none">
             {
               navLinks.map((link) => (
                 <a
                   href={link.href}
-                  class="relative font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto hover:text-oro-brillo transition-colors duration-300 group"
+                  class="pointer-events-auto relative font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto hover:text-oro-brillo transition-colors duration-300 group"
                 >
                   {link.label}
                   <span class="absolute -bottom-1.5 left-0 h-0.5 w-0 bg-oro-brillo transition-[width] duration-300 group-hover:w-full" />
@@ -241,7 +244,7 @@ const jsonLd = {
           </nav>
 
           <!-- Acciones (derecha) -->
-          <div class="flex items-center justify-end gap-1.5 sm:gap-2.5">
+          <div class="flex items-center justify-end gap-1.5 sm:gap-2.5 shrink-0">
             <button
               type="button"
               id="search-open"
@@ -1190,20 +1193,22 @@ const jsonLd = {
       }
 
       // ---------- Anuncios rotativos ----------
+      // Cambio vertical: el texto que sale sube y el que entra llega desde
+      // abajo. Antes se cruzaban en el mismo píxel y durante el fundido los
+      // dos textos se leían encimados.
       const slides = document.querySelectorAll<HTMLElement>('.announcement-slide');
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (slides.length > 1 && !reduceMotion) {
         let current = 0;
-        slides.forEach((s, i) => (s.style.opacity = i === 0 ? '1' : '0'));
         setInterval(() => {
-          const outgoing = current;
-          slides[outgoing].style.opacity = '0';
-          // Espera a que termine el fundido antes de mostrar la siguiente:
-          // así los dos textos nunca se pisan en el centro.
-          window.setTimeout(() => {
-            current = (outgoing + 1) % slides.length;
-            slides[current].style.opacity = '1';
-          }, 700);
+          const outgoing = slides[current];
+          current = (current + 1) % slides.length;
+          const incoming = slides[current];
+
+          outgoing.classList.remove('is-active');
+          outgoing.classList.add('is-leaving');
+          window.setTimeout(() => outgoing.classList.remove('is-leaving'), 600);
+          incoming.classList.add('is-active');
         }, 3500);
       }
 
@@ -1421,6 +1426,12 @@ const jsonLd = {
   }
 
   /* ---------- Header: logo giratorio a la izquierda ---------- */
+  /* El alto sale de `--header-h` (global): así la barra de filtros y los
+     pasos del checkout se pegan justo debajo sin números duplicados. */
+  .site-header-row {
+    height: var(--header-h);
+  }
+
   /* No se puede centrar con left-1/2: la animación usa `transform` y lo
      pisaría. Va en el flujo y el vaivén de desktop cabe en el header. */
   .header-spinner {
@@ -1445,6 +1456,19 @@ const jsonLd = {
       width: 5rem;
       height: 5rem;
       margin-left: 1rem;
+    }
+  }
+
+  /* Entre 1024 y 1279 la píldora completa de perfil (≈205px) más los tres
+     accesos y el idioma no caben con el menú centrado: se muestra solo el
+     avatar. Desde 1280 vuelve el texto. */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .profile-pill .profile-text {
+      display: none;
+    }
+
+    .profile-pill {
+      padding: 0.3rem;
     }
   }
 
@@ -1806,6 +1830,47 @@ const jsonLd = {
     padding: 1.25rem;
     font-size: 0.875rem;
     color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* ---------- Barra de anuncios ---------- */
+  /* Solo una línea visible a la vez. La rotación es vertical: la que sale
+     sube y se va, la que entra llega desde abajo, así los textos nunca se
+     enciman al mismo tiempo. */
+  .announcement-slide {
+    opacity: 0;
+    transform: translateY(130%);
+    transition:
+      opacity 0.35s ease,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .announcement-slide.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .announcement-slide.is-leaving {
+    opacity: 0;
+    transform: translateY(-130%);
+  }
+
+  /* Teléfono en horizontal: header bajo, logo e iconos a escala. Va al
+     final para ganarle a las reglas base de arriba. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    .header-spinner {
+      width: 2.75rem;
+      height: 2.75rem;
+      margin-left: 0;
+    }
+
+    .profile-pill {
+      min-height: 40px;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

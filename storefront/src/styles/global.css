@@ -19,6 +19,25 @@
     --color-oro-crema: #fff4c9;
     --color-blanco: #ffffff;
     --color-blanco-suave: #f2f2f2;
+
+    /* Alto del header fijo. Lo consumen el propio header, la barra de
+       filtros de /tienda y los pasos del checkout, así que al cambiar de
+       dispositivo todo se mueve junto en vez de quedar tapado. */
+    --header-h: 5rem;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --header-h: 6rem;
+    }
+  }
+
+  /* Teléfono en horizontal (o ventana baja): el alto útil es escaso y el
+     header de 96px se comía un tercio de la pantalla. */
+  @media (orientation: landscape) and (max-height: 520px) {
+    :root {
+      --header-h: 3.25rem;
+    }
   }
 
   html {
@@ -31,7 +50,7 @@
   /* Los enlaces con ancla (#pedidos, #carrito...) no deben quedar debajo
      del header fijo al navegar en móvil. */
   [id] {
-    scroll-margin-top: 6.5rem;
+    scroll-margin-top: calc(var(--header-h) + 0.75rem);
   }
 
   body {
@@ -865,5 +884,30 @@ img.is-flash-photo {
 
   body.has-cookie-bar:has(.mobile-bar) {
     padding-bottom: calc(136px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================
+   Ventana baja (teléfono en horizontal)
+   ============================================
+   Con 390px de alto, una barra de 72px y el aviso de cookies dejan el
+   contenido sin aire. Se aprieta la barra y se oculta el anuncio: el
+   header ya se encoge solo con `--header-h`. */
+@media (orientation: landscape) and (max-height: 520px) {
+  #announcement-bar {
+    display: none;
+  }
+
+  .mobile-bar-inner {
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  body:has(.mobile-bar) {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom));
+  }
+
+  body.has-cookie-bar:has(.mobile-bar) {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom));
   }
 }
