@@ -11,6 +11,11 @@
 -- Es idempotente: si el perfil ya existe, solo actualiza el rol.
 -- =====================================================
 
+-- La columna `role` puede no existir si nunca se corrió `admin_setup.sql`.
+ALTER TABLE public.customer_profiles
+  ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'customer'
+  CHECK (role IN ('customer', 'admin', 'seller'));
+
 DO $$
 DECLARE
   v_email  TEXT := 'angel@wildforgelabs.com';
