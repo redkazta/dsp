@@ -85,14 +85,22 @@ export const onRequest = defineMiddleware(async (context: any, next: any) => {
     } | null = null;
 
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('customer_profiles')
         .select('first_name, full_name, phone, role')
         .eq('id', user.id)
         .maybeSingle();
 
+      // Sin este aviso, una columna que falte (p. ej. `role` si nunca se
+      // corrió `admin_setup.sql`) se veía como "usuario sin rol" y el enlace
+      // al panel desaparecía sin explicación.
+      if (error) {
+        console.warn('[middleware] no se pudo leer el perfil:', error.message);
+      }
+
       profile = data;
-    } catch {
+    } catch (err: any) {
+      console.warn('[middleware] perfil no disponible:', err?.message ?? 'error');
       profile = null;
     }
 
