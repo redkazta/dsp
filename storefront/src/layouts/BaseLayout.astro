@@ -1196,9 +1196,14 @@ const jsonLd = {
         let current = 0;
         slides.forEach((s, i) => (s.style.opacity = i === 0 ? '1' : '0'));
         setInterval(() => {
-          slides[current].style.opacity = '0';
-          current = (current + 1) % slides.length;
-          slides[current].style.opacity = '1';
+          const outgoing = current;
+          slides[outgoing].style.opacity = '0';
+          // Espera a que termine el fundido antes de mostrar la siguiente:
+          // así los dos textos nunca se pisan en el centro.
+          window.setTimeout(() => {
+            current = (outgoing + 1) % slides.length;
+            slides[current].style.opacity = '1';
+          }, 700);
         }, 3500);
       }
 
