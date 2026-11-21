@@ -70,7 +70,7 @@ const settings = await getStoreSettings();
   </div>
 
   <script>
-    import { getDashboardStats, listOrders, listAllProducts } from '../../lib/admin';
+    import { statsFromOrders, listOrders, listAllProducts } from '../../lib/admin';
     import { escapeHtml } from '../../lib/html';
     import { TENANT_ID } from '../../lib/constants';
     import { STATUS_LABEL, formatOrderMoney, type OrderStatus } from '../../lib/orders';
@@ -79,11 +79,11 @@ const settings = await getStoreSettings();
       const loading = document.getElementById('admin-loading')!;
       const dash = document.getElementById('admin-dashboard')!;
 
-      const [stats, orders, products] = await Promise.all([
-        getDashboardStats(TENANT_ID),
-        listOrders(TENANT_ID),
+      const [orders, products] = await Promise.all([
+        listOrders(),
         listAllProducts(TENANT_ID),
       ]);
+      const stats = statsFromOrders(orders);
 
       // Mensajes sin leer: vía API con service role (no depende de RLS).
       const newMessages = await fetch('/api/admin/contact-messages?count=1', { cache: 'no-store' })

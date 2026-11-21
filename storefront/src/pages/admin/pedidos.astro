@@ -402,7 +402,6 @@ const fedexReady = isFedexConfigured();
 
   <script>
     import { listOrders, updateOrderStatus, saveOrderNotes } from '../../lib/admin';
-    import { TENANT_ID } from '../../lib/constants';
     import { safeUrl } from '../../lib/html';
     import { askConfirm, notify } from '../../lib/dialog';
     import { US_REGIONS } from '../../lib/us';
@@ -1060,7 +1059,7 @@ const fedexReady = isFedexConfigured();
     }
 
     async function refresh() {
-      orders = await listOrders(TENANT_ID);
+      orders = await listOrders();
       if (!focusOrder) renderSummary();
       renderList();
     }

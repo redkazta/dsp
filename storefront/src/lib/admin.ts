@@ -1,6 +1,10 @@
 /**
  * Operaciones del panel de administración.
- * Todas las escrituras pasan por RLS: solo `admin` o `seller`.
+ *
+ * Lecturas críticas (pedidos) pasan por /api/admin/* con service role: RLS
+ * puede devolver 0 filas sin error si la allowlist o is_admin() no están al
+ * día, y el panel se veía vacío aunque el dato existiera.
+ * Las escrituras de producto siguen yendo por RLS: solo `admin` o `seller`.
  */
 
 import { supabase } from './supabase';
@@ -306,18 +310,23 @@ export async function uploadProductImage(file: File, slugHint: string): Promise<
 
 /**
  * Pedidos (todos, para el panel) con items e historial.
+ *
+ * Va por el servidor a propósito: el navegador consultaba `orders` bajo RLS y
+ * un `is_admin()` desactualizado la dejaba en 0 filas.
  */
-export async function listOrders(tenantId: string) {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*, order_items(*), order_status_history(status, notes, created_at)')
-    .eq('tenant_id', tenantId)
-    .eq('is_deleted', false)
-    .order('created_at', { ascending: false })
-    .limit(200);
+export async function listOrders(): Promise<any[]> {
+  const res = await fetch('/api/admin/orders', {
+    cache: 'no-store',
+    credentials: 'same-origin',
+  });
 
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error ?? 'No se pudieron cargar los pedidos.');
+  }
+
+  const data = await res.json();
+  return Array.isArray(data?.orders) ? data.orders : [];
 }
 
 /**
@@ -354,60 +363,54 @@ export async function updateOrderStatus(
   }
 }
 
-/** Notas internas del pedido (solo staff) */
+/** Notas internas del pedido (solo staff). Va por el servidor igual que el
+ *  cambio de estado: la escritura directa podía fallar por RLS. */
 export async function saveOrderNotes(orderId: string, adminNotes: string) {
-  const { error } = await supabase
-    .from('orders')
-    .update({ admin_notes: adminNotes, updated_at: new Date().toISOString() })
-    .eq('id', orderId);
+  const res = await fetch('/api/admin/order-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId, adminNotes }),
+  });
 
-  if (error) throw new Error(error.message);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error ?? 'No se pudieron guardar las notas.');
+  }
 }
 
 /**
- * Métricas para el dashboard.
+ * Métricas del dashboard a partir de los pedidos que ya cargó el panel.
+ * Antes se consultaban en el navegador y, con RLS devolviendo 0 filas,
+ * el resumen salía en cero aunque hubiera pedidos.
  */
-export async function getDashboardStats(tenantId: string) {
-  const [ordersRes, productsRes, customersRes] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('total_amount, status, created_at')
-      .eq('tenant_id', tenantId)
-      .eq('is_deleted', false),
-    supabase
-      .from('products')
-      .select('id, is_active')
-      .eq('tenant_id', tenantId)
-      .eq('is_deleted', false),
-    supabase
-      .from('customer_profiles')
-      .select('id')
-      .eq('tenant_id', tenantId),
-  ]);
+export interface DashboardStats {
+  totalOrders: number;
+  pendingOrders: number;
+  inProduction: number;
+  readyOrders: number;
+  monthRevenue: number;
+  totalRevenue: number;
+}
 
-  const orders = ordersRes.data ?? [];
-  const paid = orders.filter((o: { status: string }) =>
-    ['confirmed', 'design', 'preparing', 'ready', 'shipped', 'delivered'].includes(o.status)
-  );
+export function statsFromOrders(orders: any[]): DashboardStats {
+  const paidStatuses = ['confirmed', 'design', 'preparing', 'ready', 'shipped', 'delivered'];
+  const paid = orders.filter((o) => paidStatuses.includes(o.status));
 
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
   const monthRevenue = paid
-    .filter((o: { created_at: string }) => new Date(o.created_at) >= startOfMonth)
-    .reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0);
+    .filter((o) => new Date(o.created_at) >= startOfMonth)
+    .reduce((sum, o) => sum + Number(o.total_amount ?? 0), 0);
 
   return {
     totalOrders: orders.length,
-    pendingOrders: orders.filter((o: { status: string }) => o.status === 'pending').length,
-    inProduction: orders.filter((o: { status: string }) => ['confirmed', 'design', 'preparing'].includes(o.status)).length,
-    readyOrders: orders.filter((o: { status: string }) => o.status === 'ready').length,
+    pendingOrders: orders.filter((o) => o.status === 'pending').length,
+    inProduction: orders.filter((o) => ['confirmed', 'design', 'preparing'].includes(o.status)).length,
+    readyOrders: orders.filter((o) => o.status === 'ready').length,
     monthRevenue,
-    totalRevenue: paid.reduce((sum: number, o: { total_amount: number }) => sum + Number(o.total_amount), 0),
-    products: productsRes.data?.length ?? 0,
-    activeProducts: productsRes.data?.filter((p: { is_active: boolean }) => p.is_active).length ?? 0,
-    customers: customersRes.data?.length ?? 0,
+    totalRevenue: paid.reduce((sum, o) => sum + Number(o.total_amount ?? 0), 0),
   };
 }
 

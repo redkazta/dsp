@@ -52,8 +52,12 @@ export const POST: APIRoute = async (context: any) => {
       ? payload.paymentStatus.trim()
       : null;
 
+  // Notas internas: se guardan por aquí para no depender de RLS.
+  const adminNotes =
+    typeof payload?.adminNotes === 'string' ? payload.adminNotes.slice(0, 4000) : null;
+
   if (!orderId) return json({ error: 'invalid_body' }, 400);
-  if (!status && !paymentStatus) return json({ error: 'invalid_body' }, 400);
+  if (!status && !paymentStatus && adminNotes === null) return json({ error: 'invalid_body' }, 400);
   if (status && !ALLOWED.has(status)) return json({ error: 'invalid_body' }, 400);
   if (paymentStatus && !ALLOWED_PAYMENT.has(paymentStatus)) return json({ error: 'invalid_body' }, 400);
 
@@ -65,6 +69,7 @@ export const POST: APIRoute = async (context: any) => {
   // Sin `status` el pedido no se mueve del flujo: solo cambia el pago.
   if (status) patch.status = status;
   if (paymentStatus) patch.payment_status = paymentStatus;
+  if (adminNotes !== null) patch.admin_notes = adminNotes;
 
   if (typeof payload?.trackingNumber === 'string') {
     patch.tracking_number = payload.trackingNumber.trim() || null;
