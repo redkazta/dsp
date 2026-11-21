@@ -37,7 +37,7 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
       class:list={[
         'grid',
         compact
-          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-7 lg:gap-x-5 lg:gap-y-8 shop-grid--compact'
+          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-7 lg:gap-x-5 lg:gap-y-8 shop-grid--compact'
           : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-5 sm:gap-y-12 lg:gap-x-8 lg:gap-y-16',
       ]}
     >
@@ -213,6 +213,33 @@ const products = [...new Map<string, any>(rawProducts.map((p) => [String(p.id), 
 
   .shop-grid--compact :global(.quick-cancel) {
     font-size: 8px;
+  }
+
+  /* En escritorio la tarjeta compacta gana tamaño: con 5 columnas a 1440
+     las fotos y los nombres quedaban de miniaturas. */
+  @media (min-width: 1024px) {
+    .shop-grid--compact :global(.product-frame) {
+      height: clamp(240px, 26vh, 320px);
+    }
+
+    .shop-grid--compact :global(.product-card-wrap h3) {
+      font-size: 0.9rem;
+    }
+
+    .shop-grid--compact :global(.product-card-wrap p) {
+      font-size: 0.85rem;
+    }
+
+    .shop-grid--compact :global(.quick-add) {
+      width: 34px;
+      height: 34px;
+      flex-basis: 34px;
+    }
+
+    .shop-grid--compact :global(.quick-add svg) {
+      width: 14px;
+      height: 14px;
+    }
   }
 
   /* En el teléfono el botón de la tarjeta compacta sigue siendo objetivo

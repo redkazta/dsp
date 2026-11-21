@@ -226,6 +226,14 @@ const tiles = (categories ?? [])
     transition: transform 0.5s ease;
   }
 
+  /* En escritorio el tile cuadrado se hacía enorme: panorámico y con menos
+     alto para que no se coma media página. */
+  @media (min-width: 768px) {
+    .cat-tile-media {
+      aspect-ratio: 16 / 9;
+    }
+  }
+
   .cat-tile:hover .cat-tile-media img {
     transform: scale(1.04);
   }

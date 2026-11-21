@@ -161,7 +161,7 @@ import { localize } from '../../lib/routes';
           </ol>
         </div>
 
-        <div class="page-container py-5 sm:py-16 lg:py-20">
+        <div class="page-container py-5 sm:py-10 lg:py-12">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-20">
             {/* Galería: el scope envuelve pista, flechas Y miniaturas, si no
                 las miniaturas quedan fuera y el JS nunca las registra. */}
@@ -274,11 +274,11 @@ import { localize } from '../../lib/routes';
                 </a>
               )}
 
-              <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-6 leading-tight">
+              <h1 class="font-titulos text-3xl sm:text-4xl lg:text-5xl text-blancoRoto mb-4 leading-tight">
                 {title}
               </h1>
 
-              <div class="flex items-center gap-4 mb-8">
+              <div class="flex items-center gap-4 mb-6">
                 <p class="font-acentos text-3xl text-oro-brillo font-medium">
                   ${Number(price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
@@ -304,14 +304,14 @@ import { localize } from '../../lib/routes';
 
               <div class="gold-line mb-8" style="margin-left: 0"></div>
 
-              <p class="text-white/80 leading-relaxed mb-8 whitespace-pre-line">
+              <p class="text-white/80 leading-relaxed mb-6 whitespace-pre-line">
                 {blurb || t.product.defaultDescription}
               </p>
 
               <!-- Tallas -->
               {sizes.length > 0 && (
-                <div class="mb-6">
-                  <h3 class="font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto mb-4">
+                <div class="mb-4">
+                  <h3 class="font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto mb-3">
                     {t.product.size}
                   </h3>
                   <div class="flex flex-wrap gap-3" id="size-options">
@@ -330,8 +330,8 @@ import { localize } from '../../lib/routes';
 
               <!-- Colores -->
               {colors.length > 0 && (
-                <div class="mb-8">
-                  <h3 class="font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto mb-4">
+                <div class="mb-6">
+                  <h3 class="font-acentos text-xs uppercase tracking-[0.25em] text-blancoRoto mb-3">
                     {t.product.colorLabel}
                   </h3>
                   <div class="flex flex-wrap gap-3" id="color-options">

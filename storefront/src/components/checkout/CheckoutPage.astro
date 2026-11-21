@@ -121,40 +121,41 @@ const canceled = Astro.url.searchParams.get('canceled') === '1';
   </div>
 
   <div id="checkout-content" class="page-container py-6 sm:py-12 lg:py-16">
-    <!-- Indicador de pasos: barra de progreso + nombres, pegada bajo el header. -->
-    <nav id="checkout-steps" class="mb-5 sm:mb-8" aria-label={t.checkout.title}>
-      <div class="co-steps-track" aria-hidden="true">
-        <span id="co-steps-fill" class="co-steps-fill"></span>
-      </div>
-      <ol class="co-steps-labels">
-        <li>
-          <button
-            type="button"
-            class="step-tab"
-            data-step-tab="1"
-            aria-current="step"
-            aria-controls="step-1"
-          >
-            <span class="step-name">{t.checkout.step1}</span>
-          </button>
-        </li>
-        <li>
-          <button type="button" class="step-tab" data-step-tab="2" aria-controls="step-2">
-            <span class="step-name">{t.checkout.step2}</span>
-          </button>
-        </li>
-        <li>
-          <button type="button" class="step-tab" data-step-tab="3" aria-controls="step-3">
-            <span class="step-name">{t.checkout.step3}</span>
-          </button>
-        </li>
-      </ol>
-      <p id="step-progress" class="sr-only" role="status" aria-live="polite"></p>
-    </nav>
-
     <div class="grid lg:grid-cols-3 gap-8 lg:gap-12">
       <!-- Formulario principal -->
       <div class="lg:col-span-2 order-2 lg:order-1">
+        <!-- Indicador de pasos: dentro de la columna del formulario, para
+             que en escritorio no cruce toda la pantalla. -->
+        <nav id="checkout-steps" class="mb-5 sm:mb-8 lg:max-w-[560px]" aria-label={t.checkout.title}>
+          <div class="co-steps-track" aria-hidden="true">
+            <span id="co-steps-fill" class="co-steps-fill"></span>
+          </div>
+          <ol class="co-steps-labels">
+            <li>
+              <button
+                type="button"
+                class="step-tab"
+                data-step-tab="1"
+                aria-current="step"
+                aria-controls="step-1"
+              >
+                <span class="step-name">{t.checkout.step1}</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="step-tab" data-step-tab="2" aria-controls="step-2">
+                <span class="step-name">{t.checkout.step2}</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="step-tab" data-step-tab="3" aria-controls="step-3">
+                <span class="step-name">{t.checkout.step3}</span>
+              </button>
+            </li>
+          </ol>
+          <p id="step-progress" class="sr-only" role="status" aria-live="polite"></p>
+        </nav>
+
         <form id="checkout-form" class="space-y-8" novalidate>
           <!-- Paso 1: contacto -->
           <section id="step-1" data-step="1" class="co-card">
