@@ -135,7 +135,7 @@ const tiles = (categories ?? [])
     tiles.length > 0 && (
       <section class="page-container pb-9 sm:pb-16">
         <p class="section-label mb-3">{t.home.categoriesLabel}</p>
-        <div class="grid grid-cols-2 gap-3 sm:gap-5">
+        <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-8">
           {tiles.map((tile) => (
             <a href={`${localize(lang, 'shop')}?category=${tile.id}`} class="cat-tile">
               <span class="cat-tile-media">
@@ -177,21 +177,28 @@ const tiles = (categories ?? [])
     position: relative;
     height: clamp(290px, 50vh, 460px);
     margin-top: 1rem;
+    /* El slide deja 0.75rem de aire a cada lado; el escenario se corre lo
+       mismo para que la tarjeta —no el escenario— quede al ras del texto. */
+    margin-inline: calc(var(--page-pad) - 0.75rem);
   }
 
   @media (min-width: 640px) {
     .home-stage {
       height: clamp(360px, 56vh, 540px);
       margin-top: 1.5rem;
+      margin-inline: calc(var(--page-pad) - 0.5rem);
     }
   }
 
-  /* Escritorio: el carrusel se alinea con el resto de la página (mismo aire
-     que `.page-container`) en vez de ir a sangre y cortar las fichas contra
-     el borde de la ventana. */
+  /* Escritorio: el carrusel comparte la retícula de `.page-container` aunque
+     vaya a sangre dentro de su propia sección. Se descuenta el gutter interno
+     del slide para que el borde de la tarjeta caiga donde el título. */
   @media (min-width: 768px) {
     .home-stage {
-      margin-inline: max(1.5rem, calc((100% - 1400px) / 2 + 2.5rem));
+      margin-inline: max(
+        calc(var(--page-pad) - 0.5rem),
+        calc((100% - var(--page-max)) / 2 + var(--page-pad) - 0.5rem)
+      );
     }
   }
 

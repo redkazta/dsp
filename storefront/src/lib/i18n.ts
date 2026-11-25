@@ -605,6 +605,7 @@ export const copy = {
       lastUpdated: 'Última actualización',
       updatedOn: '17 de octubre de 2026',
       viewCatalog: 'Ver catálogo',
+      linkContact: 'Escríbenos',
       shipping: {
         title: 'Envíos',
         sections: [
@@ -1440,6 +1441,7 @@ export const copy = {
       lastUpdated: 'Last updated',
       updatedOn: 'October 17, 2026',
       viewCatalog: 'Browse the catalogue',
+      linkContact: 'Contact us',
       shipping: {
         title: 'Shipping',
         sections: [
