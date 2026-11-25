@@ -4,6 +4,8 @@
  * Variables de entorno (Vercel):
  *   RESEND_API_KEY  → clave de Resend
  *   RESEND_DOMAIN  → dominio verificado (ej. dinerosobreproblemas.com)
+ *   ORDER_COPY_EMAIL → buzón que recibe copia oculta de cada recibo
+ *                      (por defecto, angel@wildforgelabs.com)
  *
  * `RESEND_DOMAIN` se normaliza: si alguien la guarda como
  * `https://dominio.com`, `@dominio.com` o con espacios, el remitente sale
@@ -18,6 +20,8 @@
  */
 
 import { serverEnv } from './env';
+import { escapeHtml } from './html';
+import { formatOrderMoney, type OrderReceipt } from './orders';
 
 const RESEND_API = 'https://api.resend.com/emails';
 
@@ -69,6 +73,16 @@ const SENDING_DOMAIN = 'wildgvng.com.mx';
 /** Dominio de la marca. */
 const BRAND_DOMAIN = 'dinerosobreproblemas.com';
 
+/** Copia oculta de cada recibo. Se puede cambiar con `ORDER_COPY_EMAIL`. */
+const ORDER_COPY_EMAIL = 'angel@wildforgelabs.com';
+
+/** BCC efectivo, salvo que coincida con el destinatario principal. */
+function orderCopyRecipient(to: string) {
+  const configured =
+    (serverEnv('ORDER_COPY_EMAIL') ?? '').trim() || ORDER_COPY_EMAIL;
+  return configured.toLowerCase() === to.trim().toLowerCase() ? '' : configured;
+}
+
 /** Nombres aceptados para la clave, en orden de preferencia. */
 const API_KEY_NAMES = ['RESEND_API_KEY', 'RESENDAPIKEY'] as const;
 
@@ -108,12 +122,75 @@ export function resendConfig() {
   };
 }
 
+/** Piezas, totales y dirección para el recibo del correo. */
+function receiptDetails(receipt: OrderReceipt, es: boolean) {
+  const itemRows = receipt.items
+    .map((item) => {
+      const spec =
+        [item.size, item.color].filter(Boolean).join(' · ') ||
+        item.variantName ||
+        '';
+
+      return `<tr>
+        <td style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.10);font-size:13px;line-height:1.5;color:rgba(255,255,255,0.88);">
+          ${item.quantity} × ${escapeHtml(item.name)}${
+            spec
+              ? `<br><span style="font-size:11px;color:rgba(255,255,255,0.55);">${escapeHtml(spec)}</span>`
+              : ''
+          }
+        </td>
+        <td align="right" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.10);font-size:13px;color:rgba(255,255,255,0.88);white-space:nowrap;">
+          ${formatOrderMoney(item.quantity * item.unitPrice)}
+        </td>
+      </tr>`;
+    })
+    .join('');
+
+  const label = (name: string, value: string, strong = false) => `<tr>
+      <td style="padding:3px 0;font-size:${strong ? 14 : 12}px;color:${strong ? '#FFE28A' : 'rgba(255,255,255,0.62)'};">${name}</td>
+      <td align="right" style="padding:3px 0;font-size:${strong ? 14 : 12}px;color:${strong ? '#FFE28A' : 'rgba(255,255,255,0.88)'};white-space:nowrap;">${value}</td>
+    </tr>`;
+
+  const address = receipt.shippingAddress.map(escapeHtml).join('<br>');
+  const phone = receipt.customerPhone
+    ? `<p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);">${es ? 'Tel' : 'Phone'}: ${escapeHtml(receipt.customerPhone)}</p>`
+    : '';
+
+  return `
+    <div style="margin:20px 0 0;">
+      <p style="margin:0 0 2px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#FFE28A;">${es ? 'Detalle del pedido' : 'Order details'}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${itemRows || `<tr><td style="padding:8px 0;font-size:13px;color:rgba(255,255,255,0.62);">${es ? 'El detalle no está disponible.' : 'Details are not available.'}</td></tr>`}
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+        ${label(es ? 'Subtotal' : 'Subtotal', formatOrderMoney(receipt.subtotal))}
+        ${label(
+          es ? 'Envío' : 'Shipping',
+          receipt.shipping > 0 ? formatOrderMoney(receipt.shipping) : es ? 'Gratis' : 'Free'
+        )}
+        ${receipt.discount > 0 ? label(es ? 'Descuento' : 'Discount', `−${formatOrderMoney(receipt.discount)}`) : ''}
+        ${label(es ? 'Total pagado' : 'Total paid', formatOrderMoney(receipt.total), true)}
+      </table>
+    </div>
+    ${
+      receipt.shippingAddress.length > 0
+        ? `<div style="margin:16px 0 0;">
+            <p style="margin:0 0 4px;font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#FFE28A;">${es ? 'Enviar a' : 'Ship to'}</p>
+            <p style="margin:0;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.72);">${address}</p>
+            ${receipt.shippingMethod ? `<p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(receipt.shippingMethod)}</p>` : ''}
+            ${phone}
+          </div>`
+        : ''
+    }`;
+}
+
 export async function sendOrderConfirmation({
   to,
   orderNumber,
   customerName,
   total,
   lang = 'es',
+  receipt = null,
 }: {
   to: string;
   orderNumber: string;
@@ -121,6 +198,8 @@ export async function sendOrderConfirmation({
   total: string;
   /** Idioma con el que se compró; el correo sale en ese idioma. */
   lang?: 'es' | 'en';
+  /** Detalle completo; si falta, el correo queda como aviso mínimo. */
+  receipt?: OrderReceipt | null;
 }) {
   const { apiKey, from, contactEmail } = resendConfig();
 
@@ -130,6 +209,7 @@ export async function sendOrderConfirmation({
   }
 
   const es = lang !== 'en';
+  const copyTo = orderCopyRecipient(to);
 
   const title = es ? `Pedido #${orderNumber}` : `Order #${orderNumber}`;
   const subject = es
@@ -138,19 +218,20 @@ export async function sendOrderConfirmation({
 
   const body = `
     <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
-      ${es ? `¡Gracias por tu compra, ${customerName}!` : `Thanks for your purchase, ${customerName}!`}
+      ${es ? `¡Gracias por tu compra, ${escapeHtml(customerName)}!` : `Thanks for your purchase, ${escapeHtml(customerName)}!`}
     </p>
     <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
       ${
         es
-          ? `Tu pedido <strong style="color:#ffffff;">#${orderNumber}</strong> quedó confirmado.`
-          : `Your order <strong style="color:#ffffff;">#${orderNumber}</strong> is confirmed.`
+          ? `Tu pedido <strong style="color:#ffffff;">#${escapeHtml(orderNumber)}</strong> quedó confirmado.`
+          : `Your order <strong style="color:#ffffff;">#${escapeHtml(orderNumber)}</strong> is confirmed.`
       }
     </p>
     <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:rgba(255,255,255,0.85);">
-      ${es ? 'Total pagado' : 'Total paid'}: <strong style="color:#FFE28A;">${total}</strong>
+      ${es ? 'Total pagado' : 'Total paid'}: <strong style="color:#FFE28A;">${escapeHtml(total)}</strong>
     </p>
-    <p style="margin:0 0 18px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
+    ${receipt ? receiptDetails(receipt, es) : ''}
+    <p style="margin:20px 0 18px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
       ${
         es
           ? 'Te avisamos en cuanto tu pieza entre a producción y de nuevo cuando salga a camino.'
@@ -173,6 +254,8 @@ export async function sendOrderConfirmation({
       body: JSON.stringify({
         from,
         to,
+        // Copia del recibo para el equipo; oculta para el cliente.
+        ...(copyTo ? { bcc: [copyTo] } : {}),
         // Las respuestas las atiende una persona, no el remitente técnico.
         reply_to: contactEmail,
         subject,

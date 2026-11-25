@@ -31,7 +31,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseAdminClient } from '../../../lib/supabase-server';
 import { verifyWebhookSignature, stripeWebhookSecret, type StripeEvent } from '../../../lib/stripe';
 import { applyPaidStatus, applyFailedStatus, applyRefundedStatus } from '../../../lib/checkout';
-import { sendOrderConfirmation } from '../../../lib/resend';
+import { sendOrderReceipt } from '../../../lib/order-receipt';
 
 export const prerender = false;
 
@@ -128,22 +128,9 @@ async function isOrderPaid(db: SupabaseClient, orderId: string): Promise<boolean
 }
 
 async function sendConfirmation(db: SupabaseClient, orderId: string, lang: 'es' | 'en' = 'es') {
-  const { data: order } = await db
-    .from('orders')
-    .select('contact_email, contact_name, order_number, total_amount')
-    .eq('id', orderId)
-    .maybeSingle();
-
-  if (!order?.contact_email) return;
-
   try {
-    await sendOrderConfirmation({
-      to: order.contact_email,
-      orderNumber: order.order_number ?? orderId,
-      customerName: order.contact_name ?? (lang === 'en' ? 'Customer' : 'Cliente'),
-      total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
-      lang,
-    });
+    // Cliente + copia oculta al buzón interno, con el detalle del pedido.
+    await sendOrderReceipt({ db, orderId, lang });
   } catch (err: any) {
     // El pedido ya está pagado: un correo fallido no debe tumbar el webhook.
     console.error('[webhook] correo de confirmación', err?.message);

@@ -17,7 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { CHECKOUT_NOTES_MARKER, CURRENCY, TENANT_ID } from './constants';
 import { priceItems, totalsFor, PricingError, round2, type PricedItem } from './pricing';
 import { createPaymentIntent, retrievePaymentIntent, retrieveCheckoutSession, isStripeConfigured, stripeMode, stripeEnv, StripeError } from './stripe';
-import { sendOrderConfirmation } from './resend';
+import { sendOrderReceipt } from './order-receipt';
 import { resolveCoupon, couponMessage } from './coupons';
 import { isUsState, isUsShippingRegion, usStateCode, isUsPostalCode } from './us';
 import { getStoreSettings, shippingRulesFrom } from './settings';
@@ -701,23 +701,10 @@ export async function confirmSessionOnReturn({ db, sessionId }: {
   });
 
   // Confirmación por correo también en la vuelta de Stripe: sin webhook
-  // configurado, esta es la única vía por la que sale el correo.
+  // configurado, esta es la única vía por la que sale el correo. El recibo
+  // lleva la copia oculta al buzón interno.
   if (!wasPaid) {
-    const { data: order } = await db
-      .from('orders')
-      .select('contact_email, contact_name, order_number, total_amount')
-      .eq('id', orderId)
-      .maybeSingle();
-
-    if (order?.contact_email) {
-      sendOrderConfirmation({
-        to: order.contact_email,
-        orderNumber: order.order_number ?? orderId,
-        customerName: order.contact_name ?? (sessionLang === 'en' ? 'Customer' : 'Cliente'),
-        total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
-        lang: sessionLang,
-      }).catch(() => {});
-    }
+    sendOrderReceipt({ db, orderId, lang: sessionLang }).catch(() => {});
   }
 
   return orderId;
@@ -764,21 +751,7 @@ export async function confirmPaymentIntentOnReturn({ db, paymentIntentId }: {
   });
 
   if (!wasPaid) {
-    const { data: order } = await db
-      .from('orders')
-      .select('contact_email, contact_name, order_number, total_amount')
-      .eq('id', orderId)
-      .maybeSingle();
-
-    if (order?.contact_email) {
-      sendOrderConfirmation({
-        to: order.contact_email,
-        orderNumber: order.order_number ?? orderId,
-        customerName: order.contact_name ?? (intentLang === 'en' ? 'Customer' : 'Cliente'),
-        total: `$${Number(order.total_amount ?? 0).toFixed(2)}`,
-        lang: intentLang,
-      }).catch(() => {});
-    }
+    sendOrderReceipt({ db, orderId, lang: intentLang }).catch(() => {});
   }
 
   return orderId;

@@ -131,6 +131,34 @@ export interface CreatedOrder {
   order_number: string | null;
   total_amount: number;
 }
+
+/** Una línea del recibo, tal como se guardó al crear el pedido. */
+export interface OrderReceiptItem {
+  name: string;
+  variantName: string | null;
+  size: string | null;
+  color: string | null;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** Datos completos para el correo de compra (cliente y copia interna). */
+export interface OrderReceipt {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  createdAt: string | null;
+  items: OrderReceiptItem[];
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  shippingMethod: string;
+  shippingAddress: string[];
+}
+
 /** Rastreo: enlace según paquetería (si no reconocemos, búsqueda en Google). */
 export function trackingUrl(carrier: string | null | undefined, trackingNumber: string) {
   const n = encodeURIComponent(trackingNumber);
