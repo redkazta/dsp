@@ -41,12 +41,12 @@ const tiles = (categories ?? [])
 <BaseLayout title={t.meta.home.title} description={t.meta.home.description}>
   <!-- ============ HERO ============ -->
   <section class="border-b-2 border-white/25 bg-noise">
-    <div class="page-container pt-7 sm:pt-12">
+    <div class="page-container pt-7 sm:pt-12 lg:pt-16 lg:text-center">
       <p class="section-label mb-2.5 sm:mb-3">{t.home.heroLabel}</p>
-      <h1 class="font-titulos text-[2.1rem] leading-[0.95] sm:text-5xl lg:text-6xl text-blancoRoto">
+      <h1 class="font-titulos text-[2.1rem] leading-[0.95] sm:text-5xl lg:text-7xl text-blancoRoto">
         {t.brand}
       </h1>
-      <p class="mt-3 text-sm sm:text-base text-white/80 leading-relaxed max-w-md">
+      <p class="mt-3 text-sm sm:text-base text-white/80 leading-relaxed max-w-md lg:mx-auto lg:mt-5 lg:max-w-2xl">
         {t.home.heroText}
       </p>
     </div>
@@ -56,7 +56,7 @@ const tiles = (categories ?? [])
       <HeroCarousel slides={slides} t={t} currency="USD" />
     </div>
 
-    <div class="page-container pb-7 sm:pb-10 flex flex-col sm:flex-row gap-3">
+    <div class="page-container pb-7 sm:pb-10 flex flex-col sm:flex-row gap-3 lg:justify-center">
       <a href={localize(lang, 'shop')} class="btn-gold w-full sm:w-auto">
         {t.home.heroPrimary}
       </a>
@@ -69,7 +69,7 @@ const tiles = (categories ?? [])
   <!-- ============ GARANTÍAS ============ -->
   <section class="border-b-2 border-white/25 bg-negro-carbono">
     <ul class="page-container py-4 sm:py-6 grid grid-cols-3 gap-2 sm:gap-8">
-      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4 lg:flex-col lg:items-center lg:text-center lg:gap-2">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
           <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
           <circle cx="7" cy="18" r="1.6" />
@@ -81,7 +81,7 @@ const tiles = (categories ?? [])
         </span>
       </li>
 
-      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4 lg:flex-col lg:items-center lg:text-center lg:gap-2">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
           <rect x="2.5" y="5.5" width="19" height="13" rx="2" />
           <path d="M2.5 10h19M6 15h4" />
@@ -92,7 +92,7 @@ const tiles = (categories ?? [])
         </span>
       </li>
 
-      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4">
+      <li class="flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-4 lg:flex-col lg:items-center lg:text-center lg:gap-2">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFE28A" stroke-width="1.8" aria-hidden="true" class="shrink-0">
           <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
         </svg>
@@ -106,8 +106,8 @@ const tiles = (categories ?? [])
 
   <!-- ============ EL DROP ============ -->
   <section class="page-container py-9 sm:py-16">
-    <div class="flex items-end justify-between gap-4 mb-5 sm:mb-8">
-      <div class="min-w-0">
+    <div class="flex items-end justify-between gap-4 mb-5 sm:mb-8 lg:flex-col lg:items-center lg:gap-5 lg:text-center">
+      <div class="min-w-0 lg:max-w-2xl lg:mx-auto">
         <p class="section-label mb-2">{t.home.dropLabel}</p>
         <h2 class="font-titulos text-2xl sm:text-4xl text-blancoRoto leading-none">
           {t.home.dropTitle}
@@ -133,7 +133,7 @@ const tiles = (categories ?? [])
   <!-- ============ CATEGORÍAS ============ -->
   {
     tiles.length > 0 && (
-      <section class="page-container pb-9 sm:pb-16">
+      <section class="page-container pb-9 sm:pb-16 lg:text-center">
         <p class="section-label mb-3">{t.home.categoriesLabel}</p>
         <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:gap-8">
           {tiles.map((tile) => (
@@ -156,12 +156,12 @@ const tiles = (categories ?? [])
 
   <!-- ============ HECHO A MANO ============ -->
   <section class="border-y-2 border-white/25 bg-noise">
-    <div class="page-container py-10 sm:py-16">
+    <div class="page-container py-10 sm:py-16 lg:text-center">
       <p class="section-label mb-3">{t.home.craftLabel}</p>
-      <h2 class="font-titulos text-2xl sm:text-4xl text-blancoRoto leading-tight max-w-2xl">
+      <h2 class="font-titulos text-2xl sm:text-4xl text-blancoRoto leading-tight max-w-2xl lg:mx-auto">
         {t.home.craftTitle}
       </h2>
-      <p class="mt-3 sm:mt-4 text-sm sm:text-base text-white/80 leading-relaxed max-w-xl">
+      <p class="mt-3 sm:mt-4 text-sm sm:text-base text-white/80 leading-relaxed max-w-xl lg:mx-auto">
         {t.home.craftText}
       </p>
       <a href={localize(lang, 'about')} class="btn-outline w-full sm:w-auto mt-6">
