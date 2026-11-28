@@ -8,16 +8,16 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   <div id="admin-loading" class="py-20 text-center text-white/80 text-sm">Cargando...</div>
 
   <div id="products-view" class="hidden">
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
       <div>
         <p class="section-label mb-2">Catálogo</p>
-        <h1 class="font-titulos text-4xl text-blancoRoto">Productos</h1>
+        <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto">Productos</h1>
       </div>
-      <button id="new-btn" class="btn-gold">+ Nuevo producto</button>
+      <button id="new-btn" class="btn-gold w-full sm:w-auto">+ Nuevo producto</button>
     </div>
 
     <!-- Formulario -->
-    <div id="form-panel" class="hidden card p-6 mb-8">
+    <div id="form-panel" class="hidden card p-4 sm:p-6 mb-8">
       <h2 id="form-title" class="font-acentos text-sm uppercase tracking-[0.2em] text-oro-brillo mb-6">
         Nuevo producto
       </h2>
@@ -67,16 +67,16 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
             Imagen
           </label>
           <input id="image-input" type="file" accept="image/*" class="block text-xs text-white/80 file:mr-4 file:py-2 file:px-4 file:border file:border-white/30 file:bg-transparent file:text-xs file:text-white hover:file:border-oro-brillo file:cursor-pointer" />
-          <div id="image-preview" class="hidden mt-3 w-24 h-30 bg-white overflow-hidden">
+          <div id="image-preview" class="hidden mt-3 w-20 sm:w-24 aspect-[3/4] bg-white overflow-hidden">
             <img class="w-full h-full object-contain" />
           </div>
         </div>
 
         <p id="form-error" class="hidden sm:col-span-2 text-xs text-red-400"></p>
 
-        <div class="sm:col-span-2 flex gap-3 pt-2">
-          <button type="submit" id="save-btn" class="btn-gold">Guardar producto</button>
-          <button type="button" id="cancel-btn" class="btn-outline">Cancelar</button>
+        <div class="sm:col-span-2 flex flex-col sm:flex-row gap-3 pt-2">
+          <button type="submit" id="save-btn" class="btn-gold w-full sm:w-auto">Guardar producto</button>
+          <button type="button" id="cancel-btn" class="btn-outline w-full sm:w-auto">Cancelar</button>
         </div>
       </form>
     </div>
@@ -112,11 +112,11 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
           const stock = (p.product_variants ?? []).reduce((s: number, v: any) => s + (v.stock ?? 0), 0);
           const img = safeUrl(p.product_images?.[0]?.url);
           return `
-          <div class="border-2 border-white/30 p-4 flex items-center gap-4" data-id="${escapeHtml(p.id)}">
+          <div class="border-2 border-white/30 p-4 flex flex-wrap items-center gap-3 sm:gap-4" data-id="${escapeHtml(p.id)}">
             <div class="w-14 h-16 bg-white shrink-0 overflow-hidden">
               ${img ? `<img src="${img}" alt="" class="w-full h-full object-contain">` : ''}
             </div>
-            <div class="flex-1 min-w-0">
+            <div class="flex-1 min-w-[9rem]">
               <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="font-acentos text-sm text-white hover:text-oro-brillo transition-colors line-clamp-2 leading-snug" title="${escapeHtml(p.name)}">
                 ${escapeHtml(p.name)}
               </a>
@@ -125,17 +125,17 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
               </p>
             </div>
             <p class="font-acentos text-sm text-oro-brillo shrink-0">$${Number(p.base_price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-            <div class="flex gap-2 shrink-0">
-              <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
+            <div class="w-full flex flex-wrap gap-2 lg:w-auto lg:flex-nowrap lg:shrink-0">
+              <button data-toggle="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider text-center border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 ${p.is_active ? 'Ocultar' : 'Activar'}
               </button>
-              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider text-center border-2 border-white/40 text-white hover:border-oro-brillo hover:text-oro-brillo transition-colors">
                 Editar
               </a>
-              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider border-2 border-oro-brillo/60 text-oro-brillo hover:border-oro-brillo transition-colors">
+              <a href="/admin/productos/${escapeHtml(p.slug || p.id)}" class="px-3 py-2 text-xs uppercase tracking-wider text-center border-2 border-oro-brillo/60 text-oro-brillo hover:border-oro-brillo transition-colors">
                 Stock
               </a>
-              <button data-delete="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">
+              <button data-delete="${p.id}" class="px-3 py-2 text-xs uppercase tracking-wider text-center border border-red-500/20 text-red-400/70 hover:border-red-500 hover:text-red-400 transition-colors">
                 Borrar
               </button>
             </div>

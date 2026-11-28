@@ -13,12 +13,12 @@ const settings = await getStoreSettings();
   <div id="admin-loading" class="py-20 text-center text-white/80 text-sm">Cargando...</div>
 
   <div id="admin-dashboard" class="hidden" data-low-stock={String(settings.lowStockThreshold)}>
-    <div class="mb-10">
+    <div class="mb-8 sm:mb-10">
       <p class="section-label mb-2">Panel</p>
-      <h1 class="font-titulos text-4xl text-blancoRoto">Dashboard</h1>
+      <h1 class="font-titulos text-3xl sm:text-4xl text-blancoRoto">Dashboard</h1>
     </div>
 
-    <div id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"></div>
+    <div id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-12"></div>
 
     <div class="grid lg:grid-cols-2 gap-8 items-start">
       <section>
@@ -34,28 +34,28 @@ const settings = await getStoreSettings();
         </h2>
         <!-- 6 tarjetas = dos filas exactas de tres: nada se cae abajo. -->
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-          <a href="/admin/productos" class="card h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href="/admin/productos" class="card h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Productos</p>
             <p class="text-xs text-white/80 leading-snug">Precios, stock y fotos</p>
           </a>
-          <a href="/admin/pedidos" class="card h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href="/admin/pedidos" class="card h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Pedidos</p>
             <p class="text-xs text-white/80 leading-snug">Estatus y envíos</p>
           </a>
-          <a href="/admin/mensajes" class="card relative h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href="/admin/mensajes" class="card relative h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Mensajes</p>
             <p class="text-xs text-white/80 leading-snug">Formulario de contacto</p>
             <span id="new-messages-badge" class="hidden absolute top-3 right-3 min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center bg-oro-brillo text-negro-profundo text-[11px] font-bold"></span>
           </a>
-          <a href={localize(lang, 'shop')} target="_blank" rel="noopener" class="card h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href={localize(lang, 'shop')} target="_blank" rel="noopener" class="card h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Ver tienda</p>
             <p class="text-xs text-white/80 leading-snug">Como cliente</p>
           </a>
-          <a href="/cuenta" class="card h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href="/cuenta" class="card h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Mi cuenta</p>
             <p class="text-xs text-white/80 leading-snug">Perfil y pedidos</p>
           </a>
-          <a href="/admin/configuracion" class="card h-full flex flex-col justify-center p-4 sm:p-5 hover:border-oro-brillo/60 transition-colors">
+          <a href="/admin/configuracion" class="card h-full flex flex-col justify-center p-3.5 sm:p-5 hover:border-oro-brillo/60 transition-colors">
             <p class="font-acentos text-sm text-white mb-1">Configuración</p>
             <p class="text-xs text-white/80 leading-snug">Integraciones y estado</p>
           </a>
@@ -109,7 +109,7 @@ const settings = await getStoreSettings();
       ]
         .map(
           (s) => `
-        <div class="card p-5">
+        <div class="card p-4 sm:p-5">
           <p class="text-xs uppercase tracking-[0.16em] text-white/80 mb-2">${s.label}</p>
           <p class="font-acentos text-2xl text-oro-brillo">${s.value}</p>
         </div>`
@@ -125,7 +125,7 @@ const settings = await getStoreSettings();
               .slice(0, 12)
               .map(
                 (o: any) => `
-          <a href="/admin/pedidos?order=${encodeURIComponent(o.id)}" class="flex items-center justify-between gap-4 card p-4 hover:border-oro-brillo transition-colors">
+          <a href="/admin/pedidos?order=${encodeURIComponent(o.id)}" class="flex items-center justify-between gap-3 sm:gap-4 card p-3.5 sm:p-4 hover:border-oro-brillo transition-colors">
             <div class="min-w-0">
               <p class="font-acentos text-base text-blancoRoto">${o.order_number ?? o.id.slice(0, 8)}</p>
               <p class="text-sm text-white/80 truncate">${o.contact_name ?? ''}</p>

@@ -120,7 +120,7 @@ import { localize } from '../../../lib/routes';
         { label: 'Variantes', value: String(variants.length) },
         { label: 'Unidades vendidas', value: String(soldUnits) },
       ].map((m) => (
-        <div class="card p-4">
+        <div class="card p-3.5 sm:p-4">
           <p class="text-xs uppercase tracking-[0.16em] text-white/70 mb-2">{m.label}</p>
           <p class="font-acentos text-2xl text-oro-brillo">{m.value}</p>
         </div>
@@ -130,7 +130,7 @@ import { localize } from '../../../lib/routes';
     <div class="grid lg:grid-cols-3 gap-8">
       <div class="lg:col-span-2 space-y-8">
         <!-- Datos -->
-        <section class="card p-5 sm:p-6">
+        <section class="card p-4 sm:p-6">
           <h2 class="section-label mb-5">Datos del producto</h2>
 
           <form data-form="product" class="grid sm:grid-cols-2 gap-4">
@@ -207,7 +207,7 @@ import { localize } from '../../../lib/routes';
               </select>
             </label>
 
-            <div class="sm:col-span-2 flex items-center gap-4">
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
               <button type="submit" class="btn-gold !min-h-[44px] !px-6 !py-2 !text-xs">Guardar cambios</button>
               <span data-form-status="product" class="text-sm text-oro-brillo"></span>
             </div>
@@ -215,29 +215,30 @@ import { localize } from '../../../lib/routes';
         </section>
 
         <!-- Variantes y stock -->
-        <section class="card p-5 sm:p-6">
-          <div class="flex items-center justify-between mb-5">
+        <section class="card p-4 sm:p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
             <h2 class="section-label">Variantes y stock</h2>
             <button type="button" data-open-new-variant class="btn-outline !min-h-[40px] !px-4 !py-2 !text-xs">
               + Variante
             </button>
           </div>
 
-          <div data-new-variant-form class="hidden mb-5 border-2 border-dashed border-white/25 p-4">
-            <form data-form="new-variant" class="grid sm:grid-cols-5 gap-3">
+          <div data-new-variant-form class="hidden mb-5 border-2 border-dashed border-white/25 p-3 sm:p-4">
+            <form data-form="new-variant" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <input name="size" placeholder="Talla" class="input-dark !min-h-[44px]" />
               <input name="color" placeholder="Color" class="input-dark !min-h-[44px]" />
               <input name="price" type="number" step="0.01" min="0" placeholder="Precio" class="input-dark !min-h-[44px]" />
               <input name="stock" type="number" step="1" min="0" placeholder="Stock" class="input-dark !min-h-[44px]" />
-              <button type="submit" class="btn-gold !min-h-[44px] !px-3 !py-2 !text-xs">Crear</button>
+              <button type="submit" class="btn-gold col-span-2 sm:col-span-1 !min-h-[44px] !px-3 !py-2 !text-xs">Crear</button>
             </form>
           </div>
 
           {variants.length === 0 ? (
             <p class="text-sm text-white/70">Sin variantes. Crea al menos una para poder vender.</p>
           ) : (
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+            <div class="overflow-x-auto -mx-1 px-1">
+              <p class="lg:hidden mb-2 text-[11px] text-white/50">Desliza para ver todas las columnas.</p>
+              <table class="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-[0.14em] text-white/60 border-b-2 border-white/20">
                     <th class="py-2 pr-3">Talla</th>
@@ -303,7 +304,7 @@ import { localize } from '../../../lib/routes';
 
       <aside class="space-y-8">
         <!-- Galería -->
-        <section class="card p-5">
+        <section class="card p-4 sm:p-5">
           <h2 class="section-label mb-4">Galería</h2>
 
           <div class="space-y-3 mb-4">
@@ -326,7 +327,7 @@ import { localize } from '../../../lib/routes';
                       type="button"
                       data-image-up
                       aria-label="Subir"
-                      class="text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
+                      class="w-8 h-8 flex items-center justify-center text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
                       disabled={i === 0}
                     >
                       ↑
@@ -335,13 +336,13 @@ import { localize } from '../../../lib/routes';
                       type="button"
                       data-image-down
                       aria-label="Bajar"
-                      class="text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
+                      class="w-8 h-8 flex items-center justify-center text-white/70 hover:text-oro-brillo disabled:opacity-30 disabled:cursor-default"
                       disabled={i === images.length - 1}
                     >
                       ↓
                     </button>
                   </div>
-                  <button type="button" data-image-delete class="text-xs text-red-400/70 hover:text-red-400 px-1 shrink-0">
+                  <button type="button" data-image-delete class="w-8 h-8 flex items-center justify-center text-xs text-red-400/70 hover:text-red-400 shrink-0">
                     ✕
                   </button>
                 </div>
@@ -357,7 +358,7 @@ import { localize } from '../../../lib/routes';
         </section>
 
         <!-- Ventas -->
-        <section class="card p-5">
+        <section class="card p-4 sm:p-5">
           <h2 class="section-label mb-4">Últimas ventas</h2>
           {sales.length === 0 ? (
             <p class="text-sm text-white/70">Aún sin ventas registradas.</p>

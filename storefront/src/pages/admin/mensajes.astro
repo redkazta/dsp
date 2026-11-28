@@ -30,14 +30,36 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
 
     <!-- Lista + detalle -->
-    <div class="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-5">
+    <div id="messages-grid" class="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-5">
       <div id="msg-list" class="space-y-1.5 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1"></div>
 
-      <div id="msg-detail" class="border-2 border-white/20 bg-negro-carbono p-6 min-h-[320px]">
+      <div id="msg-detail" class="border-2 border-white/20 bg-negro-carbono p-4 sm:p-6 min-h-[320px]">
         <p class="text-sm text-white/60">Selecciona un mensaje para leerlo.</p>
       </div>
     </div>
   </div>
+
+  <style>
+    /* En móvil la bandeja es maestro-detalle: al abrir un mensaje se oculta
+       la lista para no tener que bajar media pantalla hasta el contenido. */
+    @media (max-width: 1023px) {
+      #messages-grid:not(.is-detail) #msg-detail {
+        display: none;
+      }
+
+      #messages-grid.is-detail #msg-list {
+        display: none;
+      }
+
+      #msg-detail {
+        scroll-margin-top: 5rem;
+      }
+
+      #messages-grid {
+        scroll-margin-top: 5rem;
+      }
+    }
+  </style>
 
   <script>
     import {
@@ -80,6 +102,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     const loading = document.getElementById('admin-loading')!;
     const view = document.getElementById('messages-view')!;
+    const gridEl = document.getElementById('messages-grid')!;
     const listEl = document.getElementById('msg-list')!;
     const detailEl = document.getElementById('msg-detail')!;
     const countEl = document.getElementById('msg-count')!;
@@ -196,6 +219,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(`Re: ${m.subject}`)}`;
 
       detailEl.innerHTML = `
+        <button type="button" data-back class="lg:hidden mb-4 inline-flex items-center gap-2 min-h-[36px] text-[11px] uppercase tracking-[0.14em] text-oro-brillo">
+          ← Volver a la lista
+        </button>
+
         <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-white/15">
           <div class="min-w-0">
             <h2 class="font-titulos text-xl text-blancoRoto mb-1 break-words">${escapeHtml(m.subject)}</h2>
@@ -224,6 +251,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             Eliminar
           </button>
         </div>`;
+
+      detailEl.querySelector('[data-back]')?.addEventListener('click', () => {
+        selectedId = null;
+        gridEl.classList.remove('is-detail');
+        paintList();
+        paintDetail(null);
+        gridEl.scrollIntoView({ block: 'start' });
+      });
 
       detailEl.querySelectorAll<HTMLElement>('[data-act]').forEach((btn) =>
         btn.addEventListener('click', async () => {
@@ -265,6 +300,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       paintTabs();
       paintList();
       paintDetail(current);
+      if (current) gridEl.classList.add('is-detail');
+
+      // En móvil el detalle sustituye a la lista; se alinea arriba para que
+      // el mensaje se lea desde el principio.
+      if (current && window.matchMedia('(max-width: 1023px)').matches) {
+        detailEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
     }
 
     async function load() {
@@ -282,6 +324,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
       // Mantiene el detalle abierto tras recargar la lista.
       const still = messages.find((m) => m.id === selectedId) ?? null;
+      if (!still) gridEl.classList.remove('is-detail');
       paintDetail(still);
     }
 
